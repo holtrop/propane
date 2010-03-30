@@ -1,6 +1,7 @@
 
 #include "serialize.h"
 #include <string.h>
+#include <iconv.h>
 using namespace std;
 
 refptr< vector<unichar_t> > deserialize(const char * encoding, istream & in)
@@ -11,7 +12,7 @@ refptr< vector<unichar_t> > deserialize(const char * encoding, istream & in)
     char * inbuf_ptr = (char *) &inbuf[0];
     unichar_t outbuf[buf_size];
     char * outbuf_ptr;
-    size_t bytes_converted, inbytes = 0, outbytes;
+    size_t chars_converted, inbytesleft = 0, outbytesleft;
     refptr< vector<unichar_t> > ucs = new vector<unichar_t>();
 
     iconv_t cd = iconv_open(encoding, "UTF-32");
@@ -23,25 +24,30 @@ refptr< vector<unichar_t> > deserialize(const char * encoding, istream & in)
 
     for (;;)
     {
-        in.read(inbuf_ptr, sizeof(inbuf) - inbytes);
+        in.read(inbuf_ptr, sizeof(inbuf) - inbytesleft);
         num_read = in.gcount();
+        cout << "num_read: " << num_read << endl;
         if (num_read <= 0)
             break;
+        inbytesleft += num_read;
         outbuf_ptr = (char *) &outbuf[0];
-        outbytes = sizeof(outbuf);
-        bytes_converted = iconv(cd, &inbuf_ptr, &inbytes,
-                &outbuf_ptr, &outbytes);
-        if (inbytes > 0)
+        outbytesleft = sizeof(outbuf);
+        cout << "before inbytesleft: " << inbytesleft << ", outbytesleft: " << outbytesleft << endl;
+        chars_converted = iconv(cd, &inbuf_ptr, &inbytesleft,
+                &outbuf_ptr, &outbytesleft);
+        cout << "chars_converted: " << chars_converted << endl;
+        cout << "after inbytesleft: " << inbytesleft << ", outbytesleft: " << outbytesleft << endl;
+        if (inbytesleft > 0)
         {
-            memmove(&inbuf[0], inbuf_ptr, inbytes);
+            memmove(&inbuf[0], inbuf_ptr, inbytesleft);
         }
-        inbuf_ptr = ((char *) &inbuf[0]) + inbytes;
-        for (int i = 0; i < (bytes_converted / sizeof(outbuf[0])); i++)
+        inbuf_ptr = ((char *) &inbuf[0]) + inbytesleft;
+        for (int i = 0;
+             i < ((sizeof(outbuf) - outbytesleft) / sizeof(outbuf[0]));
+             i++)
         {
             ucs->push_back(outbuf[i]);
         }
-        if (bytes_converted & 0x3)
-            cerr << "Warning: bytes_converted = " << bytes_converted << endl;
         if (in.eof())
             break;
     }
