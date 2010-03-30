@@ -3,6 +3,7 @@
 #include <string.h>
 #include <iconv.h>
 #include <stdio.h>
+#include <errno.h>
 using namespace std;
 
 refptr< vector<unichar_t> > deserialize(const char * encoding, istream & in)
@@ -45,7 +46,24 @@ refptr< vector<unichar_t> > deserialize(const char * encoding, istream & in)
                 &outbuf_ptr, &outbytesleft);
         if (chars_converted == (size_t) -1)
         {
+            int err = errno;
             perror("iconv() error");
+            switch (err)
+            {
+                case EINVAL:
+                    cerr << "EINVAL" << endl;
+                    break;
+                case EILSEQ:
+                    cerr << "EILSEQ" << endl;
+                    printf("inbuf: %p, inbuf_ptr: %p\n", inbuf, inbuf_ptr);
+                    for (int i = 0; i < 6; i++)
+                        printf("%02x ", inbuf_ptr[i]);
+                    cout << endl;
+                    break;
+                case E2BIG:
+                    cerr << "E2BIG" << endl;
+                    break;
+            }
         }
         cout << "chars_converted: " << chars_converted << endl;
         cout << "after inbytesleft: " << inbytesleft << ", outbytesleft: " << outbytesleft << endl;
