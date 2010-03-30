@@ -38,5 +38,11 @@ int main(int argc, char * argv[])
         return 1;
     }
 
+    cout << "Size: " << ucs_str->size() << endl;
+    for (int i = 0; i < ucs_str->size(); i++)
+    {
+        cout << (*ucs_str)[i] << ": '" << (char) (*ucs_str)[i] << "'" << endl;
+    }
+
     return 0;
 }
