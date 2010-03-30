@@ -30,7 +30,13 @@ int main(int argc, char * argv[])
         }
     }
 
-    ifstream ifs(optarg);
+    ifstream ifs;
+    ifs.open(argv[optind], ios::binary);
+    if (!ifs.is_open())
+    {
+        cerr << "Error opening input file: '" << argv[optind] << "'";
+        return 2;
+    }
     refptr< vector<unichar_t> > ucs_str = deserialize(encoding, ifs);
     if (ucs_str.isNull())
     {
