@@ -18,7 +18,7 @@ refptr< vector<unichar_t> > deserialize(const char * encoding, istream & in)
     refptr< vector<unichar_t> > ucs = new vector<unichar_t>();
 
     cout << "encoding: " << encoding << endl;
-    iconv_t cd = iconv_open(encoding, "UTF-32");
+    iconv_t cd = iconv_open(encoding, "UCS-4");
     if (cd == (iconv_t) -1)
     {
         cerr << "iconv_open() error" << endl;
@@ -41,7 +41,7 @@ refptr< vector<unichar_t> > deserialize(const char * encoding, istream & in)
         outbuf_ptr = (char *) &outbuf[0];
         outbytesleft = buf_size * sizeof(outbuf[0]);
         cout << "before inbytesleft: " << inbytesleft << ", outbytesleft: " << outbytesleft << endl;
-        cout << "inbuf_ptr: " << inbuf_ptr << endl;
+//        cout << "inbuf_ptr: " << inbuf_ptr << endl;
         chars_converted = iconv(cd, &inbuf_ptr, &inbytesleft,
                 &outbuf_ptr, &outbytesleft);
         if (chars_converted == (size_t) -1)
