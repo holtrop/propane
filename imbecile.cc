@@ -44,11 +44,5 @@ int main(int argc, char * argv[])
         return 1;
     }
 
-    cout << "Size: " << ucs_str->size() << endl;
-    for (int i = 0; i < ucs_str->size(); i++)
-    {
-        cout << dec << (*ucs_str)[i] << " (0x" << hex << (*ucs_str)[i] << "): '" << (char) ((*ucs_str)[i] & 0xFF) << "'" << endl;
-    }
-
     return 0;
 }
