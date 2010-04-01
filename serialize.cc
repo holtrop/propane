@@ -15,10 +15,16 @@ refptr< vector<unichar_t> > deserialize(const char * encoding, istream & in)
     unichar_t * outbuf = new unichar_t[buf_size];
     char * outbuf_ptr;
     size_t chars_converted, inbytesleft = 0, outbytesleft;
+    const char * to_encoding;
     refptr< vector<unichar_t> > ucs = new vector<unichar_t>();
 
-    cout << "encoding: " << encoding << endl;
-    iconv_t cd = iconv_open(encoding, "UCS-4");
+    {
+        uint32_t endianness_test = 1u;
+        uint8_t * p = (uint8_t *) &endianness_test;
+        to_encoding = (*p == 1) ? "UCS-4LE" : "UCS-4BE";
+    }
+
+    iconv_t cd = iconv_open(/* to */ to_encoding, /* from */ encoding);
     if (cd == (iconv_t) -1)
     {
         cerr << "iconv_open() error" << endl;
