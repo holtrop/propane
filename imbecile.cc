@@ -6,6 +6,7 @@
 #include "refptr/refptr.h"
 #include "serialize.h"
 #include "unicode.h"
+#include "parse-input.h"
 using namespace std;
 
 int main(int argc, char * argv[])
@@ -37,12 +38,14 @@ int main(int argc, char * argv[])
         cerr << "Error opening input file: '" << argv[optind] << "'";
         return 2;
     }
-    refptr< vector<unichar_t> > ucs_str = deserialize(encoding, ifs);
-    if (ucs_str.isNull())
+    refptr< vector<unichar_t> > ucs = deserialize(encoding, ifs);
+    if (ucs.isNull())
     {
         cerr << "Error deserializing input file." << endl;
         return 1;
     }
+
+    parse_input(ucs);
 
     return 0;
 }

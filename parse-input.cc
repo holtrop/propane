@@ -68,6 +68,9 @@ void parse_input(refptr< vector<unichar_t> > ucs)
                     case '\n':
                         SET_ERROR("Unterminated section header");
                         break;
+                    default:
+                        build_str += c;
+                        break;
                 }
                 break;
             case RULES:
