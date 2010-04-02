@@ -10,6 +10,7 @@ class unistring
 {
     public:
         unistring & operator=(const char * ascii_str);
+        unistring & operator+=(const unichar_t c);
         bool operator==(const char * ascii_str);
 
     protected:

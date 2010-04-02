@@ -13,6 +13,12 @@ unistring & unistring::operator=(const char * ascii_str)
     return *this;
 }
 
+unistring & unistring::operator+=(const unichar_t c)
+{
+    chars.push_back(c);
+    return *this;
+}
+
 bool unistring::operator==(const char * ascii_str)
 {
     int len = chars.size();

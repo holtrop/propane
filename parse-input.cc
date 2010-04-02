@@ -14,7 +14,8 @@ using namespace std;
 
 void parse_input(refptr< vector<unichar_t> > ucs)
 {
-    enum State { INITIAL, SECTION_NAME, RULES };
+    enum State { INITIAL, SECTION_NAME, RULES, RULE_NAME, RULE_COLON,
+        RULE_EQUALS, RULE_RHS };
     State state = INITIAL;
     int lineno = 1;
     int colno = 1;
@@ -69,6 +70,71 @@ void parse_input(refptr< vector<unichar_t> > ucs)
                         break;
                 }
                 break;
+            case RULES:
+                if (isspace(c))
+                {
+                }
+                else if (  ('a' <= c && c <= 'z')
+                        || ('A' <= c && c <= 'Z')
+                        || (c == '_') )
+                {
+                    build_str = "";
+                    build_str += c;
+                    state = RULE_NAME;
+                }
+                else
+                {
+                    SET_ERROR("Unexpected character");
+                }
+                break;
+            case RULE_NAME:
+                if (   ('a' <= c && c <= 'z')
+                    || ('A' <= c && c <= 'Z')
+                    || ('0' <= c && c <= '9')
+                    || (c == '_') )
+                {
+                    build_str += c;
+                }
+                else if (isspace(c))
+                {
+                    state = RULE_COLON;
+                }
+                else
+                {
+                    SET_ERROR("Expected ':='");
+                }
+                break;
+            case RULE_COLON:
+                if (isspace(c))
+                {
+                }
+                else if (c == ':')
+                {
+                    state = RULE_EQUALS;
+                }
+                else
+                {
+                    SET_ERROR("Expected ':='");
+                }
+                break;
+            case RULE_EQUALS:
+                if (c == '=')
+                {
+                    state = RULE_RHS;
+                }
+                else
+                {
+                    SET_ERROR("Expected '='");
+                }
+                break;
+            case RULE_RHS:
+                break;
+        }
+
+        if (error)
+        {
+            cerr << errstr << endl;
+            break;
         }
     }
 }
