@@ -1,6 +1,5 @@
 
 #include <iostream>
-#include <string>
 #include <stdio.h>
 #include <ctype.h>  /* isspace() */
 #include "parse-input.h"
@@ -14,27 +13,20 @@ using namespace std;
 
 void parse_input(refptr< vector<unichar_t> > ucs)
 {
-    enum State { INITIAL, SECTION_NAME, RULES, RULE_NAME, RULE_COLON,
-        RULE_EQUALS, RULE_RHS };
+    enum State { INITIAL, SECTION_NAME, RULES, RULE_NAME,
+        RULE_EQUALS, RULE_RHS, TOKENS, TOKEN_NAME, TOKEN_EQUALS, TOKEN_RHS };
     State state = INITIAL;
     int lineno = 1;
     int colno = 1;
     bool error = false;
     char errstr[200];
     unistring build_str;
+    struct { unistring name; unistring rhs; } rule;
+    struct { unistring name; unistring rhs; } token;
 
     for (int i = 0, sz = ucs->size(); i < sz; i++)
     {
         unichar_t c = (*ucs)[i];
-        if (c == '\n')
-        {
-            lineno++;
-            colno = 1;
-        }
-        else
-        {
-            colno++;
-        }
         switch (state)
         {
             case INITIAL:
@@ -60,6 +52,10 @@ void parse_input(refptr< vector<unichar_t> > ucs)
                         {
                             state = RULES;
                         }
+                        else if (build_str == "tokens")
+                        {
+                            state = TOKENS;
+                        }
                         else
                         {
                             SET_ERROR("Unknown section name");
@@ -74,50 +70,31 @@ void parse_input(refptr< vector<unichar_t> > ucs)
                 }
                 break;
             case RULES:
-                if (isspace(c))
+                if (c == '[')
+                {
+                    state = SECTION_NAME;
+                    build_str = "";
+                }
+                else if (isspace(c))
                 {
                 }
-                else if (  ('a' <= c && c <= 'z')
-                        || ('A' <= c && c <= 'Z')
-                        || (c == '_') )
+                else
                 {
                     build_str = "";
                     build_str += c;
                     state = RULE_NAME;
                 }
-                else
-                {
-                    SET_ERROR("Unexpected character");
-                }
                 break;
             case RULE_NAME:
-                if (   ('a' <= c && c <= 'z')
-                    || ('A' <= c && c <= 'Z')
-                    || ('0' <= c && c <= '9')
-                    || (c == '_') )
+                if (c == ':')
                 {
-                    build_str += c;
-                }
-                else if (isspace(c))
-                {
-                    state = RULE_COLON;
-                }
-                else
-                {
-                    SET_ERROR("Expected ':='");
-                }
-                break;
-            case RULE_COLON:
-                if (isspace(c))
-                {
-                }
-                else if (c == ':')
-                {
+                    rule.name = build_str;
+                    build_str = "";
                     state = RULE_EQUALS;
                 }
                 else
                 {
-                    SET_ERROR("Expected ':='");
+                    build_str += c;
                 }
                 break;
             case RULE_EQUALS:
@@ -131,7 +108,73 @@ void parse_input(refptr< vector<unichar_t> > ucs)
                 }
                 break;
             case RULE_RHS:
+                if (c == '\n')
+                {
+                    rule.rhs = build_str;
+                    state = RULES;
+                }
+                else
+                {
+                    build_str += c;
+                }
                 break;
+            case TOKENS:
+                if (c == '[')
+                {
+                    state = SECTION_NAME;
+                    build_str = "";
+                }
+                else
+                {
+                    build_str = "";
+                    build_str += c;
+                    state = TOKEN_NAME;
+                }
+                break;
+            case TOKEN_NAME:
+                if (c == ':')
+                {
+                    state = TOKEN_EQUALS;
+                }
+                else
+                {
+                    build_str += c;
+                }
+                break;
+            case TOKEN_EQUALS:
+                if (c == '=')
+                {
+                    token.name = build_str;
+                    build_str = "";
+                    state = TOKEN_RHS;
+                }
+                else
+                {
+                    SET_ERROR("Expected '='");
+                }
+                break;
+            case TOKEN_RHS:
+                if (c == '\n')
+                {
+                    token.rhs = build_str;
+                    state = RULES;
+                }
+                else
+                {
+                    build_str += c;
+                }
+                break;
+        }
+
+        /* update line and column position information */
+        if (c == '\n')
+        {
+            lineno++;
+            colno = 1;
+        }
+        else
+        {
+            colno++;
         }
 
         if (error)
