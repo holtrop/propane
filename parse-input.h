@@ -4,8 +4,7 @@
 
 #include <vector>
 #include "refptr/refptr.h"
-#include "unicode.h"
 
-void parse_input(refptr< std::vector<unichar_t> > ucs);
+void parse_input(char * buff, int size);
 
 #endif

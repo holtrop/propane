@@ -4,8 +4,6 @@
 #include <getopt.h>
 #include <iconv.h>
 #include "refptr/refptr.h"
-#include "serialize.h"
-#include "unicode.h"
 #include "parse-input.h"
 using namespace std;
 
@@ -38,14 +36,15 @@ int main(int argc, char * argv[])
         cerr << "Error opening input file: '" << argv[optind] << "'";
         return 2;
     }
-    refptr< vector<unichar_t> > ucs = deserialize(encoding, ifs);
-    if (ucs.isNull())
-    {
-        cerr << "Error deserializing input file." << endl;
-        return 1;
-    }
+    ifs.seekg(0, ios_base::end);
+    int size = ifs.tellg();
+    ifs.seekg(0, ios_base::beg);
+    char * buff = new char[size];
+    ifs.read(buff, size);
 
-    parse_input(ucs);
+    parse_input(buff, size);
 
+    ifs.close();
+    delete[] buff;
     return 0;
 }
