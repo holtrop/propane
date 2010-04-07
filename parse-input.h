@@ -5,6 +5,6 @@
 #include <vector>
 #include "refptr/refptr.h"
 
-void parse_input(char * buff, int size);
+bool parse_input(char * buff, int size);
 
 #endif
