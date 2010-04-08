@@ -43,6 +43,8 @@ bool parse_input(char * buff, int size)
     sections["tokens"] = tokens;
     sections["rules"] = rules;
     Section section = none;
+    string line;
+    bool append_line = false;
 
     for (int i = 0; i < sizeof(exprs)/sizeof(exprs[0]); i++)
     {
@@ -64,16 +66,36 @@ bool parse_input(char * buff, int size)
         {
             line_length--;
         }
-        string line(input, line_length);
-        if (pcre_exec(empty, NULL, line.c_str(), line.size(), 0, 0,
-                    ovector, ovec_size) == 0)
-            continue;
-        if (pcre_exec(comment, NULL, line.c_str(), line.size(), 0, 0,
-                    ovector, ovec_size) == 0)
-            continue;
-        if (pcre_exec(section_name, NULL, line.c_str(), line.size(), 0, 0,
-                    ovector, ovec_size) == 0)
+        if (append_line)
         {
+            line += string(input, line_length);
+        }
+        else
+        {
+            line = string(input, line_length);
+        }
+        if (line.size() > 0 && line[line.size()-1] == '\\')
+        {
+            line[line.size()-1] = ' ';
+            append_line = true;
+        }
+        else
+        {
+            append_line = false;
+        }
+        if ( append_line
+          || (pcre_exec(empty, NULL, line.c_str(), line.size(),
+                  0, 0, ovector, ovec_size) >= 0)
+          || (pcre_exec(comment, NULL, line.c_str(), line.size(),
+                  0, 0, ovector, ovec_size) >= 0)
+           )
+        {
+            /* nothing */;
+        }
+        else if (pcre_exec(section_name, NULL, line.c_str(), line.size(),
+                    0, 0, ovector, ovec_size) >= 0)
+        {
+            sn = string(input, ovector[2], ovector[3] - ovector[2]);
             if (sections.find(sn) != sections.end())
             {
                 section = sections[sn];
@@ -83,51 +105,55 @@ bool parse_input(char * buff, int size)
                 cerr << "Unknown section name '" << sn << "'!" << endl;
                 return false;
             }
-            continue;
         }
-        switch (section)
+        else
         {
-            case none:
-                cerr << "Unrecognized input on line " << lineno << endl;
-                return false;
-            case tokens:
-                if (pcre_exec(token, NULL, line.c_str(), line.size(), 0, 0,
-                            ovector, ovec_size) == 0)
-                {
-                    string name(line, ovector[2], ovector[3] - ovector[2]);
-                    string definition(line,
-                            ovector[4], ovector[5] - ovector[4]);
-                    string flags;
-                    if (ovector[6] >= 0 && ovector[7] >= 0)
+            switch (section)
+            {
+                case none:
+                    cerr << "Unrecognized input on line " << lineno << endl;
+                    return false;
+                case tokens:
+                    if (pcre_exec(token, NULL, line.c_str(), line.size(),
+                                0, 0, ovector, ovec_size) >= 0)
                     {
-                        flags = string(line,
-                                ovector[6], ovector[7] - ovector[6]);
+                        string name(line, ovector[2], ovector[3] - ovector[2]);
+                        string definition(line,
+                                ovector[4], ovector[5] - ovector[4]);
+                        string flags;
+                        if (ovector[6] >= 0 && ovector[7] >= 0)
+                        {
+                            flags = string(line,
+                                    ovector[6], ovector[7] - ovector[6]);
+                        }
+                        /* TODO: process token */
                     }
-                    /* TODO: process token */
-                }
-                else
-                {
-                    cerr << "Unrecognized input on line " << lineno << endl;
-                    return false;
-                }
-                break;
-            case rules:
-                if (pcre_exec(rule, NULL, line.c_str(), line.size(), 0, 0,
-                            ovector, ovec_size) == 0)
-                {
-                    string name(line, ovector[2], ovector[3] - ovector[2]);
-                    string definition(line,
-                            ovector[4], ovector[5] - ovector[4]);
-                    /* TODO: process rule */
-                }
-                else
-                {
-                    cerr << "Unrecognized input on line " << lineno << endl;
-                    return false;
-                }
-                break;
+                    else
+                    {
+                        cerr << "Unrecognized input on line " << lineno << endl;
+                        return false;
+                    }
+                    break;
+                case rules:
+                    if (pcre_exec(rule, NULL, line.c_str(), line.size(),
+                                0, 0, ovector, ovec_size) >= 0)
+                    {
+                        string name(line, ovector[2], ovector[3] - ovector[2]);
+                        string definition(line,
+                                ovector[4], ovector[5] - ovector[4]);
+                        /* TODO: process rule */
+                    }
+                    else
+                    {
+                        cerr << "Unrecognized input on line " << lineno << endl;
+                        return false;
+                    }
+                    break;
+            }
         }
         input = newline + 1;
         lineno++;
     }
+
+    return true;
 }
