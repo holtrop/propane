@@ -1,3 +1,5 @@
-Imbecile is a parser generator. It targets C++ and auto-generates a class
-heirarchy. It can read UTF-encoded parser description files and generate
-parsers that can read UTF input.
+Imbecile is a bottom-up parser generator. It targets C++ and automatically
+generates a class heirarchy for interacting with the parser.
+
+Imbecile generates both a lexer and a parser based on the rules given to
+it in the input file.
