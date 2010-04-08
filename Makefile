@@ -5,7 +5,7 @@ CXXDEPS  := $(CXXOBJS:.o=.dep)
 CXXFLAGS := -O2
 DEPS     := $(CXXDEPS)
 OBJS     := $(CXXOBJS)
-LDFLAGS  := -lpcrecpp
+LDFLAGS  := -lpcre
 
 all: $(TARGET)
 

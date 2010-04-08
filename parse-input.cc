@@ -5,30 +5,51 @@
 #include <iostream>
 #include <string>
 #include <map>
-#include <pcrecpp.h>
+#include <pcre.h>
 
 #include "parse-input.h"
 
 using namespace std;
-using namespace pcrecpp;
 
 enum Section{ none, tokens, rules };
 
 bool parse_input(char * buff, int size)
 {
-    RE empty("\\s*");
-    RE comment("\\s*#.*");
-    RE section_name("\\s*\\[([^\\]]+?)\\]\\s*");
-    RE token("\\s*"                             /* possible leading ws */
-             "([a-zA-Z_][a-zA-Z_0-9]*)"         /* token name */
-             "\\s+"                             /* required whitespace */
-             "((?:[^\\\\\\s]|\\\\.)+)"          /* token regular expression */
-             "(?:\\s+\\[([^\\]]+)\\])?"         /* optional token flags */
-             "\\s*");                           /* possible trailing ws */
-    RE rule("\\s*(\\S+)\\s*:=(.*)");
+    pcre * empty;
+    pcre * comment;
+    pcre * section_name;
+    pcre * token;
+    pcre * rule;
+    struct { pcre ** re; const char * pattern; } exprs[] = {
+        {&empty,        "^\\s*$"},
+        {&comment,      "^\\s*#"},
+        {&section_name, "^\\s*\\[([^\\]]+?)\\]\\s*$"},
+        {&token,        "^\\s*"                      /* possible leading ws */
+                        "([a-zA-Z_][a-zA-Z_0-9]*)"  /* token name */
+                        "\\s+"                      /* required whitespace */
+                        "((?:[^\\\\\\s]|\\\\.)+)"   /* token RE */
+                        "(?:\\s+\\[([^\\]]+)\\])?"  /* optional token flags */
+                        "\\s*$"},                   /* possible trailing ws */
+        {&rule,         "^\\s*(\\S+)\\s*:=(.*)$"}
+    };
 
     Section section = none;
 
+    for (int i = 0; i < sizeof(exprs)/sizeof(exprs[0]); i++)
+    {
+        const char * errptr;
+        int erroffset;
+        *exprs[i].re = pcre_compile(exprs[i].pattern, 0,
+                &errptr, &erroffset, NULL);
+        if (*exprs[i].re == NULL)
+        {
+            cerr << "Error compiling regex '" << exprs[i].pattern <<
+                "': " << errptr << " at position " << erroffset << endl;
+        }
+    }
+
+    const int ovec_size = 30;
+    int ovector[ovec_size];
     int lineno = 1;
     char * newline;
     char * input = buff;
@@ -45,11 +66,14 @@ bool parse_input(char * buff, int size)
             line_length--;
         }
         string line(input, line_length);
-        if (empty.FullMatch(line))
+        if (pcre_exec(empty, NULL, line.c_str(), line.size(), 0, 0,
+                    ovector, ovec_size) == 0)
             continue;
-        if (comment.FullMatch(line))
+        if (pcre_exec(comment, NULL, line.c_str(), line.size(), 0, 0,
+                    ovector, ovec_size) == 0)
             continue;
-        if (section_name.FullMatch(line, &sn))
+        if (pcre_exec(section_name, NULL, line.c_str(), line.size(), 0, 0,
+                    ovector, ovec_size) == 0)
         {
             if (sections.find(sn) != sections.end())
             {
@@ -68,8 +92,8 @@ bool parse_input(char * buff, int size)
                 break;
             case tokens:
                 {
-                    string name, definition, flags;
-                    if (token.FullMatch(line, &name, &definition, &flags))
+                    if (pcre_exec(token, NULL, line.c_str(), line.size(), 0, 0,
+                                ovector, ovec_size) == 0)
                     {
                         /* TODO: process token */
                     }
@@ -77,8 +101,8 @@ bool parse_input(char * buff, int size)
                 break;
             case rules:
                 {
-                    string name, definition;
-                    if (rule.FullMatch(line, &name, &definition))
+                    if (pcre_exec(rule, NULL, line.c_str(), line.size(), 0, 0,
+                                ovector, ovec_size) == 0)
                     {
                         /* TODO: process rule */
                     }
