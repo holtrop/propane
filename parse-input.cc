@@ -8,6 +8,7 @@
 #include <pcre.h>
 
 #include "parse-input.h"
+#include "TokenDefinition.h"
 
 using namespace std;
 
@@ -126,7 +127,17 @@ bool parse_input(char * buff, int size)
                             flags = string(line,
                                     ovector[6], ovector[7] - ovector[6]);
                         }
-                        /* TODO: process token */
+                        refptr<TokenDefinition> td = new TokenDefinition();
+                        if (td->create(name, definition, flags))
+                        {
+                            /* TODO: do something with td */
+                        }
+                        else
+                        {
+                            cerr << "Error in token definition ending on line "
+                                << lineno << endl;
+                            return false;
+                        }
                     }
                     else
                     {
@@ -155,5 +166,10 @@ bool parse_input(char * buff, int size)
         lineno++;
     }
 
+    pcre_free(empty);
+    pcre_free(comment);
+    pcre_free(section_name);
+    pcre_free(token);
+    pcre_free(rule);
     return true;
 }
