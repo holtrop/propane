@@ -24,7 +24,7 @@ bool parse_input(char * buff, int size)
         {&empty,        "^\\s*$"},
         {&comment,      "^\\s*#"},
         {&section_name, "^\\s*\\[([^\\]]+?)\\]\\s*$"},
-        {&token,        "^\\s*"                      /* possible leading ws */
+        {&token,        "^\\s*"                     /* possible leading ws */
                         "([a-zA-Z_][a-zA-Z_0-9]*)"  /* token name */
                         "\\s+"                      /* required whitespace */
                         "((?:[^\\\\\\s]|\\\\.)+)"   /* token RE */
@@ -32,7 +32,16 @@ bool parse_input(char * buff, int size)
                         "\\s*$"},                   /* possible trailing ws */
         {&rule,         "^\\s*(\\S+)\\s*:=(.*)$"}
     };
-
+    const int ovec_size = 30;
+    int ovector[ovec_size];
+    int lineno = 1;
+    char * newline;
+    char * input = buff;
+    string sn;
+    map<string, Section> sections;
+    sections["none"] = none;
+    sections["tokens"] = tokens;
+    sections["rules"] = rules;
     Section section = none;
 
     for (int i = 0; i < sizeof(exprs)/sizeof(exprs[0]); i++)
@@ -48,16 +57,6 @@ bool parse_input(char * buff, int size)
         }
     }
 
-    const int ovec_size = 30;
-    int ovector[ovec_size];
-    int lineno = 1;
-    char * newline;
-    char * input = buff;
-    string sn;
-    map<string, Section> sections;
-    sections["none"] = none;
-    sections["tokens"] = tokens;
-    sections["rules"] = rules;
     while ((newline = strstr(input, "\n")) != NULL)
     {
         int line_length = newline - input;
