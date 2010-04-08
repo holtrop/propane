@@ -32,7 +32,7 @@ bool parse_input(char * buff, int size)
                         "\\s*$"},                   /* possible trailing ws */
         {&rule,         "^\\s*(\\S+)\\s*:=(.*)$"}
     };
-    const int ovec_size = 30;
+    const int ovec_size = 3 * 10;
     int ovector[ovec_size];
     int lineno = 1;
     char * newline;
@@ -88,23 +88,42 @@ bool parse_input(char * buff, int size)
         switch (section)
         {
             case none:
-                break;
+                cerr << "Unrecognized input on line " << lineno << endl;
+                return false;
             case tokens:
+                if (pcre_exec(token, NULL, line.c_str(), line.size(), 0, 0,
+                            ovector, ovec_size) == 0)
                 {
-                    if (pcre_exec(token, NULL, line.c_str(), line.size(), 0, 0,
-                                ovector, ovec_size) == 0)
+                    string name(line, ovector[2], ovector[3] - ovector[2]);
+                    string definition(line,
+                            ovector[4], ovector[5] - ovector[4]);
+                    string flags;
+                    if (ovector[6] >= 0 && ovector[7] >= 0)
                     {
-                        /* TODO: process token */
+                        flags = string(line,
+                                ovector[6], ovector[7] - ovector[6]);
                     }
+                    /* TODO: process token */
+                }
+                else
+                {
+                    cerr << "Unrecognized input on line " << lineno << endl;
+                    return false;
                 }
                 break;
             case rules:
+                if (pcre_exec(rule, NULL, line.c_str(), line.size(), 0, 0,
+                            ovector, ovec_size) == 0)
                 {
-                    if (pcre_exec(rule, NULL, line.c_str(), line.size(), 0, 0,
-                                ovector, ovec_size) == 0)
-                    {
-                        /* TODO: process rule */
-                    }
+                    string name(line, ovector[2], ovector[3] - ovector[2]);
+                    string definition(line,
+                            ovector[4], ovector[5] - ovector[4]);
+                    /* TODO: process rule */
+                }
+                else
+                {
+                    cerr << "Unrecognized input on line " << lineno << endl;
+                    return false;
                 }
                 break;
         }
