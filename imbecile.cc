@@ -42,7 +42,9 @@ int main(int argc, char * argv[])
     char * buff = new char[size];
     ifs.read(buff, size);
 
-    parse_input(buff, size);
+    Parser p;
+
+    parse_input(buff, size, p);
 
     ifs.close();
     delete[] buff;

@@ -9,12 +9,13 @@
 
 #include "parse-input.h"
 #include "TokenDefinition.h"
+#include "Parser.h"
 
 using namespace std;
 
 enum Section{ none, tokens, rules };
 
-bool parse_input(char * buff, int size)
+bool parse_input(char * buff, int size, Parser & parser)
 {
     pcre * empty;
     pcre * comment;
@@ -130,7 +131,7 @@ bool parse_input(char * buff, int size)
                         refptr<TokenDefinition> td = new TokenDefinition();
                         if (td->create(name, definition, flags))
                         {
-                            /* TODO: do something with td */
+                            parser.addTokenDefinition(td);
                         }
                         else
                         {
