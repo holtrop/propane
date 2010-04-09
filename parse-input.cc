@@ -153,7 +153,17 @@ bool parse_input(char * buff, int size, Parser & parser)
                         string name(line, ovector[2], ovector[3] - ovector[2]);
                         string definition(line,
                                 ovector[4], ovector[5] - ovector[4]);
-                        /* TODO: process rule */
+                        refptr<RuleDefinition> rd = new RuleDefinition();
+                        if (rd->create(name, definition))
+                        {
+                            parser.addRuleDefinition(rd);
+                        }
+                        else
+                        {
+                            cerr << "Error in rule definition ending on line "
+                                << lineno << endl;
+                            return false;
+                        }
                     }
                     else
                     {
