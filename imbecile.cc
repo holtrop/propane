@@ -38,7 +38,7 @@ int main(int argc, char * argv[])
     ifs.open(input_fname.c_str(), ios::binary);
     if (!ifs.is_open())
     {
-        cerr << "Error opening input file: '" << argv[optind] << "'";
+        cerr << "Error opening input file: '" << input_fname << "'";
         return 2;
     }
     ifs.seekg(0, ios_base::end);
