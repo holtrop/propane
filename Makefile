@@ -7,7 +7,16 @@ DEPS     := $(CXXDEPS)
 OBJS     := $(CXXOBJS)
 LDFLAGS  := -lpcre
 
-all: $(TARGET)
+all: submodule_check $(TARGET)
+
+.PHONY: submodule_check
+submodule_check:
+	@if [ ! -e refptr/refptr.h ]; then \
+		echo Error: \"refptr\" folder is not populated.; \
+		echo Perhaps you forgot to do \"git checkout --recursive\"?; \
+		echo You can remedy the situation with \"git submodule update --init\".; \
+		exit 1; \
+	fi
 
 $(TARGET): $(OBJS)
 	$(CXX) -o $@ $^ $(LDFLAGS)
