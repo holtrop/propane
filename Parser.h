@@ -3,6 +3,7 @@
 #define PARSER_H
 
 #include <vector>
+#include <string>
 
 #include "refptr/refptr.h"
 #include "TokenDefinition.h"
@@ -20,6 +21,7 @@ class Parser
         {
             m_rules.push_back(rd);
         }
+        void write(const std::string & fname);
 
     protected:
         std::vector< refptr< TokenDefinition > > m_tokens;

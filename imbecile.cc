@@ -1,17 +1,19 @@
 
+#include <getopt.h>
+
 #include <iostream>
 #include <fstream>
-#include <getopt.h>
-#include <iconv.h>
+
 #include "refptr/refptr.h"
 #include "parse-input.h"
+
 using namespace std;
 
 int main(int argc, char * argv[])
 {
     int longind = 1;
     int opt;
-    const char * output_fname = "";
+    string output_fname;
 
     static struct option longopts[] = {
         /* name, has_arg, flag, val */
@@ -29,8 +31,9 @@ int main(int argc, char * argv[])
         }
     }
 
+    string input_fname = argv[optind];
     ifstream ifs;
-    ifs.open(argv[optind], ios::binary);
+    ifs.open(input_fname.c_str(), ios::binary);
     if (!ifs.is_open())
     {
         cerr << "Error opening input file: '" << argv[optind] << "'";
@@ -41,12 +44,26 @@ int main(int argc, char * argv[])
     ifs.seekg(0, ios_base::beg);
     char * buff = new char[size];
     ifs.read(buff, size);
+    ifs.close();
 
     Parser p;
 
     parse_input(buff, size, p);
 
-    ifs.close();
+    if (output_fname == "")
+    {
+        size_t len = input_fname.length();
+        if (len > 2 && input_fname.substr(len - 2) == ".I")
+        {
+            output_fname = input_fname.substr(0, len - 2) + ".cc";
+        }
+        else
+        {
+            output_fname = input_fname + ".cc";
+        }
+    }
+    p.write(output_fname);
+
     delete[] buff;
     return 0;
 }
