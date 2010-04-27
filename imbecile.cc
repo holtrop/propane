@@ -9,6 +9,8 @@
 
 using namespace std;
 
+string buildOutputFilename(string & input_fname);
+
 int main(int argc, char * argv[])
 {
     int longind = 1;
@@ -46,24 +48,30 @@ int main(int argc, char * argv[])
     ifs.read(buff, size);
     ifs.close();
 
+    if (output_fname == "")
+        output_fname = buildOutputFilename(input_fname);
+
     Parser p;
 
     p.parseInputFile(buff, size);
 
-    if (output_fname == "")
-    {
-        size_t len = input_fname.length();
-        if (len > 2 && input_fname.substr(len - 2) == ".I")
-        {
-            output_fname = input_fname.substr(0, len - 2) + ".cc";
-        }
-        else
-        {
-            output_fname = input_fname + ".cc";
-        }
-    }
     p.write(output_fname);
 
     delete[] buff;
     return 0;
+}
+
+string buildOutputFilename(string & input_fname)
+{
+    string output_fname;
+    size_t len = input_fname.length();
+    if (len > 2 && input_fname.substr(len - 2) == ".I")
+    {
+        output_fname = input_fname.substr(0, len - 2) + ".cc";
+    }
+    else
+    {
+        output_fname = input_fname + ".cc";
+    }
+    return output_fname;
 }
