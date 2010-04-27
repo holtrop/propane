@@ -5,7 +5,7 @@
 #include <fstream>
 
 #include "refptr/refptr.h"
-#include "parse-input.h"
+#include "Parser.h"
 
 using namespace std;
 
@@ -48,7 +48,7 @@ int main(int argc, char * argv[])
 
     Parser p;
 
-    parse_input(buff, size, p);
+    p.parseInputFile(buff, size);
 
     if (output_fname == "")
     {

@@ -22,6 +22,7 @@ class Parser
             m_rules.push_back(rd);
         }
         void write(const std::string & fname);
+        bool parseInputFile(char * buff, int size);
 
     protected:
         std::vector< refptr< TokenDefinition > > m_tokens;

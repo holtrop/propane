@@ -7,15 +7,15 @@
 #include <map>
 #include <pcre.h>
 
-#include "parse-input.h"
-#include "TokenDefinition.h"
 #include "Parser.h"
+#include "TokenDefinition.h"
+#include "RuleDefinition.h"
 
 using namespace std;
 
 enum Section{ none, tokens, rules };
 
-bool parse_input(char * buff, int size, Parser & parser)
+bool Parser::parseInputFile(char * buff, int size)
 {
     pcre * empty;
     pcre * comment;
@@ -131,7 +131,7 @@ bool parse_input(char * buff, int size, Parser & parser)
                         refptr<TokenDefinition> td = new TokenDefinition();
                         if (td->create(name, definition, flags))
                         {
-                            parser.addTokenDefinition(td);
+                            addTokenDefinition(td);
                         }
                         else
                         {
@@ -156,7 +156,7 @@ bool parse_input(char * buff, int size, Parser & parser)
                         refptr<RuleDefinition> rd = new RuleDefinition();
                         if (rd->create(name, definition))
                         {
-                            parser.addRuleDefinition(rd);
+                            addRuleDefinition(rd);
                         }
                         else
                         {
