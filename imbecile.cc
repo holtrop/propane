@@ -11,11 +11,11 @@ int main(int argc, char * argv[])
 {
     int longind = 1;
     int opt;
-    const char * encoding = "UTF-8";
+    const char * output_fname = "";
 
     static struct option longopts[] = {
         /* name, has_arg, flag, val */
-        { "encoding", required_argument, NULL, 'e' },
+        { "outfile", required_argument, NULL, 'o' },
         { NULL, 0, NULL, 0 }
     };
 
@@ -23,8 +23,8 @@ int main(int argc, char * argv[])
     {
         switch (opt)
         {
-            case 'e':   /* encoding */
-                encoding = optarg;
+            case 'o':   /* outfile */
+                output_fname = optarg;
                 break;
         }
     }
