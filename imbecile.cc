@@ -15,10 +15,12 @@ int main(int argc, char * argv[])
 {
     int longind = 1;
     int opt;
-    string output_fname;
+    string outfile;
+    string classname = "Parser";
 
     static struct option longopts[] = {
         /* name, has_arg, flag, val */
+        { "classname", required_argument, NULL, 'c' },
         { "outfile", required_argument, NULL, 'o' },
         { NULL, 0, NULL, 0 }
     };
@@ -27,10 +29,19 @@ int main(int argc, char * argv[])
     {
         switch (opt)
         {
+            case 'c':   /* classname */
+                classname = optarg;
+                break;
             case 'o':   /* outfile */
-                output_fname = optarg;
+                outfile = optarg;
                 break;
         }
+    }
+
+    if (optind >= argc)
+    {
+        cerr << "Usage: imbecile [options] <input-file>" << endl;
+        return 2;
     }
 
     string input_fname = argv[optind];
@@ -48,14 +59,13 @@ int main(int argc, char * argv[])
     ifs.read(buff, size);
     ifs.close();
 
-    if (output_fname == "")
-        output_fname = buildOutputFilename(input_fname);
+    if (outfile == "")
+        outfile = buildOutputFilename(input_fname);
 
     Parser p;
-
+    p.setClassName(classname);
     p.parseInputFile(buff, size);
-
-    p.write(output_fname);
+    p.write(outfile);
 
     delete[] buff;
     return 0;
@@ -63,15 +73,15 @@ int main(int argc, char * argv[])
 
 string buildOutputFilename(string & input_fname)
 {
-    string output_fname;
+    string outfile;
     size_t len = input_fname.length();
     if (len > 2 && input_fname.substr(len - 2) == ".I")
     {
-        output_fname = input_fname.substr(0, len - 2) + ".cc";
+        outfile = input_fname.substr(0, len - 2);
     }
     else
     {
-        output_fname = input_fname + ".cc";
+        outfile = input_fname;
     }
-    return output_fname;
+    return outfile;
 }

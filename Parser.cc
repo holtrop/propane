@@ -15,6 +15,7 @@
 using namespace std;
 
 Parser::Parser()
+    : m_classname("Parser")
 {
 }
 
