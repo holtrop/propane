@@ -2,6 +2,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <pcre.h>
+#include <ctype.h>                  /* toupper() */
 
 #include <iostream>
 #include <fstream>
@@ -21,9 +22,26 @@ Parser::Parser()
 
 void Parser::write(const string & fname)
 {
-    ofstream ofs(fname.c_str());
-    ofs << "Content goes here" << endl;
-    ofs.close();
+    string header_fname = fname + ".h";
+    string body_fname = fname + "." + m_extension;
+    ofstream header(header_fname.c_str());
+    ofstream body(body_fname.c_str());
+
+    string ifndef_name = m_namespace + "_" + m_classname + "_classes_defined";
+    for (string::iterator i = ifndef_name.begin(); i != ifndef_name.end(); i++)
+    {
+        *i = toupper(*i);
+    }
+
+    header << "#ifndef " << ifndef_name << endl;
+    header << "#define " << ifndef_name << endl << endl;
+    header << "#endif /* #ifndef " << ifndef_name << " */" << endl;
+
+    body << "#include \"" << header_fname << "\"" << endl;
+    body << endl;
+
+    header.close();
+    body.close();
 }
 
 bool Parser::parseInputFile(char * buff, int size)
