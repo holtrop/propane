@@ -17,10 +17,12 @@ int main(int argc, char * argv[])
     int opt;
     string outfile;
     string classname = "Parser";
+    string namespace_name = "";
 
     static struct option longopts[] = {
         /* name, has_arg, flag, val */
         { "classname", required_argument, NULL, 'c' },
+        { "namespace", required_argument, NULL, 'n' },
         { "outfile", required_argument, NULL, 'o' },
         { NULL, 0, NULL, 0 }
     };
@@ -31,6 +33,9 @@ int main(int argc, char * argv[])
         {
             case 'c':   /* classname */
                 classname = optarg;
+                break;
+            case 'n':   /* namespace */
+                namespace_name = optarg;
                 break;
             case 'o':   /* outfile */
                 outfile = optarg;
@@ -64,6 +69,7 @@ int main(int argc, char * argv[])
 
     Parser p;
     p.setClassName(classname);
+    p.setNamespace(namespace_name);
     p.parseInputFile(buff, size);
     p.write(outfile);
 
