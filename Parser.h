@@ -23,16 +23,22 @@ class Parser
         }
         void write(const std::string & fname);
         bool parseInputFile(char * buff, int size);
+
         void setClassName(const std::string & cn) { m_classname = cn; }
         std::string getClassName() { return m_classname; }
+
         void setNamespace(const std::string & ns) { m_namespace = ns; }
         std::string getNamespace() { return m_namespace; }
+
+        void setExtension(const std::string & e) { m_extension = e; }
+        std::string getExtension() { return m_extension; }
 
     protected:
         std::vector< refptr< TokenDefinition > > m_tokens;
         std::vector< refptr< RuleDefinition > > m_rules;
         std::string m_classname;
         std::string m_namespace;
+        std::string m_extension;
 };
 
 #endif

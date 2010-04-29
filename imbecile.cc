@@ -15,13 +15,13 @@ int main(int argc, char * argv[])
 {
     int longind = 1;
     int opt;
+    Parser p;
     string outfile;
-    string classname = "Parser";
-    string namespace_name = "";
 
     static struct option longopts[] = {
         /* name, has_arg, flag, val */
         { "classname", required_argument, NULL, 'c' },
+        { "extension", required_argument, NULL, 'e' },
         { "namespace", required_argument, NULL, 'n' },
         { "outfile", required_argument, NULL, 'o' },
         { NULL, 0, NULL, 0 }
@@ -32,10 +32,13 @@ int main(int argc, char * argv[])
         switch (opt)
         {
             case 'c':   /* classname */
-                classname = optarg;
+                p.setClassName(optarg);
+                break;
+            case 'e':   /* extension */
+                p.setExtension(optarg);
                 break;
             case 'n':   /* namespace */
-                namespace_name = optarg;
+                p.setNamespace(optarg);
                 break;
             case 'o':   /* outfile */
                 outfile = optarg;
@@ -67,9 +70,6 @@ int main(int argc, char * argv[])
     if (outfile == "")
         outfile = buildOutputFilename(input_fname);
 
-    Parser p;
-    p.setClassName(classname);
-    p.setNamespace(namespace_name);
     p.parseInputFile(buff, size);
     p.write(outfile);
 
