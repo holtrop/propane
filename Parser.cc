@@ -33,12 +33,40 @@ void Parser::write(const string & fname)
         *i = toupper(*i);
     }
 
+    /* write the header */
     header << "#ifndef " << ifndef_name << endl;
     header << "#define " << ifndef_name << endl << endl;
+    header << "#include <iostream>" << endl;
+    header << endl;
+    if (m_namespace != "")
+    {
+        header << "namespace " << m_namespace << " {" << endl << endl;
+    }
+    header << "class " << m_classname << " {" << endl;
+    header << "public:" << endl;
+    header << "void parse(std::istream & i);" << endl;
+    header << "};" << endl << endl;
+    if (m_namespace != "")
+    {
+        header << "} /* namespace " << m_namespace << " */" << endl << endl;
+    }
     header << "#endif /* #ifndef " << ifndef_name << " */" << endl;
 
+    /* write the body */
     body << "#include \"" << header_fname << "\"" << endl;
     body << endl;
+    body << "using namespace std;" << endl << endl;
+    if (m_namespace != "")
+    {
+        body << "namespace " << m_namespace << " {" << endl << endl;
+    }
+    body << "void parse(istream & i)" << endl;
+    body << "{" << endl;
+    body << "}" << endl << endl;
+    if (m_namespace != "")
+    {
+        body << "} /* namespace " << m_namespace << " */" << endl << endl;
+    }
 
     header.close();
     body.close();
