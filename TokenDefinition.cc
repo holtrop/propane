@@ -8,6 +8,18 @@
 
 using namespace std;
 
+static string c_escape(const string & orig)
+{
+    string result;
+    for (string::const_iterator it = orig.begin(); it != orig.end(); it++)
+    {
+        if (*it == '\\')
+            result += '\\';
+        result += *it;
+    }
+    return result;
+}
+
 bool TokenDefinition::create(const string & name,
         const string & definition, const string & flags)
 {
