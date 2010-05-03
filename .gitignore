@@ -2,3 +2,4 @@ imbecile
 tags
 *.o
 .*.swp
+*.dep

@@ -36,3 +36,5 @@ $(TARGET): $(OBJS)
 
 clean:
 	-rm -f $(TARGET) *.o *.dep
+
+-include $(CXXDEPS)
