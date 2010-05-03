@@ -1,7 +1,7 @@
 
 TARGET   := imbecile
 CXXOBJS  := $(patsubst %.cc,%.o,$(wildcard *.cc))
-CXXDEPS  := $(CXXOBJS:.o=.dep)
+CXXDEPS  := $(patsubst %.o,.%.dep,$(CXXOBJS))
 CXXFLAGS := -O2
 DEPS     := $(CXXDEPS)
 OBJS     := $(CXXOBJS)
@@ -26,15 +26,15 @@ $(TARGET): $(OBJS)
 	$(CXX) -c -o $@ $(CPPFLAGS) $(CXXFLAGS) $<
 
 # Make dependency files
-%.dep: %.c
+.%.dep: %.c
 	@set -e; rm -f $@; \
 	  $(CC) -MM $(CPPFLAGS) $< | sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' > $@
 
-%.dep: %.cc
+.%.dep: %.cc
 	@set -e; rm -f $@; \
 	  $(CXX) -MM $(CPPFLAGS) $< | sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' > $@
 
 clean:
-	-rm -f $(TARGET) *.o *.dep
+	-rm -f $(TARGET) *.o .*.dep
 
 -include $(CXXDEPS)
