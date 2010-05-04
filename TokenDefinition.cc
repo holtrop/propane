@@ -13,7 +13,7 @@ static string c_escape(const string & orig)
     string result;
     for (string::const_iterator it = orig.begin(); it != orig.end(); it++)
     {
-        if (*it == '\\')
+        if (*it == '\\' || *it == '"')
             result += '\\';
         result += *it;
     }
@@ -36,4 +36,9 @@ bool TokenDefinition::create(const string & name,
     m_definition = definition;
     pcre_free(re);
     return true;
+}
+
+string TokenDefinition::getCString() const
+{
+    return c_escape(m_definition);
 }
