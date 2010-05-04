@@ -11,7 +11,7 @@ namespace I_NAMESPACE {
 class I_CLASSNAME
 {
     public:
-        void parse(std::istream & in);
+        bool parse(std::istream & in);
 
     protected:
 };

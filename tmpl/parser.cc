@@ -9,8 +9,11 @@ using namespace std;
 namespace I_NAMESPACE {
 #endif
 
-void parse(istream & i)
+bool I_CLASSNAME::parse(istream & i)
 {
+    struct { char * name; char * definition; } tokens[] = {
+        I_TOKENLIST
+    };
 }
 
 #ifdef I_NAMESPACE
