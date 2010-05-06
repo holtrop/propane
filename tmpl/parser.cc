@@ -37,6 +37,9 @@ bool I_CLASSNAME::parse(istream & i)
 
     if (size <= 0)
         return false;
+
+    /* append trailing NUL byte for pcre functions */
+    buff.push_back('\0');
 }
 
 #ifdef I_NAMESPACE
