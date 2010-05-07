@@ -32,7 +32,12 @@ static void read_istream(istream & i, vector<char> & buff, int & size)
 
 bool I_CLASSNAME::parse(istream & i)
 {
-    struct { char * name; char * definition; pcre * re; } tokens[] = {
+    struct {
+        char * name;
+        char * definition;
+        pcre * re;
+        pcre_extra * re_extra;
+    } tokens[] = {
         I_TOKENLIST
     };
 
@@ -60,7 +65,7 @@ bool I_CLASSNAME::parse(istream & i)
     {
         char * errptr;
         int erroffset;
-        tokens[i].re = pcre_compile(tokens[i].definition, PCRE_DOTALL,
+        tokens[i].re = pcre_compile(tokens[i].definition, 0,
                 &errptr, &erroffset, NULL);
         if (tokens[i].re == NULL)
         {
@@ -70,11 +75,34 @@ bool I_CLASSNAME::parse(istream & i)
             m_errstr = "Error in token regular expression";
             return false;
         }
+        tokens[i].re_extra = pcre_study(tokens[i].re, 0, &errptr);
     }
 
     int buff_pos = 0;
+    const int ovector_num_matches = 16;
+    const int ovector_size = 3 * (ovector_num_matches + 1);
+    int ovector[ovector_size];
     while (buff_pos < buff_size)
     {
+        int longest_match_length = 0;
+        int longest_match_index;
+        for (int i = 0; i < sizeof(tokens)/sizeof(tokens[0]); i++)
+        {
+            int rc = pcre_exec(tokens[i].re, tokens[i].re_extra,
+                    buff, buff_size, buff_pos,
+                    PCRE_ANCHORED | PCRE_NOTEMPTY,
+                    ovector, ovector_size);
+            if (rc > 0)
+            {
+                /* this pattern matched some of the input */
+                int len = ovector[1] - ovector[0];
+                if (len > longest_match_length)
+                {
+                    longest_match_length = len;
+                    longest_match_index = i;
+                }
+            }
+        }
     }
 }
 
