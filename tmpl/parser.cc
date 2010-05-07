@@ -1,4 +1,6 @@
 
+#include <string.h>                 /* memcpy() */
+
 #include <iostream>
 #include <vector>
 
@@ -86,6 +88,7 @@ bool I_CLASSNAME::parse(istream & i)
     {
         int longest_match_length = 0;
         int longest_match_index;
+        int longest_match_ovector[ovector_size];
         for (int i = 0; i < sizeof(tokens)/sizeof(tokens[0]); i++)
         {
             int rc = pcre_exec(tokens[i].re, tokens[i].re_extra,
@@ -100,6 +103,7 @@ bool I_CLASSNAME::parse(istream & i)
                 {
                     longest_match_length = len;
                     longest_match_index = i;
+                    memcpy(longest_match_ovector, ovector, sizeof(ovector));
                 }
             }
         }
