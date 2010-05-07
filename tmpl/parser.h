@@ -11,9 +11,12 @@ namespace I_NAMESPACE {
 class I_CLASSNAME
 {
     public:
+        I_CLASSNAME();
         bool parse(std::istream & in);
+        char * getError(); { return m_errstr; }
 
     protected:
+        char * m_errstr;
 };
 
 #ifdef I_NAMESPACE
