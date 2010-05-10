@@ -1,6 +1,6 @@
 
 TARGET   := imbecile
-CXXOBJS  := $(patsubst %.cc,%.o,$(wildcard *.cc))
+CXXOBJS  := $(patsubst %.cc,%.o,$(wildcard *.cc)) tmpl.o
 CXXDEPS  := $(patsubst %.o,.%.dep,$(CXXOBJS))
 CXXFLAGS := -O2
 DEPS     := $(CXXDEPS)
@@ -34,7 +34,19 @@ $(TARGET): $(OBJS)
 	@set -e; rm -f $@; \
 	  $(CXX) -MM $(CPPFLAGS) $< | sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' > $@
 
+tmpl.cc: $(wildcard tmpl/*)
+	echo -n > $@
+	for f in $*/*; \
+		do xxd -i $$f >> $@; \
+	done
+
+tmpl.h: tmpl.cc
+	echo '#ifndef $*_h' > $@
+	echo '#define $*_h' >> $@
+	grep '$*_' $^ | sed -e 's/^/extern /' -e 's/ =.*/;/' >> $@
+	echo '#endif' >> $@
+
 clean:
-	-rm -f $(TARGET) *.o .*.dep
+	-rm -f $(TARGET) *.o .*.dep tmpl.cc tmpl.h
 
 -include $(CXXDEPS)
