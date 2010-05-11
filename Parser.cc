@@ -12,6 +12,7 @@
 #include "Parser.h"
 #include "TokenDefinition.h"
 #include "RuleDefinition.h"
+#include "tmpl.h"
 
 using namespace std;
 
@@ -76,22 +77,24 @@ bool Parser::parseInputFile(char * buff, int size)
 {
     typedef pcre * pcre_ptr;
     enum { none, tokens, rules };
-    pcre_ptr empty, comment, section_name, token, rule;
+    pcre_ptr empty, comment, section_name, token, rule, code_end_sec;
     struct { pcre_ptr * re; const char * pattern; } exprs[] = {
         {&empty,        "^\\s*$"},
         {&comment,      "^\\s*#"},
         {&section_name, "^\\s*\\[([^\\]]+?)\\]\\s*$"},
         {&token,        "^\\s*"                     /* possible leading ws */
-                        "([a-zA-Z_][a-zA-Z_0-9]*)"  /* token name */
+                        "([a-zA-Z_][a-zA-Z_0-9]*)"  /* 1: token name */
                         "\\s+"                      /* required whitespace */
-                        "((?:[^\\\\\\s]|\\\\.)+)"   /* token RE */
-                        "(?:\\s+\\[([^\\]]+)\\])?"  /* optional token flags */
+                        "((?:[^\\\\\\s]|\\\\.)+)"   /* 2: token RE */
+                        "(?:\\s+\\[([^\\]]+)\\])?"  /* 3: token flags */
+                        "\\s*({{)?"                 /* 4: code section opener */
                         "\\s*$"},                   /* possible trailing ws */
-        {&rule,         "^\\s*(\\S+)\\s*:=(.*)$"}
+        {&rule,         "^\\s*(\\S+)\\s*:=(.*)$"},
+        {&code_end_sec, "^\\s*}}\\s*$"}
     };
     const int ovec_size = 3 * 10;
     int ovector[ovec_size];
-    int lineno = 1;
+    int lineno = 0;
     char * newline;
     char * input = buff;
     string sn;
@@ -102,6 +105,8 @@ bool Parser::parseInputFile(char * buff, int size)
     int section = none;
     string line;
     bool append_line = false;
+    bool gathering_code = false;
+    string code;
 
     for (int i = 0; i < sizeof(exprs)/sizeof(exprs[0]); i++)
     {
@@ -113,16 +118,20 @@ bool Parser::parseInputFile(char * buff, int size)
         {
             cerr << "Error compiling regex '" << exprs[i].pattern <<
                 "': " << errptr << " at position " << erroffset << endl;
+            return false;
         }
     }
 
     while ((newline = strstr(input, "\n")) != NULL)
     {
         int line_length = newline - input;
-        if (newline[-1] == '\r')
+        if (line_length >= 1 && newline[-1] == '\r')
         {
+            newline[-1] = '\n';
             line_length--;
         }
+        lineno++;
+
         if (append_line)
         {
             line += string(input, line_length);
@@ -131,28 +140,49 @@ bool Parser::parseInputFile(char * buff, int size)
         {
             line = string(input, line_length);
         }
-        if (line.size() > 0 && line[line.size()-1] == '\\')
+        input = newline + 1;        /* set up for next loop iteration */
+
+        if (gathering_code)
         {
-            line[line.size()-1] = ' ';
-            append_line = true;
+            if (pcre_exec(code_end_sec, NULL, line.c_str(), line.size(),
+                        0, 0, ovector, ovec_size) >= 0)
+            {
+                gathering_code = false;
+                code += "}\n";
+                /* TODO: do something with gathered code */
+            }
+            else
+            {
+                code += line;
+            }
+            continue;
         }
-        else
-        {
-            append_line = false;
-        }
-        if ( append_line
-          || (pcre_exec(empty, NULL, line.c_str(), line.size(),
+
+        if ( (pcre_exec(empty, NULL, line.c_str(), line.size(),
                   0, 0, ovector, ovec_size) >= 0)
           || (pcre_exec(comment, NULL, line.c_str(), line.size(),
                   0, 0, ovector, ovec_size) >= 0)
            )
         {
-            /* nothing */;
+            /* skip empty or comment lines */;
+            continue;
         }
-        else if (pcre_exec(section_name, NULL, line.c_str(), line.size(),
+
+        if (line.size() > 0 && line[line.size()-1] == '\\')
+        {
+            line[line.size()-1] = ' ';
+            append_line = true;
+            continue;
+        }
+        else
+        {
+            append_line = false;
+        }
+
+        if (pcre_exec(section_name, NULL, line.c_str(), line.size(),
                     0, 0, ovector, ovec_size) >= 0)
         {
-            sn = string(input, ovector[2], ovector[3] - ovector[2]);
+            sn = string(line, ovector[2], ovector[3] - ovector[2]);
             if (sections.find(sn) != sections.end())
             {
                 section = sections[sn];
@@ -162,80 +192,83 @@ bool Parser::parseInputFile(char * buff, int size)
                 cerr << "Unknown section name '" << sn << "'!" << endl;
                 return false;
             }
+            continue;
         }
-        else
+
+        switch (section)
         {
-            switch (section)
-            {
-                case none:
+            case none:
+                cerr << "Unrecognized input on line " << lineno << endl;
+                return false;
+            case tokens:
+                if (pcre_exec(token, NULL, line.c_str(), line.size(),
+                            0, 0, ovector, ovec_size) >= 0)
+                {
+                    string name(line, ovector[2], ovector[3] - ovector[2]);
+                    string definition(line,
+                            ovector[4], ovector[5] - ovector[4]);
+                    string flags;
+                    if (ovector[6] >= 0 && ovector[7] >= 0)
+                    {
+                        flags = string(line,
+                                ovector[6], ovector[7] - ovector[6]);
+                    }
+                    refptr<TokenDefinition> td = new TokenDefinition();
+                    if (td->create(name, definition, flags))
+                    {
+                        addTokenDefinition(td);
+                    }
+                    else
+                    {
+                        cerr << "Error in token definition ending on line "
+                            << lineno << endl;
+                        return false;
+                    }
+                    if (ovector[8] >= 0 && ovector[9] >= 0
+                            && ovector[9] - ovector[8] > 0)
+                    {
+                        code = ""; /* FIXME: function definition */
+                        gathering_code = true;
+                    }
+                }
+                else
+                {
                     cerr << "Unrecognized input on line " << lineno << endl;
                     return false;
-                case tokens:
-                    if (pcre_exec(token, NULL, line.c_str(), line.size(),
-                                0, 0, ovector, ovec_size) >= 0)
+                }
+                break;
+            case rules:
+                if (pcre_exec(rule, NULL, line.c_str(), line.size(),
+                            0, 0, ovector, ovec_size) >= 0)
+                {
+                    string name(line, ovector[2], ovector[3] - ovector[2]);
+                    string definition(line,
+                            ovector[4], ovector[5] - ovector[4]);
+                    refptr<RuleDefinition> rd = new RuleDefinition();
+                    if (rd->create(name, definition))
                     {
-                        string name(line, ovector[2], ovector[3] - ovector[2]);
-                        string definition(line,
-                                ovector[4], ovector[5] - ovector[4]);
-                        string flags;
-                        if (ovector[6] >= 0 && ovector[7] >= 0)
-                        {
-                            flags = string(line,
-                                    ovector[6], ovector[7] - ovector[6]);
-                        }
-                        refptr<TokenDefinition> td = new TokenDefinition();
-                        if (td->create(name, definition, flags))
-                        {
-                            addTokenDefinition(td);
-                        }
-                        else
-                        {
-                            cerr << "Error in token definition ending on line "
-                                << lineno << endl;
-                            return false;
-                        }
+                        addRuleDefinition(rd);
                     }
                     else
                     {
-                        cerr << "Unrecognized input on line " << lineno << endl;
+                        cerr << "Error in rule definition ending on line "
+                            << lineno << endl;
                         return false;
                     }
-                    break;
-                case rules:
-                    if (pcre_exec(rule, NULL, line.c_str(), line.size(),
-                                0, 0, ovector, ovec_size) >= 0)
-                    {
-                        string name(line, ovector[2], ovector[3] - ovector[2]);
-                        string definition(line,
-                                ovector[4], ovector[5] - ovector[4]);
-                        refptr<RuleDefinition> rd = new RuleDefinition();
-                        if (rd->create(name, definition))
-                        {
-                            addRuleDefinition(rd);
-                        }
-                        else
-                        {
-                            cerr << "Error in rule definition ending on line "
-                                << lineno << endl;
-                            return false;
-                        }
-                    }
-                    else
-                    {
-                        cerr << "Unrecognized input on line " << lineno << endl;
-                        return false;
-                    }
-                    break;
-            }
+                }
+                else
+                {
+                    cerr << "Unrecognized input on line " << lineno << endl;
+                    return false;
+                }
+                break;
         }
-        input = newline + 1;
-        lineno++;
     }
 
-    pcre_free(empty);
-    pcre_free(comment);
-    pcre_free(section_name);
-    pcre_free(token);
-    pcre_free(rule);
+    for (int i = 0; i < sizeof(exprs)/sizeof(exprs[0]); i++)
+    {
+        pcre_free(*exprs[i].re);
+    }
+
     return true;
 }
