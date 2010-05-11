@@ -30,10 +30,14 @@ static void writeDefine(ostream & out,
     out << "#define " << defname << " " << definition << endl;
 }
 
-void Parser::write(const string & fname)
+bool Parser::write(const string & fname)
 {
+    if (m_tokens.size() < 1 || m_rules.size() < 1)
+        return false;
+
     string header_fname = fname + ".h";
     string body_fname = fname + "." + m_extension;
+
     ofstream header(header_fname.c_str());
     ofstream body(body_fname.c_str());
 
@@ -53,6 +57,7 @@ void Parser::write(const string & fname)
 
     header.close();
     body.close();
+    return true;
 }
 
 bool Parser::parseInputFile(char * buff, int size)

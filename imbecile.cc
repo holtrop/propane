@@ -49,7 +49,7 @@ int main(int argc, char * argv[])
     if (optind >= argc)
     {
         cerr << "Usage: imbecile [options] <input-file>" << endl;
-        return 2;
+        return 1;
     }
 
     string input_fname = argv[optind];
@@ -70,8 +70,16 @@ int main(int argc, char * argv[])
     if (outfile == "")
         outfile = buildOutputFilename(input_fname);
 
-    p.parseInputFile(buff, size);
-    p.write(outfile);
+    if (!p.parseInputFile(buff, size))
+    {
+        cerr << "Error parsing " << input_fname << endl;
+        return 3;
+    }
+    if (!p.write(outfile))
+    {
+        cerr << "Error processing " << input_fname << endl;
+        return 4;
+    }
 
     delete[] buff;
     return 0;
