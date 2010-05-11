@@ -13,7 +13,7 @@ class I_CLASSNAME
     public:
         I_CLASSNAME();
         bool parse(std::istream & in);
-        char * getError() { return m_errstr; }
+        const char * getError() { return m_errstr; }
 
     protected:
         const char * m_errstr;

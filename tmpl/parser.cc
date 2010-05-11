@@ -36,8 +36,8 @@ static void read_istream(istream & i, vector<char> & buff, int & size)
 bool I_CLASSNAME::parse(istream & i)
 {
     struct {
-        char * name;
-        char * definition;
+        const char * name;
+        const char * definition;
         pcre * re;
         pcre_extra * re_extra;
     } tokens[] = {
@@ -93,7 +93,7 @@ bool I_CLASSNAME::parse(istream & i)
         for (int i = 0; i < sizeof(tokens)/sizeof(tokens[0]); i++)
         {
             int rc = pcre_exec(tokens[i].re, tokens[i].re_extra,
-                    buff, buff_size, buff_pos,
+                    &buff[0], buff_size, buff_pos,
                     PCRE_ANCHORED | PCRE_NOTEMPTY,
                     ovector, ovector_size);
             if (rc > 0)
