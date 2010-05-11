@@ -7,7 +7,7 @@ DEPS     := $(CXXDEPS)
 OBJS     := $(CXXOBJS)
 LDFLAGS  := -lpcre
 
-all: submodule_check $(TARGET)
+all: submodule_check tmpl.h $(TARGET)
 
 .PHONY: submodule_check
 submodule_check:
