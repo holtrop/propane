@@ -66,7 +66,7 @@ bool I_CLASSNAME::parse(istream & i)
     /* compile all token regular expressions */
     for (int i = 0; i < sizeof(tokens)/sizeof(tokens[0]); i++)
     {
-        char * errptr;
+        const char * errptr;
         int erroffset;
         tokens[i].re = pcre_compile(tokens[i].definition, 0,
                 &errptr, &erroffset, NULL);
