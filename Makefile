@@ -46,7 +46,15 @@ tmpl.h: tmpl.cc
 	grep '$*_' $^ | sed -e 's/^/extern /' -e 's/ =.*/;/' >> $@
 	echo '#endif' >> $@
 
-clean:
+.PHONY: tests
+tests: PATH := $(shell pwd):$(PATH)
+tests: all
+	$(MAKE) -C $@
+
+tests-clean:
+	$(MAKE) -C tests clean
+
+clean: tests-clean
 	-rm -f $(TARGET) *.o .*.dep tmpl.cc tmpl.h
 
 -include $(CXXDEPS)
