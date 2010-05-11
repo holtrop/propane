@@ -21,6 +21,15 @@ Parser::Parser()
 {
 }
 
+static void writeDefine(ostream & out,
+        const string & defname, const string & definition)
+{
+    out << "#ifdef " << defname << endl;
+    out << "#undef " << defname << endl;
+    out << "#endif" << endl;
+    out << "#define " << defname << " " << definition << endl;
+}
+
 void Parser::write(const string & fname)
 {
     string header_fname = fname + ".h";
@@ -28,46 +37,19 @@ void Parser::write(const string & fname)
     ofstream header(header_fname.c_str());
     ofstream body(body_fname.c_str());
 
-    string ifndef_name = m_namespace + "_" + m_classname + "_classes_defined";
-    for (string::iterator i = ifndef_name.begin(); i != ifndef_name.end(); i++)
-    {
-        *i = toupper(*i);
-    }
-
     /* write the header */
-    header << "#ifndef " << ifndef_name << endl;
-    header << "#define " << ifndef_name << endl << endl;
-    header << "#include <iostream>" << endl;
+    if (m_namespace != "")
+    {
+        writeDefine(header, "I_NAMESPACE", m_namespace);
+    }
+    writeDefine(header, "I_CLASSNAME", m_classname);
     header << endl;
-    if (m_namespace != "")
-    {
-        header << "namespace " << m_namespace << " {" << endl << endl;
-    }
-    header << "class " << m_classname << " {" << endl;
-    header << "public:" << endl;
-    header << "void parse(std::istream & i);" << endl;
-    header << "};" << endl << endl;
-    if (m_namespace != "")
-    {
-        header << "} /* namespace " << m_namespace << " */" << endl << endl;
-    }
-    header << "#endif /* #ifndef " << ifndef_name << " */" << endl;
+    header.write((const char *) tmpl_parser_h, tmpl_parser_h_len);
 
     /* write the body */
-    body << "#include \"" << header_fname << "\"" << endl;
+    writeDefine(body, "I_HEADER_NAME", string("\"") + header_fname + "\"");
     body << endl;
-    body << "using namespace std;" << endl << endl;
-    if (m_namespace != "")
-    {
-        body << "namespace " << m_namespace << " {" << endl << endl;
-    }
-    body << "void parse(istream & i)" << endl;
-    body << "{" << endl;
-    body << "}" << endl << endl;
-    if (m_namespace != "")
-    {
-        body << "} /* namespace " << m_namespace << " */" << endl << endl;
-    }
+    body.write((const char *) tmpl_parser_cc, tmpl_parser_cc_len);
 
     header.close();
     body.close();
