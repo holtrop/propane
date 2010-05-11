@@ -1,5 +1,6 @@
 
 #include <string.h>                 /* memcpy() */
+#include <pcre.h>
 
 #include <iostream>
 #include <vector>
