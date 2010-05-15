@@ -1,9 +1,14 @@
 
 [tokens]
 
-ASSIGN     :=
-DASSIGN    :==
-IDENTIFIER [a-zA-Z_][a-zA-Z_0-9]*
+AND         and
+OR          or
+NOT         not
+LPAREN      \(
+RPAREN      \)
+WS          \s+
+EQUALS      =
+IDENTIFIER  [a-zA-Z_][a-zA-Z_0-9]*
 
 [rules]
 

@@ -6,3 +6,4 @@ tags
 tmpl.*
 tests/*/itest.cc
 tests/*/itest.h
+tests/*/test

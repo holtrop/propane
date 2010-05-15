@@ -6,7 +6,7 @@ LDFLAGS  := -lpcre
 
 all: $(TARGET)
 
-$(TARGET):
+$(TARGET): $(shell which imbecile)
 	imbecile $(I_SOURCE).I
 	$(CXX) -o $@ *.cc $(LDFLAGS)
 

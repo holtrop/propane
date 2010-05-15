@@ -88,7 +88,7 @@ bool I_CLASSNAME::parse(istream & i)
     while (buff_pos < buff_size)
     {
         int longest_match_length = 0;
-        int longest_match_index;
+        int longest_match_index = -1;
         int longest_match_ovector[ovector_size];
         for (int i = 0; i < sizeof(tokens)/sizeof(tokens[0]); i++)
         {
@@ -107,6 +107,16 @@ bool I_CLASSNAME::parse(istream & i)
                     memcpy(longest_match_ovector, ovector, sizeof(ovector));
                 }
             }
+        }
+        if (longest_match_index >= 0)
+        {
+            cout << "Matched a " << tokens[longest_match_index].name << endl;
+            buff_pos += longest_match_length;
+        }
+        else
+        {
+            /* no pattern matched the input at the current position */
+            return false;
         }
     }
 }
