@@ -30,7 +30,7 @@ $(TARGET): $(OBJS)
 	@set -e; rm -f $@; \
 	  $(CC) -MM $(CPPFLAGS) $< | sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' > $@
 
-.%.dep: %.cc
+.%.dep: %.cc tmpl.h
 	@set -e; rm -f $@; \
 	  $(CXX) -MM $(CPPFLAGS) $< | sed 's,\($*\)\.o[ :]*,\1.o $@ : ,g' > $@
 
