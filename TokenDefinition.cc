@@ -22,19 +22,18 @@ static string trim(string s)
     return s;
 }
 
-static refptr< vector<string> > split(const string & delim, const string & str)
+static refptr< vector<string> > split(const string & delim, string str)
 {
     refptr< vector<string> > ret = new vector<string>();
-    string s = str;
     size_t pos;
-    while ( (pos = s.find(delim)) != string::npos )
+    while ( (pos = str.find(delim)) != string::npos )
     {
-        string t = s.substr(0, pos);
+        string t = str.substr(0, pos);
         ret->push_back(t);
-        s.erase(0, pos + 1);
+        str.erase(0, pos + 1);
     }
-    if (s != "")
-        ret->push_back(s);
+    if (str != "")
+        ret->push_back(str);
     return ret;
 }
 
@@ -48,6 +47,12 @@ static string c_escape(const string & orig)
         result += *it;
     }
     return result;
+}
+
+
+TokenDefinition::TokenDefinition()
+    : m_ignored(false)
+{
 }
 
 bool TokenDefinition::create(const string & name,
@@ -67,6 +72,21 @@ bool TokenDefinition::create(const string & name,
     pcre_free(re);
 
     refptr< vector< string > > parts = split(",", flags);
+    for (int i = 0, sz = parts->size(); i < sz; i++)
+    {
+        (*parts)[i] = trim((*parts)[i]);
+        string & s = (*parts)[i];
+        if (s == "i")
+        {
+            m_ignored = true;
+        }
+        else
+        {
+            cerr << "Unknown token flag \"" << s << "\"" << endl;
+            return false;
+        }
+    }
+
     return true;
 }
 
