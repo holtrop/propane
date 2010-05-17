@@ -5,7 +5,7 @@
 #include <vector>
 #include <string>
 
-#include "refptr/refptr.h"
+#include "refptr.h"
 #include "TokenDefinition.h"
 #include "RuleDefinition.h"
 

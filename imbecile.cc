@@ -4,7 +4,7 @@
 #include <iostream>
 #include <fstream>
 
-#include "refptr/refptr.h"
+#include "refptr.h"
 #include "Parser.h"
 
 using namespace std;

@@ -6,6 +6,7 @@ CXXFLAGS := -O2
 DEPS     := $(CXXDEPS)
 OBJS     := $(CXXOBJS)
 LDFLAGS  := -lpcre
+CPPFLAGS := -I$(shell pwd)/refptr
 
 all: submodule_check tmpl.h $(TARGET)
 
