@@ -121,6 +121,20 @@ bool I_CLASSNAME::parse(istream & i)
     }
 }
 
+refptr<Node> Node::operator[](int index)
+{
+    return (0 <= index && index < m_indexed_children.size())
+        ? m_indexed_children[index]
+        : NULL;
+}
+
+refptr<Node> Node::operator[](const std::string & index)
+{
+    return (m_named_children.find(index) != m_named_children.end())
+        ? m_named_children[index]
+        : NULL;
+}
+
 #ifdef I_NAMESPACE
 };
 #endif
