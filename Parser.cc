@@ -47,17 +47,8 @@ bool Parser::write(const string & fname)
         writeDefine(header, "I_NAMESPACE", m_namespace);
     }
     writeDefine(header, "I_CLASSNAME", m_classname);
-    string tokenlist;
-    for (int i = 0; i < m_tokens.size(); i++)
-    {
-        if (i > 0)
-            tokenlist += "    ";
-        tokenlist += "{\"" + m_tokens[i]->getName() + "\", \""
-            + m_tokens[i]->getCString() + "\"}";
-        if (i < m_tokens.size() - 1)
-            tokenlist += ", \\\n";
-    }
-    writeDefine(header, "I_TOKENLIST", tokenlist);
+    refptr<string> tokenlist = buildTokenList();
+    writeDefine(header, "I_TOKENLIST", *tokenlist);
     header << endl;
     header.write((const char *) tmpl_parser_h, tmpl_parser_h_len);
 
@@ -69,6 +60,22 @@ bool Parser::write(const string & fname)
     header.close();
     body.close();
     return true;
+}
+
+refptr<string> Parser::buildTokenList()
+{
+    refptr<string> tokenlist = new string();
+    for (int i = 0; i < m_tokens.size(); i++)
+    {
+        if (i > 0)
+            *tokenlist += "    ";
+        *tokenlist += "{ \"" + m_tokens[i]->getName() + "\", \""
+            + m_tokens[i]->getCString() + "\", "
+            + (m_tokens[i]->getIgnored() ? "true" : "false") + " }";
+        if (i < m_tokens.size() - 1)
+            *tokenlist += ", \\\n";
+    }
+    return tokenlist;
 }
 
 bool Parser::parseInputFile(char * buff, int size)

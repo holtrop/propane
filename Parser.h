@@ -34,6 +34,8 @@ class Parser
         std::string getExtension() { return m_extension; }
 
     protected:
+        refptr<std::string> buildTokenList();
+
         std::vector< refptr< TokenDefinition > > m_tokens;
         std::vector< refptr< RuleDefinition > > m_rules;
         std::string m_classname;
