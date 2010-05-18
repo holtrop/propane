@@ -51,7 +51,7 @@ static string c_escape(const string & orig)
 
 
 TokenDefinition::TokenDefinition()
-    : m_ignored(false)
+    : m_process(false)
 {
 }
 
@@ -76,9 +76,9 @@ bool TokenDefinition::create(const string & name,
     {
         (*parts)[i] = trim((*parts)[i]);
         string & s = (*parts)[i];
-        if (s == "i")
+        if (s == "p")
         {
-            m_ignored = true;
+            m_process = true;
         }
         else
         {

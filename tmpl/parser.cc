@@ -38,7 +38,7 @@ bool I_CLASSNAME::parse(istream & i)
     struct {
         const char * name;
         const char * definition;
-        bool ignored;
+        bool process;
         pcre * re;
         pcre_extra * re_extra;
     } tokens[] = {

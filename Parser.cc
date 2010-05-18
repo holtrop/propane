@@ -71,7 +71,7 @@ refptr<string> Parser::buildTokenList()
             *tokenlist += "    ";
         *tokenlist += "{ \"" + m_tokens[i]->getName() + "\", \""
             + m_tokens[i]->getCString() + "\", "
-            + (m_tokens[i]->getIgnored() ? "true" : "false") + " }";
+            + (m_tokens[i]->getProcessFlag() ? "true" : "false") + " }";
         if (i < m_tokens.size() - 1)
             *tokenlist += ", \\\n";
     }
@@ -232,6 +232,7 @@ bool Parser::parseInputFile(char * buff, int size)
                     if (ovector[8] >= 0 && ovector[9] >= 0
                             && ovector[9] - ovector[8] > 0)
                     {
+                        td->setProcessFlag(true);
                         code = ""; /* FIXME: function definition */
                         gathering_code = true;
                     }
