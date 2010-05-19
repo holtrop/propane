@@ -4,6 +4,7 @@
 
 #include <vector>
 #include <string>
+#include <list>
 
 #include "refptr.h"
 #include "TokenDefinition.h"
@@ -36,7 +37,7 @@ class Parser
     protected:
         refptr<std::string> buildTokenList();
 
-        std::vector< refptr< TokenDefinition > > m_tokens;
+        std::list<TokenDefinitionRef> m_tokens;
         std::vector< refptr< RuleDefinition > > m_rules;
         std::string m_classname;
         std::string m_namespace;

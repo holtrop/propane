@@ -65,14 +65,16 @@ bool Parser::write(const string & fname)
 refptr<string> Parser::buildTokenList()
 {
     refptr<string> tokenlist = new string();
-    for (int i = 0; i < m_tokens.size(); i++)
+    for (list<TokenDefinitionRef>::const_iterator t = m_tokens.begin();
+            t != m_tokens.end();
+            t++)
     {
-        if (i > 0)
+        if (t != m_tokens.begin())
             *tokenlist += "    ";
-        *tokenlist += "{ \"" + m_tokens[i]->getName() + "\", \""
-            + m_tokens[i]->getCString() + "\", "
-            + (m_tokens[i]->getProcessFlag() ? "true" : "false") + " }";
-        if (i < m_tokens.size() - 1)
+        *tokenlist += "{ \"" + (*t)->getName() + "\", \""
+            + (*t)->getCString() + "\", "
+            + ((*t)->getProcessFlag() ? "true" : "false") + " }";
+        if (({typeof(t) tmp = t; ++tmp;}) != m_tokens.end())
             *tokenlist += ", \\\n";
     }
     return tokenlist;
