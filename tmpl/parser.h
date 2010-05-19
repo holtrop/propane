@@ -121,6 +121,20 @@ class I_CLASSNAME
         const char * m_errstr;
 };
 
+class MatchSet
+{
+    public:
+        MatchSet(const char * data, int * ovector, int ovec_size);
+        std::string operator[](int index);
+        std::string operator[](const std::string & index);
+
+    protected:
+        const char * m_data;
+        int * m_ovector;
+        int m_ovec_size;
+};
+typedef refptr<MatchSet> MatchSetRef;
+
 class Node
 {
     public:
@@ -131,14 +145,16 @@ class Node
         std::map< std::string, refptr<Node> > m_named_children;
         std::vector< refptr<Node> > m_indexed_children;
 };
-
 typedef refptr<Node> NodeRef;
 
 class Token : public Node
 {
     public:
+        virtual void process();
+
     protected:
 };
+typedef refptr<Token> TokenRef;
 
 #ifdef I_NAMESPACE
 };

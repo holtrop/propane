@@ -136,6 +136,35 @@ refptr<Node> Node::operator[](const std::string & index)
         : NULL;
 }
 
+void Token::process()
+{
+}
+
+MatchSet::MatchSet(const char * data, int * ovector, int ovec_size)
+    : m_data(data), m_ovector(ovector), m_ovec_size(ovec_size)
+{
+}
+
+std::string MatchSet::operator[](int index)
+{
+    if (0 <= index && index < (m_ovec_size / 3))
+    {
+        int idx = 2 * index;
+        if (m_ovector[idx] >= 0 && m_ovector[idx + 1] >= 0)
+        {
+            return string(m_data, m_ovector[idx],
+                    m_ovector[idx + 1] - m_ovector[idx]);
+        }
+    }
+    return "";
+}
+
+std::string MatchSet::operator[](const std::string & index)
+{
+    /* FIXME */
+    return "";
+}
+
 #ifdef I_NAMESPACE
 };
 #endif
