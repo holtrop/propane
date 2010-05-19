@@ -123,10 +123,10 @@ class I_CLASSNAME
         const char * m_errstr;
 };
 
-class MatchSet
+class Matches
 {
     public:
-        MatchSet(pcre * re, const char * data, int * ovector, int ovec_size);
+        Matches(pcre * re, const char * data, int * ovector, int ovec_size);
         std::string operator[](int index);
         std::string operator[](const std::string & index);
 
@@ -136,7 +136,7 @@ class MatchSet
         int * m_ovector;
         int m_ovec_size;
 };
-typedef refptr<MatchSet> MatchSetRef;
+typedef refptr<Matches> MatchesRef;
 
 class Node
 {
