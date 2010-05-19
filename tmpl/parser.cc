@@ -5,7 +5,7 @@
 #include <iostream>
 #include <vector>
 
-#include I_HEADER_NAME
+#include {%header_name%}
 
 using namespace std;
 
@@ -52,7 +52,7 @@ bool I_CLASSNAME::parse(istream & i)
         pcre * re;
         pcre_extra * re_extra;
     } tokens[] = {
-        I_TOKENLIST
+        {%token_list%}
     };
 
     if (sizeof(tokens)/sizeof(tokens[0]) == 0)

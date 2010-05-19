@@ -47,13 +47,13 @@ bool Parser::write(const string & fname)
         writeDefine(header, "I_NAMESPACE", m_namespace);
     }
     writeDefine(header, "I_CLASSNAME", m_classname);
-    refptr<string> tokenlist = buildTokenList();
-    writeDefine(header, "I_TOKENLIST", *tokenlist);
+    setReplacement("token_list", buildTokenList());
     header << endl;
     writeTmpl(header, (char *) tmpl_parser_h, tmpl_parser_h_len);
 
     /* write the body */
-    writeDefine(body, "I_HEADER_NAME", string("\"") + header_fname + "\"");
+    setReplacement("header_name",
+            new string(string("\"") + header_fname + "\""));
     body << endl;
     writeTmpl(body, (char *) tmpl_parser_cc, tmpl_parser_cc_len);
 
@@ -81,7 +81,7 @@ bool Parser::writeTmpl(std::ostream & out, char * dat, int len)
             {
                 out.write(data, ovector[0]);
             }
-            out << getTmplReplacement(string(data, ovector[2],
+            out << *getReplacement(string(data, ovector[2],
                         ovector[3] - ovector[2]));
             if (ovector[1] < newline - data)
             {
@@ -97,8 +97,13 @@ bool Parser::writeTmpl(std::ostream & out, char * dat, int len)
     }
 }
 
-std::string Parser::getTmplReplacement(const std::string & name)
+refptr<std::string> Parser::getReplacement(const std::string & name)
 {
+    if (m_replacements.find(name) != m_replacements.end())
+    {
+        return m_replacements[name];
+    }
+    return new string("");
 }
 
 refptr<string> Parser::buildTokenList()

@@ -5,6 +5,7 @@
 #include <vector>
 #include <string>
 #include <list>
+#include <map>
 
 #include "refptr.h"
 #include "TokenDefinition.h"
@@ -24,7 +25,11 @@ class Parser
         }
         bool write(const std::string & fname);
         bool writeTmpl(std::ostream & out, char * dat, int len);
-        std::string getTmplReplacement(const std::string & name);
+        refptr<std::string> getReplacement(const std::string & name);
+        void setReplacement(const std::string & name, refptr<std::string> val)
+        {
+            m_replacements[name] = val;
+        }
         bool parseInputFile(char * buff, int size);
 
         void setClassName(const std::string & cn) { m_classname = cn; }
@@ -44,6 +49,7 @@ class Parser
         std::string m_classname;
         std::string m_namespace;
         std::string m_extension;
+        std::map< std::string, refptr<std::string> > m_replacements;
 };
 
 #endif
