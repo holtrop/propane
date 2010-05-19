@@ -82,7 +82,8 @@ bool Parser::parseInputFile(char * buff, int size)
 {
     typedef pcre * pcre_ptr;
     enum { none, tokens, rules };
-    pcre_ptr empty, comment, section_name, token, rule, code_end_sec;
+    pcre_ptr empty, comment, section_name, token, rule,
+             data_begin, data_end, code_begin, code_end;
     struct { pcre_ptr * re; const char * pattern; } exprs[] = {
         {&empty,        "^\\s*$"},
         {&comment,      "^\\s*#"},
@@ -90,19 +91,19 @@ bool Parser::parseInputFile(char * buff, int size)
         {&token,        "^\\s*"                     /* possible leading ws */
                         "([a-zA-Z_][a-zA-Z_0-9]*)"  /* 1: token name */
                         "\\s+"                      /* required whitespace */
-                        "((?:[^\\\\\\s]|\\\\.)+)"   /* 2: token RE */
-                        "(?:\\s+\\[([^\\]]+)\\])?"  /* 3: token flags */
-                        "\\s*({{)?"                 /* 4: code section opener */
-                        "\\s*$"},                   /* possible trailing ws */
+                        "((?:[^\\\\\\s]|\\\\.)+)"}, /* 2: token RE */
         {&rule,         "^\\s*(\\S+)\\s*:=(.*)$"},
-        {&code_end_sec, "^\\s*}}\\s*$"}
+        {&data_begin,   "^\\s*\\${"},
+        {&data_end,     "\\$}"},
+        {&code_begin,   "^\\s*%{"},
+        {&code_end,     "%}"}
     };
     const int ovec_size = 3 * 10;
     int ovector[ovec_size];
     int lineno = 0;
     char * newline;
     char * input = buff;
-    string sn;
+    string current_section_name;
     map<string, int> sections;
     sections["none"] = none;
     sections["tokens"] = tokens;
@@ -110,8 +111,11 @@ bool Parser::parseInputFile(char * buff, int size)
     int section = none;
     string line;
     bool append_line = false;
+    bool gathering_data = false;
     bool gathering_code = false;
-    string code;
+    string gather;
+    bool continue_line = false;
+    TokenDefinitionRef current_token;
 
     for (int i = 0; i < sizeof(exprs)/sizeof(exprs[0]); i++)
     {
@@ -127,40 +131,33 @@ bool Parser::parseInputFile(char * buff, int size)
         }
     }
 
-    while ((newline = strstr(input, "\n")) != NULL)
+    for (;;)
     {
-        int line_length = newline - input;
-        if (line_length >= 1 && newline[-1] == '\r')
+        if (continue_line)
         {
-            newline[-1] = '\n';
-            line_length--;
-        }
-        lineno++;
-
-        if (append_line)
-        {
-            line += string(input, line_length);
+            continue_line = false;
         }
         else
         {
-            line = string(input, line_length);
-        }
-        input = newline + 1;        /* set up for next loop iteration */
-
-        if (gathering_code)
-        {
-            if (pcre_exec(code_end_sec, NULL, line.c_str(), line.size(),
-                        0, 0, ovector, ovec_size) >= 0)
+            if ((newline = strstr(input, "\n")) == NULL)
+                break;
+            int line_length = newline - input;
+            if (line_length >= 1 && newline[-1] == '\r')
             {
-                gathering_code = false;
-                code += "}\n";
-                /* TODO: do something with gathered code */
+                newline[-1] = '\n';
+                line_length--;
+            }
+            lineno++;
+
+            if (append_line)
+            {
+                line += string(input, line_length);
             }
             else
             {
-                code += line;
+                line = string(input, line_length);
             }
-            continue;
+            input = newline + 1;        /* set up for next loop iteration */
         }
 
         if ( (pcre_exec(empty, NULL, line.c_str(), line.size(),
@@ -173,31 +170,36 @@ bool Parser::parseInputFile(char * buff, int size)
             continue;
         }
 
-        if (line.size() > 0 && line[line.size()-1] == '\\')
+        if (! (gathering_code || gathering_data) )
         {
-            line[line.size()-1] = ' ';
-            append_line = true;
-            continue;
-        }
-        else
-        {
-            append_line = false;
-        }
-
-        if (pcre_exec(section_name, NULL, line.c_str(), line.size(),
-                    0, 0, ovector, ovec_size) >= 0)
-        {
-            sn = string(line, ovector[2], ovector[3] - ovector[2]);
-            if (sections.find(sn) != sections.end())
+            if (line.size() > 0 && line[line.size()-1] == '\\')
             {
-                section = sections[sn];
+                line[line.size()-1] = ' ';
+                append_line = true;
+                continue;
             }
             else
             {
-                cerr << "Unknown section name '" << sn << "'!" << endl;
-                return false;
+                append_line = false;
             }
-            continue;
+
+            if (pcre_exec(section_name, NULL, line.c_str(), line.size(),
+                        0, 0, ovector, ovec_size) >= 0)
+            {
+                current_section_name
+                    = string(line, ovector[2], ovector[3] - ovector[2]);
+                if (sections.find(current_section_name) != sections.end())
+                {
+                    section = sections[current_section_name];
+                }
+                else
+                {
+                    cerr << "Unknown section name '" << current_section_name
+                        << "'!" << endl;
+                    return false;
+                }
+                continue;
+            }
         }
 
         switch (section)
@@ -206,22 +208,86 @@ bool Parser::parseInputFile(char * buff, int size)
                 cerr << "Unrecognized input on line " << lineno << endl;
                 return false;
             case tokens:
-                if (pcre_exec(token, NULL, line.c_str(), line.size(),
+                if      (gathering_data)
+                {
+                    if (pcre_exec(data_end, NULL, line.c_str(), line.size(),
+                                0, 0, ovector, ovec_size) >= 0)
+                    {
+                        gather += string(line, 0, ovector[0]) + "\n";
+                        gathering_data = false;
+                        line = string(line, ovector[1]);
+                        continue_line = true;
+                        if (current_token.isNull())
+                        {
+                            cerr << "Data section with no corresponding "
+                                "token definition on line " << lineno << endl;
+                            return false;
+                        }
+                        else
+                        {
+                            current_token->addData(gather);
+                        }
+                    }
+                    else
+                    {
+                        gather += line + "\n";
+                    }
+                    continue;
+                }
+                else if (gathering_code)
+                {
+                    if (pcre_exec(code_end, NULL, line.c_str(), line.size(),
+                                0, 0, ovector, ovec_size) >= 0)
+                    {
+                        gather += string(line, 0, ovector[0]) + "\n";
+                        gathering_code = false;
+                        line = string(line, ovector[1]);
+                        continue_line = true;
+                        if (current_token.isNull())
+                        {
+                            cerr << "Code section with no corresponding "
+                                "token definition on line " << lineno << endl;
+                            return false;
+                        }
+                        else
+                        {
+                            current_token->addCode(gather);
+                        }
+                    }
+                    else
+                    {
+                        gather += line + "\n";
+                    }
+                    continue;
+                }
+                else if (pcre_exec(data_begin, NULL, line.c_str(), line.size(),
+                            0, 0, ovector, ovec_size) >= 0)
+                {
+                    gathering_data = true;
+                    gather = "";
+                    line = string(line, ovector[1]);
+                    continue_line = true;
+                    continue;
+                }
+                else if (pcre_exec(code_begin, NULL, line.c_str(), line.size(),
+                            0, 0, ovector, ovec_size) >= 0)
+                {
+                    gathering_code = true;
+                    gather = "";
+                    line = string(line, ovector[1]);
+                    continue_line = true;
+                    continue;
+                }
+                else if (pcre_exec(token, NULL, line.c_str(), line.size(),
                             0, 0, ovector, ovec_size) >= 0)
                 {
                     string name(line, ovector[2], ovector[3] - ovector[2]);
                     string definition(line,
                             ovector[4], ovector[5] - ovector[4]);
-                    string flags;
-                    if (ovector[6] >= 0 && ovector[7] >= 0)
+                    current_token = new TokenDefinition();
+                    if (current_token->create(name, definition))
                     {
-                        flags = string(line,
-                                ovector[6], ovector[7] - ovector[6]);
-                    }
-                    refptr<TokenDefinition> td = new TokenDefinition();
-                    if (td->create(name, definition, flags))
-                    {
-                        addTokenDefinition(td);
+                        addTokenDefinition(current_token);
                     }
                     else
                     {
@@ -229,13 +295,9 @@ bool Parser::parseInputFile(char * buff, int size)
                             << lineno << endl;
                         return false;
                     }
-                    if (ovector[8] >= 0 && ovector[9] >= 0
-                            && ovector[9] - ovector[8] > 0)
-                    {
-                        td->setProcessFlag(true);
-                        code = ""; /* FIXME: function definition */
-                        gathering_code = true;
-                    }
+                    line = string(line, ovector[1]);
+                    continue_line = true;
+                    continue;
                 }
                 else
                 {

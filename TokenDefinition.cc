@@ -56,7 +56,7 @@ TokenDefinition::TokenDefinition()
 }
 
 bool TokenDefinition::create(const string & name,
-        const string & definition, const string & flags)
+        const string & definition)
 {
     const char * errptr;
     int erroffset;
@@ -71,6 +71,7 @@ bool TokenDefinition::create(const string & name,
     m_definition = definition;
     pcre_free(re);
 
+#if 0
     refptr< vector< string > > parts = split(",", flags);
     for (int i = 0, sz = parts->size(); i < sz; i++)
     {
@@ -86,6 +87,7 @@ bool TokenDefinition::create(const string & name,
             return false;
         }
     }
+#endif
 
     return true;
 }
