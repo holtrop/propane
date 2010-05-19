@@ -50,16 +50,55 @@ bool Parser::write(const string & fname)
     refptr<string> tokenlist = buildTokenList();
     writeDefine(header, "I_TOKENLIST", *tokenlist);
     header << endl;
-    header.write((const char *) tmpl_parser_h, tmpl_parser_h_len);
+    writeTmpl(header, (char *) tmpl_parser_h, tmpl_parser_h_len);
 
     /* write the body */
     writeDefine(body, "I_HEADER_NAME", string("\"") + header_fname + "\"");
     body << endl;
-    body.write((const char *) tmpl_parser_cc, tmpl_parser_cc_len);
+    writeTmpl(body, (char *) tmpl_parser_cc, tmpl_parser_cc_len);
 
     header.close();
     body.close();
     return true;
+}
+
+bool Parser::writeTmpl(std::ostream & out, char * dat, int len)
+{
+    char * newline;
+    char * data = dat;
+    const char * errptr;
+    int erroffset;
+    data[len-1] = '\n';
+    const int ovec_size = 6;
+    int ovector[ovec_size];
+    pcre * replace = pcre_compile("{%(\\w+)%}", 0, &errptr, &erroffset, NULL);
+    while (data < (dat + len) && (newline = strstr(data, "\n")) != NULL)
+    {
+        if (pcre_exec(replace, NULL, data, newline - data,
+                    0, 0, ovector, ovec_size) >= 0)
+        {
+            if (ovector[0] > 0)
+            {
+                out.write(data, ovector[0]);
+            }
+            out << getTmplReplacement(string(data, ovector[2],
+                        ovector[3] - ovector[2]));
+            if (ovector[1] < newline - data)
+            {
+                out.write(data + ovector[1], newline - data - ovector[1]);
+            }
+        }
+        else
+        {
+            out.write(data, newline - data);
+        }
+        out << '\n';
+        data = newline + 1;
+    }
+}
+
+std::string Parser::getTmplReplacement(const std::string & name)
+{
 }
 
 refptr<string> Parser::buildTokenList()

@@ -23,6 +23,8 @@ class Parser
             m_rules.push_back(rd);
         }
         bool write(const std::string & fname);
+        bool writeTmpl(std::ostream & out, char * dat, int len);
+        std::string getTmplReplacement(const std::string & name);
         bool parseInputFile(char * buff, int size);
 
         void setClassName(const std::string & cn) { m_classname = cn; }

@@ -18,6 +18,16 @@ I_CLASSNAME::I_CLASSNAME()
 {
 }
 
+static TokenRef buildToken(int typeindex)
+{
+    TokenRef token;
+    switch (typeindex)
+    {
+//%buildToken%
+    }
+    return token;
+}
+
 static void read_istream(istream & i, vector<char> & buff, int & size)
 {
     size = 0;
@@ -111,12 +121,15 @@ bool I_CLASSNAME::parse(istream & i)
         }
         if (longest_match_index >= 0)
         {
-            cout << "Matched a " << tokens[longest_match_index].name << endl;
+            MatchesRef matches = new Matches(tokens[longest_match_index].re,
+                    &buff[0], ovector, ovector_size);
+            TokenRef token = buildToken(longest_match_index);
             buff_pos += longest_match_length;
         }
         else
         {
             /* no pattern matched the input at the current position */
+            cerr << "Parse error" << endl;
             return false;
         }
     }
