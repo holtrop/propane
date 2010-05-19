@@ -140,8 +140,8 @@ void Token::process()
 {
 }
 
-MatchSet::MatchSet(const char * data, int * ovector, int ovec_size)
-    : m_data(data), m_ovector(ovector), m_ovec_size(ovec_size)
+MatchSet::MatchSet(pcre * re, const char * data, int * ovector, int ovec_size)
+    : m_re(re), m_data(data), m_ovector(ovector), m_ovec_size(ovec_size)
 {
 }
 
@@ -161,7 +161,15 @@ std::string MatchSet::operator[](int index)
 
 std::string MatchSet::operator[](const std::string & index)
 {
-    /* FIXME */
+    int idx = pcre_get_stringnumber(m_re, index.c_str());
+    if (idx > 0 && idx < (m_ovec_size / 3))
+    {
+        if (m_ovector[idx] >= 0 && m_ovector[idx + 1] >= 0)
+        {
+            return string(m_data, m_ovector[idx],
+                    m_ovector[idx + 1] - m_ovector[idx]);
+        }
+    }
     return "";
 }
 

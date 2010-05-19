@@ -2,6 +2,8 @@
 #ifndef IMBECILE_PARSER_HEADER
 #define IMBECILE_PARSER_HEADER
 
+#include <pcre.h>
+
 #include <iostream>
 #include <map>
 #include <vector>
@@ -124,11 +126,12 @@ class I_CLASSNAME
 class MatchSet
 {
     public:
-        MatchSet(const char * data, int * ovector, int ovec_size);
+        MatchSet(pcre * re, const char * data, int * ovector, int ovec_size);
         std::string operator[](int index);
         std::string operator[](const std::string & index);
 
     protected:
+        pcre * m_re;
         const char * m_data;
         int * m_ovector;
         int m_ovec_size;
