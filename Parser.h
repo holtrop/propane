@@ -24,12 +24,6 @@ class Parser
             m_rules.push_back(rd);
         }
         bool write(const std::string & fname);
-        bool writeTmpl(std::ostream & out, char * dat, int len);
-        refptr<std::string> getReplacement(const std::string & name);
-        void setReplacement(const std::string & name, refptr<std::string> val)
-        {
-            m_replacements[name] = val;
-        }
         bool parseInputFile(char * buff, int size);
 
         void setClassName(const std::string & cn) { m_classname = cn; }
@@ -43,6 +37,14 @@ class Parser
 
     protected:
         refptr<std::string> buildTokenList();
+        bool writeTmpl(std::ostream & out, char * dat, int len);
+        refptr<std::string> getReplacement(const std::string & name);
+        void setReplacement(const std::string & name, refptr<std::string> val)
+        {
+            m_replacements[name] = val;
+        }
+        void makeDefine(const std::string & defname,
+                const std::string & definition);
 
         std::list<TokenDefinitionRef> m_tokens;
         std::vector< refptr< RuleDefinition > > m_rules;
@@ -52,6 +54,7 @@ class Parser
         std::map< std::string, refptr<std::string> > m_replacements;
         refptr<std::string> m_token_data;
         refptr<std::string> m_token_code;
+        refptr<std::string> m_defines;
 };
 
 #endif

@@ -8,6 +8,8 @@
 #include <map>
 #include <vector>
 
+{%defines%}
+
 #ifdef I_NAMESPACE
 namespace I_NAMESPACE {
 #endif

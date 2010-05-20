@@ -20,17 +20,14 @@ using namespace std;
 
 Parser::Parser()
     : m_classname("Parser"), m_namespace(""), m_extension("cc"),
-    m_token_data(new string()), m_token_code(new string())
+    m_token_data(new string()), m_token_code(new string()),
+    m_defines(new string())
 {
 }
 
-static void writeDefine(ostream & out,
-        const string & defname, const string & definition)
+void Parser::makeDefine(const string & defname, const string & definition)
 {
-    out << "#ifdef " << defname << endl;
-    out << "#undef " << defname << endl;
-    out << "#endif" << endl;
-    out << "#define " << defname << " " << definition << endl;
+    *m_defines += string("#define ") + defname + " " + definition + "\n";
 }
 
 bool Parser::write(const string & fname)
@@ -44,24 +41,34 @@ bool Parser::write(const string & fname)
     ofstream header(header_fname.c_str());
     ofstream body(body_fname.c_str());
 
+    /* make some #define's */
+    int i = 0;
+    for (list<TokenDefinitionRef>::const_iterator it = m_tokens.begin();
+            it != m_tokens.end();
+            it++)
+    {
+        char buff[20];
+        sprintf(buff, "%d", i++);
+        makeDefine(string("TK_") + (*it)->getName(), buff);
+    }
+    if (m_namespace != "")
+    {
+        makeDefine("I_NAMESPACE", m_namespace);
+    }
+    makeDefine("I_CLASSNAME", m_classname);
+
     /* set up replacements */
     setReplacement("token_list", buildTokenList());
     setReplacement("header_name",
             new string(string("\"") + header_fname + "\""));
     setReplacement("token_code", m_token_code);
     setReplacement("token_data", m_token_data);
+    setReplacement("defines", m_defines);
 
     /* write the header */
-    if (m_namespace != "")
-    {
-        writeDefine(header, "I_NAMESPACE", m_namespace);
-    }
-    writeDefine(header, "I_CLASSNAME", m_classname);
-    header << endl;
     writeTmpl(header, (char *) tmpl_parser_h, tmpl_parser_h_len);
 
     /* write the body */
-    body << endl;
     writeTmpl(body, (char *) tmpl_parser_cc, tmpl_parser_cc_len);
 
     header.close();
