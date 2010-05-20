@@ -50,6 +50,8 @@ class Parser
         std::string m_namespace;
         std::string m_extension;
         std::map< std::string, refptr<std::string> > m_replacements;
+        refptr<std::string> m_token_data;
+        refptr<std::string> m_token_code;
 };
 
 #endif

@@ -153,11 +153,14 @@ typedef refptr<Node> NodeRef;
 class Token : public Node
 {
     public:
-        virtual void process();
+        virtual void process(MatchesRef matches);
 
     protected:
+        {%token_data%}
 };
 typedef refptr<Token> TokenRef;
+
+{%token_classes%}
 
 #ifdef I_NAMESPACE
 };

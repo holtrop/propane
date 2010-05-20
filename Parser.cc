@@ -16,8 +16,11 @@
 
 using namespace std;
 
+#define DEBUG
+
 Parser::Parser()
-    : m_classname("Parser"), m_namespace(""), m_extension("cc")
+    : m_classname("Parser"), m_namespace(""), m_extension("cc"),
+    m_token_data(new string()), m_token_code(new string())
 {
 }
 
@@ -41,24 +44,29 @@ bool Parser::write(const string & fname)
     ofstream header(header_fname.c_str());
     ofstream body(body_fname.c_str());
 
+    /* set up replacements */
+    setReplacement("token_list", buildTokenList());
+    setReplacement("header_name",
+            new string(string("\"") + header_fname + "\""));
+    setReplacement("token_code", m_token_code);
+    setReplacement("token_data", m_token_data);
+
     /* write the header */
     if (m_namespace != "")
     {
         writeDefine(header, "I_NAMESPACE", m_namespace);
     }
     writeDefine(header, "I_CLASSNAME", m_classname);
-    setReplacement("token_list", buildTokenList());
     header << endl;
     writeTmpl(header, (char *) tmpl_parser_h, tmpl_parser_h_len);
 
     /* write the body */
-    setReplacement("header_name",
-            new string(string("\"") + header_fname + "\""));
     body << endl;
     writeTmpl(body, (char *) tmpl_parser_cc, tmpl_parser_cc_len);
 
     header.close();
     body.close();
+
     return true;
 }
 
@@ -103,6 +111,9 @@ refptr<std::string> Parser::getReplacement(const std::string & name)
     {
         return m_replacements[name];
     }
+#ifdef DEBUG
+    cerr << "No replacement found for \"" << name << "\"" << endl;
+#endif
     return new string("");
 }
 
@@ -119,7 +130,7 @@ refptr<string> Parser::buildTokenList()
             + (*t)->getCString() + "\", "
             + ((*t)->getProcessFlag() ? "true" : "false") + " }";
         if (({typeof(t) tmp = t; ++tmp;}) != m_tokens.end())
-            *tokenlist += ", \\\n";
+            *tokenlist += ",\n";
     }
     return tokenlist;
 }
@@ -265,9 +276,7 @@ bool Parser::parseInputFile(char * buff, int size)
                         continue_line = true;
                         if (current_token.isNull())
                         {
-                            cerr << "Data section with no corresponding "
-                                "token definition on line " << lineno << endl;
-                            return false;
+                            *m_token_data += gather;
                         }
                         else
                         {
@@ -291,9 +300,7 @@ bool Parser::parseInputFile(char * buff, int size)
                         continue_line = true;
                         if (current_token.isNull())
                         {
-                            cerr << "Code section with no corresponding "
-                                "token definition on line " << lineno << endl;
-                            return false;
+                            *m_token_code += gather;
                         }
                         else
                         {

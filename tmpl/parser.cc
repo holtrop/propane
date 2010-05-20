@@ -23,7 +23,7 @@ static TokenRef buildToken(int typeindex)
     TokenRef token;
     switch (typeindex)
     {
-//%buildToken%
+        {%buildToken%}
     }
     return token;
 }
@@ -149,8 +149,9 @@ refptr<Node> Node::operator[](const std::string & index)
         : NULL;
 }
 
-void Token::process()
+void Token::process(MatchesRef matches)
 {
+    {%token_code%}
 }
 
 Matches::Matches(pcre * re, const char * data, int * ovector, int ovec_size)
