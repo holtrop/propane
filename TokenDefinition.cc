@@ -96,3 +96,30 @@ string TokenDefinition::getCString() const
 {
     return c_escape(m_definition);
 }
+
+string TokenDefinition::getClassDefinition() const
+{
+    string ret = "class ";
+    ret += m_name + " : public Token {\n";
+    ret += "public:\n";
+    if (m_process)
+    {
+        ret += "    virtual void process(Matches matches);\n";
+    }
+    ret += "protected:\n";
+    ret += m_data + "\n";
+    ret += "};\n";
+    return ret;
+}
+
+string TokenDefinition::getProcessMethod() const
+{
+    string ret;
+    if (m_code != "")
+    {
+        ret += "void " + m_name + "::process(Matches matches) {\n";
+        ret += m_code + "\n";
+        ret += "}\n";
+    }
+    return ret;
+}

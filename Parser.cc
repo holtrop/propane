@@ -41,7 +41,9 @@ bool Parser::write(const string & fname)
     ofstream header(header_fname.c_str());
     ofstream body(body_fname.c_str());
 
-    /* make some #define's */
+    /* process data */
+    refptr<string> token_classes = new string();
+    refptr<string> token_classes_code = new string();
     int i = 0;
     for (list<TokenDefinitionRef>::const_iterator it = m_tokens.begin();
             it != m_tokens.end();
@@ -50,6 +52,8 @@ bool Parser::write(const string & fname)
         char buff[20];
         sprintf(buff, "%d", i++);
         makeDefine(string("TK_") + (*it)->getName(), buff);
+        *token_classes += (*it)->getClassDefinition();
+        *token_classes_code += (*it)->getProcessMethod();
     }
     if (m_namespace != "")
     {
@@ -64,6 +68,8 @@ bool Parser::write(const string & fname)
     setReplacement("token_code", m_token_code);
     setReplacement("token_data", m_token_data);
     setReplacement("defines", m_defines);
+    setReplacement("token_classes", token_classes);
+    setReplacement("token_classes_code", token_classes_code);
 
     /* write the header */
     writeTmpl(header, (char *) tmpl_parser_h, tmpl_parser_h_len);

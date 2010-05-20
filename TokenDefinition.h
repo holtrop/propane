@@ -19,6 +19,8 @@ class TokenDefinition
         std::string getData() const { return m_data; }
         void addCode(const std::string & c) { m_code += c; m_process = true; }
         std::string getCode() const { return m_code; }
+        std::string getClassDefinition() const;
+        std::string getProcessMethod() const;
 
     protected:
         std::string m_name;

@@ -121,7 +121,7 @@ bool I_CLASSNAME::parse(istream & i)
         }
         if (longest_match_index >= 0)
         {
-            MatchesRef matches = new Matches(tokens[longest_match_index].re,
+            Matches matches(tokens[longest_match_index].re,
                     &buff[0], ovector, ovector_size);
             TokenRef token = buildToken(longest_match_index);
             buff_pos += longest_match_length;
@@ -149,7 +149,7 @@ refptr<Node> Node::operator[](const std::string & index)
         : NULL;
 }
 
-void Token::process(MatchesRef matches)
+void Token::process(Matches matches)
 {
     {%token_code%}
 }
@@ -186,6 +186,8 @@ std::string Matches::operator[](const std::string & index)
     }
     return "";
 }
+
+{%token_classes_code%}
 
 #ifdef I_NAMESPACE
 };

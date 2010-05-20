@@ -3,10 +3,15 @@
 #define IMBECILE_PARSER_HEADER
 
 #include <pcre.h>
+#include <stdio.h>
+#include <stdlib.h>
+#include <stdint.h>
 
 #include <iostream>
 #include <map>
 #include <vector>
+
+{%user_includes%}
 
 {%defines%}
 
@@ -138,7 +143,6 @@ class Matches
         int * m_ovector;
         int m_ovec_size;
 };
-typedef refptr<Matches> MatchesRef;
 
 class Node
 {
@@ -155,7 +159,7 @@ typedef refptr<Node> NodeRef;
 class Token : public Node
 {
     public:
-        virtual void process(MatchesRef matches);
+        virtual void process(Matches matches);
 
     protected:
         {%token_data%}
