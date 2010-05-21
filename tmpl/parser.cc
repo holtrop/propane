@@ -130,7 +130,7 @@ bool I_CLASSNAME::parse(istream & i)
             return false;
         }
         Matches matches(tokens[longest_match_index].re,
-                &buff[0], ovector, ovector_size);
+                &buff[0], longest_match_ovector, ovector_size);
         TokenRef token = buildToken(longest_match_index);
         if (token.isNull())
         {
