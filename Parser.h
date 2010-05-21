@@ -37,6 +37,7 @@ class Parser
 
     protected:
         refptr<std::string> buildTokenList();
+        refptr<std::string> buildBuildToken();
         bool writeTmpl(std::ostream & out, char * dat, int len);
         refptr<std::string> getReplacement(const std::string & name);
         void setReplacement(const std::string & name, refptr<std::string> val)

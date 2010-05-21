@@ -21,6 +21,7 @@ class TokenDefinition
         std::string getCode() const { return m_code; }
         std::string getClassDefinition() const;
         std::string getProcessMethod() const;
+        std::string getIdentifier() { return std::string("TK_") + m_name; }
 
     protected:
         std::string m_name;

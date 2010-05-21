@@ -51,7 +51,7 @@ bool Parser::write(const string & fname)
     {
         char buff[20];
         sprintf(buff, "%d", i++);
-        makeDefine(string("TK_") + (*it)->getName(), buff);
+        makeDefine((*it)->getIdentifier(), buff);
         *token_classes += (*it)->getClassDefinition();
         *token_classes_code += (*it)->getProcessMethod();
     }
@@ -63,6 +63,7 @@ bool Parser::write(const string & fname)
 
     /* set up replacements */
     setReplacement("token_list", buildTokenList());
+    setReplacement("buildToken", buildBuildToken());
     setReplacement("header_name",
             new string(string("\"") + header_fname + "\""));
     setReplacement("token_code", m_token_code);
@@ -146,6 +147,20 @@ refptr<string> Parser::buildTokenList()
             *tokenlist += ",\n";
     }
     return tokenlist;
+}
+
+refptr<string> Parser::buildBuildToken()
+{
+    refptr<string> buildToken = new string();
+    for (list<TokenDefinitionRef>::const_iterator t = m_tokens.begin();
+            t != m_tokens.end();
+            t++)
+    {
+        *buildToken += "case " + (*t)->getIdentifier() + ":\n";
+        *buildToken += "    token = new " + (*t)->getName() + "();\n";
+        *buildToken += "    break;\n";
+    }
+    return buildToken;
 }
 
 bool Parser::parseInputFile(char * buff, int size)
