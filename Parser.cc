@@ -157,7 +157,7 @@ refptr<string> Parser::buildBuildToken()
             t++)
     {
         *buildToken += "case " + (*t)->getIdentifier() + ":\n";
-        *buildToken += "    token = new " + (*t)->getName() + "();\n";
+        *buildToken += "    token = new " + (*t)->getClassName() + "();\n";
         *buildToken += "    break;\n";
     }
     return buildToken;

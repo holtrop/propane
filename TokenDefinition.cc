@@ -99,8 +99,7 @@ string TokenDefinition::getCString() const
 
 string TokenDefinition::getClassDefinition() const
 {
-    string ret = "class ";
-    ret += m_name + " : public Token {\n";
+    string ret = "class "+ getClassName() + " : public Token {\n";
     ret += "public:\n";
     if (m_process)
     {
@@ -117,7 +116,7 @@ string TokenDefinition::getProcessMethod() const
     string ret;
     if (m_code != "")
     {
-        ret += "void " + m_name + "::process(Matches matches) {\n";
+        ret += "void " + getClassName() + "::process(Matches matches) {\n";
         ret += m_code + "\n";
         ret += "}\n";
     }
