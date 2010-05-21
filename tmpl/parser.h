@@ -134,8 +134,8 @@ class Matches
 {
     public:
         Matches(pcre * re, const char * data, int * ovector, int ovec_size);
-        std::string operator[](int index);
-        std::string operator[](const std::string & index);
+        std::string operator[](int index) const;
+        std::string operator[](const std::string & index) const;
 
     protected:
         pcre * m_re;
@@ -159,9 +159,12 @@ typedef refptr<Node> NodeRef;
 class Token : public Node
 {
     public:
-        virtual void process(Matches matches);
+        virtual void process(const Matches & matches);
+        void setType(int type) { m_type = type; }
+        int getType() const { return m_type; }
 
     protected:
+        int m_type;
         {%token_data%}
 };
 typedef refptr<Token> TokenRef;

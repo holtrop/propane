@@ -103,7 +103,7 @@ string TokenDefinition::getClassDefinition() const
     ret += "public:\n";
     if (m_process)
     {
-        ret += "    virtual void process(Matches matches);\n";
+        ret += "    virtual void process(const Matches & matches);\n";
     }
     ret += "protected:\n";
     ret += m_data + "\n";
@@ -116,7 +116,7 @@ string TokenDefinition::getProcessMethod() const
     string ret;
     if (m_code != "")
     {
-        ret += "void " + getClassName() + "::process(Matches matches) {\n";
+        ret += "void " + getClassName() + "::process(const Matches & matches) {\n";
         ret += m_code + "\n";
         ret += "}\n";
     }

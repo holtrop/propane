@@ -25,6 +25,10 @@ static TokenRef buildToken(int typeindex)
     {
         {%buildToken%}
     }
+    if (!token.isNull())
+    {
+        token->setType(typeindex);
+    }
     return token;
 }
 
@@ -119,19 +123,22 @@ bool I_CLASSNAME::parse(istream & i)
                 }
             }
         }
-        if (longest_match_index >= 0)
-        {
-            Matches matches(tokens[longest_match_index].re,
-                    &buff[0], ovector, ovector_size);
-            TokenRef token = buildToken(longest_match_index);
-            buff_pos += longest_match_length;
-        }
-        else
+        if (longest_match_index < 0)
         {
             /* no pattern matched the input at the current position */
             cerr << "Parse error" << endl;
             return false;
         }
+        Matches matches(tokens[longest_match_index].re,
+                &buff[0], ovector, ovector_size);
+        TokenRef token = buildToken(longest_match_index);
+        if (token.isNull())
+        {
+            cerr << "Internal Error: null token" << endl;
+            return false;
+        }
+        token->process(matches);
+        buff_pos += longest_match_length;
     }
 }
 
@@ -149,7 +156,7 @@ refptr<Node> Node::operator[](const std::string & index)
         : NULL;
 }
 
-void Token::process(Matches matches)
+void Token::process(const Matches & matches)
 {
     {%token_code%}
 }
@@ -159,7 +166,7 @@ Matches::Matches(pcre * re, const char * data, int * ovector, int ovec_size)
 {
 }
 
-std::string Matches::operator[](int index)
+std::string Matches::operator[](int index) const
 {
     if (0 <= index && index < (m_ovec_size / 3))
     {
@@ -173,7 +180,7 @@ std::string Matches::operator[](int index)
     return "";
 }
 
-std::string Matches::operator[](const std::string & index)
+std::string Matches::operator[](const std::string & index) const
 {
     int idx = pcre_get_stringnumber(m_re, index.c_str());
     if (idx > 0 && idx < (m_ovec_size / 3))
