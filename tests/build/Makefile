@@ -5,6 +5,7 @@ CXXFLAGS := -O2
 LDFLAGS  := -lpcre
 
 all: $(TARGET)
+	./$(TARGET)
 
 $(TARGET): $(shell which imbecile) $(I_SOURCE).I $(wildcard *.cc)
 	imbecile $(I_SOURCE).I
