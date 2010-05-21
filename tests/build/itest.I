@@ -17,12 +17,12 @@ ${
     uint64_t value;
 $}
 %{
-    sscanf("%lld", matches[1].c_str(), &value);
+    sscanf(matches[0].c_str(), "%lld", &value);
     cout << "value: " << value << endl;
 %}
 
 HEX_INT     0x([0-9a-fA-F]+)\b ${ uint64_t value; $} %{
-    sscanf("%llx", matches[1].c_str(), &value);
+    sscanf(matches[1].c_str(), "%llx", &value);
     cout << "value: " << value << endl;
 %}
 
