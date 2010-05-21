@@ -10,6 +10,7 @@
 #include <iostream>
 #include <map>
 #include <vector>
+#include <list>
 
 {%user_includes%}
 
@@ -119,17 +120,6 @@ template <typename T> void refptr<T>::destroy()
 #endif
 
 
-class I_CLASSNAME
-{
-    public:
-        I_CLASSNAME();
-        bool parse(std::istream & in);
-        const char * getError() { return m_errstr; }
-
-    protected:
-        const char * m_errstr;
-};
-
 class Matches
 {
     public:
@@ -165,11 +155,25 @@ class Token : public Node
 
     protected:
         int m_type;
+
+    public:
         {%token_data%}
 };
 typedef refptr<Token> TokenRef;
 
 {%token_classes%}
+
+class I_CLASSNAME
+{
+    public:
+        I_CLASSNAME();
+        bool parse(std::istream & in);
+        const char * getError() { return m_errstr; }
+
+    protected:
+        const char * m_errstr;
+        std::list<TokenRef> m_tokens;
+};
 
 #ifdef I_NAMESPACE
 };

@@ -138,6 +138,7 @@ bool I_CLASSNAME::parse(istream & i)
             return false;
         }
         token->process(matches);
+        m_tokens.push_back(token);
         buff_pos += longest_match_length;
     }
 }

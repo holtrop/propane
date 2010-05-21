@@ -105,7 +105,7 @@ string TokenDefinition::getClassDefinition() const
     {
         ret += "    virtual void process(const Matches & matches);\n";
     }
-    ret += "protected:\n";
+    ret += "\n";
     ret += m_data + "\n";
     ret += "};\n";
     return ret;
