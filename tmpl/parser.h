@@ -156,7 +156,6 @@ class Token : public Node
     protected:
         int m_type;
 
-    public:
         {%token_data%}
 };
 typedef refptr<Token> TokenRef;
