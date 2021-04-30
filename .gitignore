@@ -1,9 +1,0 @@
-imbecile
-tags
-*.o
-.*.swp
-*.dep
-tmpl.*
-tests/*/itest.cc
-tests/*/itest.h
-tests/*/test

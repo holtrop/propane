@@ -1,5 +1,0 @@
-Imbecile is a bottom-up parser generator. It targets C++ and automatically
-generates a class heirarchy for interacting with the parser.
-
-Imbecile generates both a lexer and a parser based on the rules given to
-it in the input file.
