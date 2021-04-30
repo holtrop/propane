@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require "imbecile"
+
+Imbecile::CLI.run(ARGV.dup)

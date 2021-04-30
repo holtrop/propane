@@ -1,6 +1,2 @@
-require "imbecile/version"
-
-module Imbecile
-  class Error < StandardError; end
-  # Your code goes here...
-end
+require_relative "imbecile/cli"
+require_relative "imbecile/version"
