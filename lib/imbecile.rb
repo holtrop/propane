@@ -1,5 +1,5 @@
 require_relative "imbecile/cli"
-require_relative "imbecile/grammar_parser"
+require_relative "imbecile/grammar"
 require_relative "imbecile/version"
 
 module Imbecile
@@ -7,7 +7,10 @@ module Imbecile
   class << self
 
     def run(input_file)
-      gp = GrammarParser.new(input_file)
+      grammar = Grammar.new
+      unless grammar.load(input_file)
+        return 2
+      end
     end
 
   end
