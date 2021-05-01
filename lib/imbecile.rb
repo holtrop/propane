@@ -6,7 +6,7 @@ module Imbecile
 
   class << self
 
-    def run(input_file)
+    def run(input_file, output_file)
       grammar = Grammar.new
       unless grammar.load(input_file)
         return 2

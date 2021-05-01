@@ -2,7 +2,7 @@ module Imbecile
   module CLI
 
     USAGE = <<EOF
-Usage: #{$0} [options] <input-file>
+Usage: #{$0} [options] <input-file> <output-file>
 Options:
   --version   Show program version and exit
   -h, --help  Show this usage and exit
@@ -11,7 +11,7 @@ EOF
     class << self
 
       def run(args)
-        input_file = nil
+        extra_args = []
         args.each do |arg|
           case arg
           when "--version"
@@ -24,23 +24,18 @@ EOF
             $stderr.puts "Error: unknown option #{arg}"
             return 1
           else
-            if input_file
-              $stderr.puts "Error: only one input file supported"
-              return 1
-            else
-              input_file = arg
-            end
+            extra_args << arg
           end
         end
-        if input_file.nil?
-          $stderr.puts "Error: must specify input file"
+        if extra_args.size != 2
+          $stderr.puts "Error: specify input and output files"
           return 1
         end
-        unless File.readable?(input_file)
-          $stderr.puts "Error: cannot read #{input_file}"
+        unless File.readable?(args[0])
+          $stderr.puts "Error: cannot read #{args[0]}"
           return 2
         end
-        Imbecile.run(input_file)
+        Imbecile.run(*args)
       end
 
     end
