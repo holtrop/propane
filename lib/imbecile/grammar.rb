@@ -27,8 +27,12 @@ module Imbecile
             return false
           end
           @tokens[name] = expr
+        else
+          $stderr.puts "Unexpected input on line #{line_number}: #{line}"
+          return false
         end
       end
+      true
     end
 
   end
