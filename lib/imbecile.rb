@@ -5,11 +5,16 @@ require "erb"
 
 module Imbecile
 
+  class Error < RuntimeError
+  end
+
   class << self
 
     def run(input_file, output_file)
-      grammar = Grammar.new
-      unless grammar.load(input_file)
+      begin
+        grammar = Grammar.new(input_file)
+      rescue Error => e
+        $stderr.puts e.message
         return 2
       end
       classname = grammar.classname || grammar.capitalize

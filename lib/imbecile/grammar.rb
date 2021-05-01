@@ -7,14 +7,9 @@ module Imbecile
     # @return [String, nil] Class name.
     attr_reader :classname
 
-    def initialize
+    def initialize(input_file)
       @tokens = {}
       @rules = {}
-    end
-
-    # @return [Boolean]
-    #   Whether loading was successful.
-    def load(input_file)
       File.read(input_file).each_line.each_with_index do |line, line_index|
         line = line.chomp
         line_number = line_index + 1
@@ -29,20 +24,16 @@ module Imbecile
         elsif line =~ /^\s*token\s+(\S+)\s+(.*)$/
           name, expr = $1, $2
           unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
-            $stderr.puts "Invalid token name #{name} on line #{line_number}"
-            return false
+            raise Error.new("Invalid token name #{name} on line #{line_number}")
           end
           if @tokens[name]
-            $stderr.puts "Duplicate token name #{name} on line #{line_number}"
-            return false
+            raise Error.new("Duplicate token name #{name} on line #{line_number}")
           end
           @tokens[name] = expr
         else
-          $stderr.puts "Unexpected input on line #{line_number}: #{line}"
-          return false
+          raise Error.new("Unexpected input on line #{line_number}: #{line}")
         end
       end
-      true
     end
 
   end
