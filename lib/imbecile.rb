@@ -17,7 +17,7 @@ module Imbecile
         $stderr.puts e.message
         return 2
       end
-      classname = grammar.classname || grammar.capitalize
+      classname = grammar.classname || output_file.sub(%r{[^a-zA-Z0-9].*}, "").capitalize
       erb = ERB.new(File.read(File.join(File.dirname(File.expand_path(__FILE__)), "../assets/parser.d.erb")), nil, "<>")
       result = erb.result(binding.clone)
       File.open(output_file, "wb") do |fh|
