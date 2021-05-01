@@ -13,7 +13,9 @@ module Imbecile
         line = line.chomp
         line_number = line_index + 1
         if line =~ /^\s*#/
-          # Skip comment line.
+          # Skip comment lines.
+        elsif line =~ /^\s*$/
+          # Skip blank lines.
         elsif line =~ /^\s*token\s+(\S+)\s+(.*)$/
           name, expr = $1, $2
           unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
