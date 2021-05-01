@@ -16,6 +16,8 @@ module Imbecile
           # Skip comment lines.
         elsif line =~ /^\s*$/
           # Skip blank lines.
+        elsif line =~ /^\s*class\s+(\S+)$/
+          @class = $1
         elsif line =~ /^\s*token\s+(\S+)\s+(.*)$/
           name, expr = $1, $2
           unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
