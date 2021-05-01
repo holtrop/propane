@@ -36,6 +36,11 @@ EOF
           $stderr.puts "Error: must specify input file"
           return 1
         end
+        unless File.readable?(input_file)
+          $stderr.puts "Error: cannot read #{input_file}"
+          return 2
+        end
+        Imbecile.run(input_file)
       end
 
     end
