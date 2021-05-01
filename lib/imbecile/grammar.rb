@@ -1,6 +1,12 @@
 module Imbecile
   class Grammar
 
+    # @return [String, nil] Module name.
+    attr_reader :modulename
+
+    # @return [String, nil] Class name.
+    attr_reader :classname
+
     def initialize
       @tokens = {}
       @rules = {}
@@ -16,8 +22,10 @@ module Imbecile
           # Skip comment lines.
         elsif line =~ /^\s*$/
           # Skip blank lines.
+        elsif line =~ /^\s*module\s+(\S+)$/
+          @modulename = $1
         elsif line =~ /^\s*class\s+(\S+)$/
-          @class = $1
+          @classname = $1
         elsif line =~ /^\s*token\s+(\S+)\s+(.*)$/
           name, expr = $1, $2
           unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
