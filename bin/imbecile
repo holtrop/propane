@@ -2,4 +2,4 @@
 
 require "imbecile"
 
-Imbecile::CLI.run(ARGV.dup)
+exit Imbecile::CLI.run(ARGV.dup)

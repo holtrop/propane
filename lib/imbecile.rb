@@ -11,6 +11,7 @@ module Imbecile
       unless grammar.load(input_file)
         return 2
       end
+      return 0
     end
 
   end
