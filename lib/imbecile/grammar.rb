@@ -23,6 +23,9 @@ module Imbecile
           @classname = $1
         elsif line =~ /^\s*token\s+(\S+)\s+(.*)$/
           name, expr = $1, $2
+          if expr == ""
+            expr = name
+          end
           unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
             raise Error.new("Invalid token name #{name} on line #{line_number}")
           end
@@ -33,6 +36,11 @@ module Imbecile
         else
           raise Error.new("Unexpected input on line #{line_number}: #{line}")
         end
+      end
+
+      # Build NFA from each token expression.
+      @tokens.transform_values! do |expr|
+        LexerNFA.new(expr)
       end
     end
 
