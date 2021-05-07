@@ -1,7 +1,10 @@
 module Imbecile
   class Regex
 
-    class Unit
+    class Parser
+
+      class Unit
+      end
 
       class SequenceUnit < Unit
         attr_accessor :units
@@ -66,11 +69,13 @@ module Imbecile
         end
       end
 
+      attr_reader :unit
+
       def initialize(pattern)
         @pattern = pattern.dup
         @unit = parse_alternates
         if @pattern != ""
-          raise "Invalid pattern: #{@pattern}"
+          raise Error.new(%[Unexpected "#{@pattern}" in pattern])
         end
       end
 
