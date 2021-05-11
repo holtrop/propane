@@ -148,7 +148,7 @@ module Imbecile
             break
           elsif c == "^" && index == 0
             au.negate = true
-          elsif c == "-" && (index == 0 || @pattern[0] == "]")
+          elsif c == "-" && (au.alternates.size == 0 || @pattern[0] == "]")
             au.append_alternate(CharacterUnit.new(c))
           elsif c == "\\"
             au.append_alternate(parse_backslash)
