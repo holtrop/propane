@@ -177,14 +177,13 @@ module Imbecile
           min_count = min_count.to_i
           if comma.to_s == ""
             max_count = min_count
-          else
-            max_count = nil
-          end
-          if max_count.to_s != ""
+          elsif max_count.to_s != ""
             max_count = max_count.to_i
             if max_count < min_count
               raise Error.new("Maximum repetition count cannot be less than minimum repetition count")
             end
+          else
+            max_count = nil
           end
           @pattern = pattern
           [min_count, max_count]
