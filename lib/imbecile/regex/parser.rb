@@ -57,11 +57,11 @@ module Imbecile
       end
 
       class CharacterRangeUnit < Unit
-        attr_accessor :start_code_point
-        attr_accessor :end_code_point
+        attr_accessor :min_code_point
+        attr_accessor :max_code_point
         def initialize(c1, c2)
-          @start_code_point = c1.ord
-          @end_code_point = c2.ord
+          @min_code_point = c1.ord
+          @max_code_point = c2.ord
         end
       end
 
@@ -163,12 +163,12 @@ module Imbecile
               unless end_cu.is_a?(CharacterUnit)
                 raise Error.new("Character range must be between single characters")
               end
-              end_code_point = end_cu.code_point
+              max_code_point = end_cu.code_point
             else
-              end_code_point = @pattern[0].ord
+              max_code_point = @pattern[0].ord
               @pattern.slice!(0)
             end
-            cru = CharacterRangeUnit.new(begin_cu.code_point, end_code_point)
+            cru = CharacterRangeUnit.new(begin_cu.code_point, max_code_point)
             au.replace_last!(cru)
           else
             au.append_alternate(CharacterUnit.new(c))
