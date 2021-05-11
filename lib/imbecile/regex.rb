@@ -14,7 +14,7 @@ module Imbecile
     end
 
     def initialize(pattern)
-      @unit = Unit.new(pattern)
+      parser = Parser.new(pattern)
     end
 
   end
