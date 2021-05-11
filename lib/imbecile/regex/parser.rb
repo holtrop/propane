@@ -172,16 +172,21 @@ module Imbecile
       end
 
       def parse_curly_count
-        if @pattern =~ /^(\d+)(?:,(\d+))?\}(.*)$/
-          min_count = $1.to_i
-          max_count = nil
-          if $2 != ""
-            max_count = $2.to_i
+        if @pattern =~ /^(\d+)(?:(,)(\d*))?\}(.*)$/
+          min_count, comma, max_count, pattern = $1, $2, $3, $4
+          min_count = min_count.to_i
+          if comma.to_s == ""
+            max_count = min_count
+          else
+            max_count = nil
+          end
+          if max_count.to_s != ""
+            max_count = max_count.to_i
             if max_count < min_count
               raise Error.new("Maximum repetition count cannot be less than minimum repetition count")
             end
           end
-          @pattern = $3
+          @pattern = pattern
           [min_count, max_count]
         else
           raise Error.new("Unexpected match count at #{@pattern}")
