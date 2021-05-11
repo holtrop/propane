@@ -34,11 +34,18 @@ module Imbecile
           @alternates[-1] << unit
         end
         def last_unit
-          new_alternate! if @alternates.empty?
-          @alternates[-1][-1]
+          if @alternates.last.is_a?(SequenceUnit)
+            @alternates[-1][-1]
+          else
+            @alternates[-1]
+          end
         end
         def replace_last!(new_unit)
-          @alternates[-1][-1] = new_unit
+          if @alternates.last.is_a?(SequenceUnit)
+            @alternates[-1][-1] = new_unit
+          else
+            @alternates[-1] = new_unit
+          end
         end
       end
 
