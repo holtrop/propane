@@ -14,6 +14,18 @@ module Imbecile
         def method_missing(*args)
           @units.__send__(*args)
         end
+        def to_nfa
+          if @units.empty?
+            NFA.empty
+          else
+            @units.map do |unit|
+              unit.to_nfa
+            end.reduce do |result, nfa|
+              result.end_state.add_transition(nil, nfa.start_state)
+              result
+            end
+          end
+        end
       end
 
       class AlternatesUnit < Unit
@@ -45,6 +57,23 @@ module Imbecile
             @alternates[-1][-1] = new_unit
           else
             @alternates[-1] = new_unit
+          end
+        end
+        def to_nfa
+          if @alternates.size == 0
+            NFA.empty
+          elsif @alternates.size == 1
+            @alternates[0].to_nfa
+          else
+            nfa = NFA.new
+            alternate_nfas = @alternates.map do |alternate|
+              alternate.to_nfa
+            end
+            alternate_nfas.each do |alternate_nfa|
+              nfa.start_state.add_transition(nil, alternate_nfa.start_state)
+              alternate_nfa.end_state.add_transition(nil, nfa.end_state)
+            end
+            nfa
           end
         end
       end
