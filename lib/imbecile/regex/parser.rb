@@ -83,6 +83,11 @@ module Imbecile
         def initialize(c)
           @code_point = c.ord
         end
+        def to_nfa
+          nfa = NFA.new
+          nfa.start_state.add_transition(@code_point, nfa.end_state)
+          nfa
+        end
       end
 
       class CharacterRangeUnit < Unit
@@ -91,6 +96,11 @@ module Imbecile
         def initialize(c1, c2)
           @min_code_point = c1.ord
           @max_code_point = c2.ord
+        end
+        def to_nfa
+          nfa = NFA.new
+          nfa.start_state.add_transition((@min_code_point..@max_code_point), nfa.end_state)
+          nfa
         end
       end
 
@@ -102,6 +112,32 @@ module Imbecile
           @unit = unit
           @min_count = min_count
           @max_count = max_count
+        end
+        def to_nfa
+          nfa = NFA.new
+          unit_nfa = @unit.to_nfa
+          nfa.start_state.add_transition(nil, unit_nfa.start_state)
+          if @min_count == 0
+            nfa.start_state.add_transition(nil, nfa.end_state)
+          else
+            (@min_count - 1).times do
+              prev_nfa = unit_nfa
+              unit_nfa = @unit.to_nfa
+              prev_nfa.end_state.add_transition(nil, unit_nfa.start_state)
+            end
+          end
+          unit_nfa.end_state.add_transition(nil, nfa.end_state)
+          if @max_count.nil?
+            unit_nfa.end_state.add_transition(nil, nfa.start_state)
+          else
+            (@max_count - @min_count).times do
+              prev_nfa = unit_nfa
+              unit_nfa = @unit.to_nfa
+              prev_nfa.end_state.add_transition(nil, unit_nfa.start_state)
+              unit_nfa.end_state.add_transition(nil, nfa.end_state)
+            end
+          end
+          nfa
         end
       end
 
