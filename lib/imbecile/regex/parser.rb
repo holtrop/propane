@@ -65,28 +65,19 @@ module Imbecile
         end
       end
 
-      class CharacterUnit < Unit
-        attr_accessor :code_point
-        def initialize(c)
-          @code_point = c.ord
-        end
-        def to_nfa
-          nfa = NFA.new
-          nfa.start_state.add_transition(@code_point, nfa.end_state)
-          nfa
-        end
-      end
-
       class CharacterRangeUnit < Unit
         attr_accessor :min_code_point
         attr_accessor :max_code_point
-        def initialize(c1, c2)
+        def initialize(c1, c2 = nil)
           @min_code_point = c1.ord
-          @max_code_point = c2.ord
+          @max_code_point = c2 ? c2.ord : @min_code_point
+        end
+        def range
+          @min_code_point..@max_code_point
         end
         def to_nfa
           nfa = NFA.new
-          nfa.start_state.add_transition((@min_code_point..@max_code_point), nfa.end_state)
+          nfa.start_state.add_transition(range, nfa.end_state)
           nfa
         end
       end
@@ -109,6 +100,36 @@ module Imbecile
         end
         def replace_last!(new_unit)
           @units[-1] = new_unit
+        end
+        def to_nfa
+          nfa = NFA.new
+          if @units.empty?
+            nfa.start_state.add_transition(nil, nfa.end_state)
+          else
+            ranges = @units.map(&:range)
+            if unit.negate
+              ranges = negate_ranges(ranges)
+            end
+            ranges.each do |range|
+              nfa.start_state.add_transition(range, nfa.end_state)
+            end
+          end
+        end
+        private
+        def negate_ranges(ranges)
+          ranges = ranges.sort_by(&:first)
+          new_ranges = []
+          last_cp = -1
+          ranges.each do |range|
+            if range.first > (last_cp + 1)
+              new_ranges << ((last_cp + 1)..(range.first - 1))
+              last_cp = range.last
+            end
+          end
+          if last_cp < 0xFFFFFFFF
+            new_ranges << ((last_cp + 1)..0xFFFFFFFF)
+          end
+          new_ranges
         end
       end
 
@@ -194,7 +215,7 @@ module Imbecile
           when "\\"
             au << parse_backslash
           else
-            au << CharacterUnit.new(c)
+            au << CharacterRangeUnit.new(c)
           end
         end
         au
@@ -222,18 +243,18 @@ module Imbecile
           elsif c == "^" && index == 0
             ccu.negate = true
           elsif c == "-" && (ccu.size == 0 || @pattern[0] == "]")
-            ccu << CharacterUnit.new(c)
+            ccu << CharacterRangeUnit.new(c)
           elsif c == "\\"
             ccu << parse_backslash
           elsif c == "-" && @pattern[0] != "]"
             begin_cu = ccu.last_unit
-            unless begin_cu.is_a?(CharacterUnit)
+            unless begin_cu.is_a?(CharacterRangeUnit) && begin_cu.range.size == 1
               raise Error.new("Character range must be between single characters")
             end
             if @pattern[0] == "\\"
               @pattern.slice!(0)
               end_cu = parse_backslash
-              unless end_cu.is_a?(CharacterUnit)
+              unless end_cu.is_a?(CharacterRangeUnit) && end_cu.range.size == 1
                 raise Error.new("Character range must be between single characters")
               end
               max_code_point = end_cu.code_point
@@ -241,10 +262,10 @@ module Imbecile
               max_code_point = @pattern[0].ord
               @pattern.slice!(0)
             end
-            cru = CharacterRangeUnit.new(begin_cu.code_point, max_code_point)
+            cru = CharacterRangeUnit.new(begin_cu.min_code_point, max_code_point)
             ccu.replace_last!(cru)
           else
-            ccu << CharacterUnit.new(c)
+            ccu << CharacterRangeUnit.new(c)
           end
           index += 1
         end
@@ -281,7 +302,7 @@ module Imbecile
           when "d"
             CharacterRangeUnit.new("0", "9")
           else
-            CharacterUnit.new(c)
+            CharacterRangeUnit.new(c)
           end
         end
       end
