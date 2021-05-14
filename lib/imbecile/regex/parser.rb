@@ -30,34 +30,21 @@ module Imbecile
 
       class AlternatesUnit < Unit
         attr_accessor :alternates
-        attr_accessor :negate
         def initialize
           @alternates = []
-          @negate = false
+          new_alternate!
         end
         def new_alternate!
           @alternates << SequenceUnit.new
         end
-        def append_alternate(unit)
-          @alternates << unit
-        end
         def <<(unit)
-          new_alternate! if @alternates.empty?
           @alternates[-1] << unit
         end
         def last_unit
-          if @alternates.last.is_a?(SequenceUnit)
-            @alternates[-1][-1]
-          else
-            @alternates[-1]
-          end
+          @alternates[-1][-1]
         end
         def replace_last!(new_unit)
-          if @alternates.last.is_a?(SequenceUnit)
-            @alternates[-1][-1] = new_unit
-          else
-            @alternates[-1] = new_unit
-          end
+          @alternates[-1][-1] = new_unit
         end
         def to_nfa
           if @alternates.size == 0
@@ -101,6 +88,27 @@ module Imbecile
           nfa = NFA.new
           nfa.start_state.add_transition((@min_code_point..@max_code_point), nfa.end_state)
           nfa
+        end
+      end
+
+      class CharacterClassUnit < Unit
+        attr_accessor :units
+        attr_accessor :negate
+        def initialize
+          @units = []
+          @negate = false
+        end
+        def initialize
+          @units = []
+        end
+        def method_missing(*args)
+          @units.__send__(*args)
+        end
+        def last_unit
+          @units[-1]
+        end
+        def replace_last!(new_unit)
+          @units[-1] = new_unit
         end
       end
 
@@ -202,7 +210,7 @@ module Imbecile
       end
 
       def parse_character_class
-        au = AlternatesUnit.new
+        ccu = CharacterClassUnit.new
         index = 0
         loop do
           if @pattern == ""
@@ -212,13 +220,13 @@ module Imbecile
           if c == "]"
             break
           elsif c == "^" && index == 0
-            au.negate = true
-          elsif c == "-" && (au.alternates.size == 0 || @pattern[0] == "]")
-            au.append_alternate(CharacterUnit.new(c))
+            ccu.negate = true
+          elsif c == "-" && (ccu.size == 0 || @pattern[0] == "]")
+            ccu << CharacterUnit.new(c)
           elsif c == "\\"
-            au.append_alternate(parse_backslash)
+            ccu << parse_backslash
           elsif c == "-" && @pattern[0] != "]"
-            begin_cu = au.last_unit
+            begin_cu = ccu.last_unit
             unless begin_cu.is_a?(CharacterUnit)
               raise Error.new("Character range must be between single characters")
             end
@@ -234,13 +242,13 @@ module Imbecile
               @pattern.slice!(0)
             end
             cru = CharacterRangeUnit.new(begin_cu.code_point, max_code_point)
-            au.replace_last!(cru)
+            ccu.replace_last!(cru)
           else
-            au.append_alternate(CharacterUnit.new(c))
+            ccu << CharacterUnit.new(c)
           end
           index += 1
         end
-        au
+        ccu
       end
 
       def parse_curly_count
