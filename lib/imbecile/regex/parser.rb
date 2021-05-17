@@ -214,6 +214,8 @@ module Imbecile
             au.new_alternate!
           when "\\"
             au << parse_backslash
+          when "."
+            au << period_character_class
           else
             au << CharacterRangeUnit.new(c)
           end
@@ -305,6 +307,13 @@ module Imbecile
             CharacterRangeUnit.new(c)
           end
         end
+      end
+
+      def period_character_class
+        ccu = CharacterClassUnit.new
+        ccu << CharacterRangeUnit.new(0, "\n".ord - 1)
+        ccu << CharacterRangeUnit.new("\n".ord + 1, 0xFFFFFFFF)
+        ccu
       end
 
     end

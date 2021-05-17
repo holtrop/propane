@@ -235,7 +235,7 @@ module Imbecile
         expect(ccu[0].min_code_point).to eq "-".ord
       end
 
-      it "parses . as a plain character in a negated character class" do
+      it "parses . as a plain character in a character class" do
         parser = Parser.new("[.]")
         expect(parser.unit).to be_a Parser::AlternatesUnit
         expect(parser.unit.alternates.size).to eq 1
@@ -277,6 +277,17 @@ module Imbecile
         expect(parser.unit.alternates[1]).to be_a Parser::SequenceUnit
         expect(parser.unit.alternates[0].size).to eq 2
         expect(parser.unit.alternates[1].size).to eq 1
+      end
+
+      it "parses a ." do
+        parser = Parser.new("a.b")
+        expect(parser.unit).to be_a Parser::AlternatesUnit
+        expect(parser.unit.alternates.size).to eq 1
+        expect(parser.unit.alternates[0]).to be_a Parser::SequenceUnit
+        expect(parser.unit.alternates[0][0]).to be_a Parser::CharacterRangeUnit
+        expect(parser.unit.alternates[0][1]).to be_a Parser::CharacterClassUnit
+        expect(parser.unit.alternates[0][1].units.size).to eq 2
+        expect(parser.unit.alternates[0][2]).to be_a Parser::CharacterRangeUnit
       end
 
       it "parses something complex" do
