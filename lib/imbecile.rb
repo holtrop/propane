@@ -1,6 +1,7 @@
 require_relative "imbecile/cli"
 require_relative "imbecile/grammar"
 require_relative "imbecile/regex"
+require_relative "imbecile/regex/dfa"
 require_relative "imbecile/regex/nfa"
 require_relative "imbecile/regex/unit"
 require_relative "imbecile/version"

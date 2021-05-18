@@ -42,6 +42,7 @@ module Imbecile
       @tokens.each do |token_name, token_def|
         token_def[:regex] = Regex.new(token_def[:pattern])
       end
+      dfa = DFA.new(@tokens.map {|token_name, token_def| token_def[:regex].nfa})
     end
 
   end
