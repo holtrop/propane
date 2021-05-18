@@ -21,10 +21,10 @@ module Imbecile
           @modulename = $1
         elsif line =~ /^\s*class\s+(\S+)$/
           @classname = $1
-        elsif line =~ /^\s*token\s+(\S+)(?:\s+(.*))?$/
-          name, expr = $1, $2
-          if expr == ""
-            expr = name
+        elsif line =~ /^\s*token\s+(\S+)(?:\s+(\S+))?$/
+          name, pattern = $1, $2
+          if pattern.to_s == ""
+            pattern = name
           end
           unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
             raise Error.new("Invalid token name #{name} on line #{line_number}")
@@ -32,15 +32,16 @@ module Imbecile
           if @tokens[name]
             raise Error.new("Duplicate token name #{name} on line #{line_number}")
           end
-          @tokens[name] = expr
+          @tokens[name] = {pattern: pattern}
         else
           raise Error.new("Unexpected input on line #{line_number}: #{line}")
         end
       end
 
       # Build NFA from each token expression.
-      @tokens.transform_values! do |expr|
-        LexerNFA.new(expr)
+      @tokens.each do |token_name, token_def|
+        token_def[:regex] = Regex.new(token_def[:pattern])
+        token_def[:nfa] = token_def[:regex].parser.unit.to_nfa
       end
     end
 

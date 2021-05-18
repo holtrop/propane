@@ -1,20 +1,10 @@
 module Imbecile
   class Regex
 
-    class State
-      attr_accessor :accepting
-
-      def initialize
-        @transitions = []
-      end
-
-      def add_transition(character_range, state)
-        @transitions << [character_range, state]
-      end
-    end
+    attr_accessor :parser
 
     def initialize(pattern)
-      parser = Parser.new(pattern)
+      @parser = Parser.new(pattern)
     end
 
   end
