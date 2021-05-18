@@ -41,8 +41,9 @@ module Imbecile
       # Build NFA from each token expression.
       @tokens.each do |token_name, token_def|
         token_def[:regex] = Regex.new(token_def[:pattern])
+        token_def[:regex].nfa.end_state.accepts = token_name
       end
-      dfa = DFA.new(@tokens.map {|token_name, token_def| token_def[:regex].nfa})
+      dfa = Regex::DFA.new(@tokens.map {|token_name, token_def| token_def[:regex].nfa})
     end
 
   end

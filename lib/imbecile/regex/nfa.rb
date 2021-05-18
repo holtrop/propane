@@ -5,6 +5,8 @@ module Imbecile
 
       class State
 
+        attr_accessor :accepts
+
         def initialize
           @transitions = []
         end
