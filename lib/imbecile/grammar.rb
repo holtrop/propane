@@ -41,7 +41,6 @@ module Imbecile
       # Build NFA from each token expression.
       @tokens.each do |token_name, token_def|
         token_def[:regex] = Regex.new(token_def[:pattern])
-        token_def[:nfa] = token_def[:regex].parser.unit.to_nfa
       end
     end
 
