@@ -107,13 +107,14 @@ module Imbecile
             nfa.start_state.add_transition(nil, nfa.end_state)
           else
             ranges = @units.map(&:range)
-            if unit.negate
+            if @negate
               ranges = negate_ranges(ranges)
             end
             ranges.each do |range|
               nfa.start_state.add_transition(range, nfa.end_state)
             end
           end
+          nfa
         end
         private
         def negate_ranges(ranges)
@@ -171,10 +172,12 @@ module Imbecile
       end
 
       attr_reader :unit
+      attr_reader :nfa
 
       def initialize(pattern)
         @pattern = pattern.dup
         @unit = parse_alternates
+        @nfa = @unit.to_nfa
         if @pattern != ""
           raise Error.new(%[Unexpected "#{@pattern}" in pattern])
         end
