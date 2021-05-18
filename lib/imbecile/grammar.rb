@@ -21,7 +21,7 @@ module Imbecile
           @modulename = $1
         elsif line =~ /^\s*class\s+(\S+)$/
           @classname = $1
-        elsif line =~ /^\s*token\s+(\S+)\s+(.*)$/
+        elsif line =~ /^\s*token\s+(\S+)(?:\s+(.*))?$/
           name, expr = $1, $2
           if expr == ""
             expr = name
