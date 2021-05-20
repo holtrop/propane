@@ -16,12 +16,16 @@ module Imbecile
         if @units.empty?
           NFA.empty
         else
-          @units.map do |unit|
+          nfa = NFA.new
+          unit_nfas = @units.map do |unit|
             unit.to_nfa
-          end.reduce do |result, nfa|
-            result.end_state.add_transition(nil, nfa.start_state)
-            result
           end
+          nfa.start_state.add_transition(nil, unit_nfas[0].start_state)
+          unit_nfas.reduce do |prev_nfa, next_nfa|
+            prev_nfa.end_state.add_transition(nil, next_nfa.start_state)
+            next_nfa
+          end.end_state.add_transition(nil, nfa.end_state)
+          nfa
         end
       end
     end
@@ -156,7 +160,7 @@ module Imbecile
         end
         unit_nfa.end_state.add_transition(nil, nfa.end_state)
         if @max_count.nil?
-          unit_nfa.end_state.add_transition(nil, nfa.start_state)
+          unit_nfa.end_state.add_transition(nil, unit_nfa.start_state)
         else
           (@max_count - @min_count).times do
             prev_nfa = unit_nfa

@@ -31,7 +31,7 @@ module Imbecile
 
         def empty
           nfa = NFA.new
-          nfa.end_state = nfa.start_state
+          nfa.start_state.add_transition(nil, nfa.end_state)
           nfa
         end
 
