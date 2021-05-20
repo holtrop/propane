@@ -6,6 +6,7 @@ module Imbecile
       class State
 
         attr_accessor :accepts
+        attr_reader :transitions
 
         def initialize
           @transitions = []
