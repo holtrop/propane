@@ -16,6 +16,27 @@ module Imbecile
           @transitions << [code_point, destination_state]
         end
 
+        # Determine the set of states that can be reached by nil transitions.
+        # from this state.
+        #
+        # @return [Set<NFA::State>]
+        #   Set of states.
+        def nil_transition_states
+          states = Set[self]
+          analyze_state = lambda do |state|
+            state.transitions.each do |range, dest_state|
+              if range.nil?
+                unless states.include?(dest_state)
+                  states << dest_state
+                  analyze_state[dest_state]
+                end
+              end
+            end
+          end
+          analyze_state[self]
+          states
+        end
+
       end
 
       attr_accessor :start_state
