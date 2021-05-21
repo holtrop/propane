@@ -49,6 +49,13 @@ module Imbecile
       end
 
       def to_s
+        chr = lambda do |value|
+          if value < 32 || value > 127
+            "{#{value}}"
+          else
+            value.chr
+          end
+        end
         rv = ""
         states = {start_state => 0}
         to_visit = [start_state]
@@ -66,9 +73,9 @@ module Imbecile
             if range.nil?
               range_s = "nil"
             else
-              range_s = range.first.chr
+              range_s = chr[range.first]
               if range.size > 1
-                range_s += "-" + range.last.chr
+                range_s += "-" + chr[range.last]
               end
             end
             accepts_s = dest_state.accepts ? " *" : ""
