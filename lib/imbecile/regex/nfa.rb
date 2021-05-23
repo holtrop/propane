@@ -24,17 +24,27 @@ module Imbecile
         def nil_transition_states
           states = Set[self]
           analyze_state = lambda do |state|
-            state.transitions.each do |range, dest_state|
-              if range.nil?
-                unless states.include?(dest_state)
-                  states << dest_state
-                  analyze_state[dest_state]
-                end
+            state.nil_transitions.each do |range, dest_state|
+              unless states.include?(dest_state)
+                states << dest_state
+                analyze_state[dest_state]
               end
             end
           end
           analyze_state[self]
           states
+        end
+
+        def nil_transitions
+          @transitions.select do |code_point, dest_state|
+            code_point.nil?
+          end
+        end
+
+        def cp_transitions
+          @transitions.select do |code_point, dest_state|
+            code_point
+          end
         end
 
       end
@@ -69,13 +79,13 @@ module Imbecile
         visit = lambda do |state|
           accepts_s = state.accepts ? " *" : ""
           rv += "#{state_id[state]}#{accepts_s}:\n"
-          state.transitions.each do |range, dest_state|
-            if range.nil?
+          state.transitions.each do |code_point_range, dest_state|
+            if code_point_range.nil?
               range_s = "nil"
             else
-              range_s = chr[range.first]
-              if range.size > 1
-                range_s += "-" + chr[range.last]
+              range_s = chr[code_point_range.first]
+              if code_point_range.size > 1
+                range_s += "-" + chr[code_point_range.last]
               end
             end
             accepts_s = dest_state.accepts ? " *" : ""

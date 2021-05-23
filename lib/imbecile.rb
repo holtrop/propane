@@ -1,6 +1,7 @@
 require "erb"
 require "set"
 require_relative "imbecile/cli"
+require_relative "imbecile/code_point_range"
 require_relative "imbecile/grammar"
 require_relative "imbecile/regex"
 require_relative "imbecile/regex/dfa"

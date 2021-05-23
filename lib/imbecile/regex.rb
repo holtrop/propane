@@ -83,13 +83,13 @@ module Imbecile
           ccu << parse_backslash
         elsif c == "-" && @pattern[0] != "]"
           begin_cu = ccu.last_unit
-          unless begin_cu.is_a?(CharacterRangeUnit) && begin_cu.range.size == 1
+          unless begin_cu.is_a?(CharacterRangeUnit) && begin_cu.code_point_range.size == 1
             raise Error.new("Character range must be between single characters")
           end
           if @pattern[0] == "\\"
             @pattern.slice!(0)
             end_cu = parse_backslash
-            unless end_cu.is_a?(CharacterRangeUnit) && end_cu.range.size == 1
+            unless end_cu.is_a?(CharacterRangeUnit) && end_cu.code_point_range.size == 1
               raise Error.new("Character range must be between single characters")
             end
             max_code_point = end_cu.code_point
@@ -97,7 +97,7 @@ module Imbecile
             max_code_point = @pattern[0].ord
             @pattern.slice!(0)
           end
-          cru = CharacterRangeUnit.new(begin_cu.min_code_point, max_code_point)
+          cru = CharacterRangeUnit.new(begin_cu.first, max_code_point)
           ccu.replace_last!(cru)
         else
           ccu << CharacterRangeUnit.new(c)

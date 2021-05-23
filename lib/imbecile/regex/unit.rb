@@ -68,18 +68,19 @@ module Imbecile
     end
 
     class CharacterRangeUnit < Unit
-      attr_accessor :min_code_point
-      attr_accessor :max_code_point
+      attr_reader :code_point_range
       def initialize(c1, c2 = nil)
-        @min_code_point = c1.ord
-        @max_code_point = c2 ? c2.ord : @min_code_point
+        @code_point_range = CodePointRange.new(c1, c2)
       end
-      def range
-        @min_code_point..@max_code_point
+      def first
+        @code_point_range.first
+      end
+      def last
+        @code_point_range.last
       end
       def to_nfa
         nfa = NFA.new
-        nfa.start_state.add_transition(range, nfa.end_state)
+        nfa.start_state.add_transition(@code_point_range, nfa.end_state)
         nfa
       end
     end
@@ -108,31 +109,15 @@ module Imbecile
         if @units.empty?
           nfa.start_state.add_transition(nil, nfa.end_state)
         else
-          ranges = @units.map(&:range)
+          code_point_ranges = @units.map(&:code_point_range)
           if @negate
-            ranges = negate_ranges(ranges)
+            code_point_ranges = CodePointRange.invert_ranges(code_point_ranges)
           end
-          ranges.each do |range|
-            nfa.start_state.add_transition(range, nfa.end_state)
+          code_point_ranges.each do |code_point_range|
+            nfa.start_state.add_transition(code_point_range, nfa.end_state)
           end
         end
         nfa
-      end
-      private
-      def negate_ranges(ranges)
-        ranges = ranges.sort_by(&:first)
-        new_ranges = []
-        last_cp = -1
-        ranges.each do |range|
-          if range.first > (last_cp + 1)
-            new_ranges << ((last_cp + 1)..(range.first - 1))
-            last_cp = range.last
-          end
-        end
-        if last_cp < 0xFFFFFFFF
-          new_ranges << ((last_cp + 1)..0xFFFFFFFF)
-        end
-        new_ranges
       end
     end
 
