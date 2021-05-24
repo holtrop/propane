@@ -5,6 +5,21 @@ module Imbecile
 
       class State
 
+        class Transition
+
+          attr_reader :code_point_range
+          attr_reader :destination
+
+          def initialize(code_point_range, destination)
+            @code_point_range = code_point_range
+          end
+
+          def nil?
+            @code_point_range.nil?
+          end
+
+        end
+
         attr_accessor :accepts
         attr_reader :transitions
 
@@ -12,8 +27,8 @@ module Imbecile
           @transitions = []
         end
 
-        def add_transition(code_point, destination_state)
-          @transitions << [code_point, destination_state]
+        def add_transition(code_point_range, destination)
+          @transitions << Transition.new(code_point_range, destination)
         end
 
         # Determine the set of states that can be reached by nil transitions.
@@ -24,10 +39,10 @@ module Imbecile
         def nil_transition_states
           states = Set[self]
           analyze_state = lambda do |state|
-            state.nil_transitions.each do |range, dest_state|
-              unless states.include?(dest_state)
-                states << dest_state
-                analyze_state[dest_state]
+            state.nil_transitions.each do |transition|
+              unless states.include?(transition.destination)
+                states << transition.destination
+                analyze_state[transition.destination]
               end
             end
           end
@@ -36,14 +51,14 @@ module Imbecile
         end
 
         def nil_transitions
-          @transitions.select do |code_point, dest_state|
-            code_point.nil?
+          @transitions.select do |transition|
+            transition.nil?
           end
         end
 
         def cp_transitions
-          @transitions.select do |code_point, dest_state|
-            code_point
+          @transitions.reject do |transition|
+            transition.nil?
           end
         end
 
@@ -79,13 +94,13 @@ module Imbecile
         visit = lambda do |state|
           accepts_s = state.accepts ? " *" : ""
           rv += "#{state_id[state]}#{accepts_s}:\n"
-          state.transitions.each do |code_point_range, dest_state|
-            if code_point_range.nil?
+          state.transitions.each do |transition|
+            if transition.nil?
               range_s = "nil"
             else
-              range_s = chr[code_point_range.first]
-              if code_point_range.size > 1
-                range_s += "-" + chr[code_point_range.last]
+              range_s = chr[transition.code_point_range.first]
+              if transition.code_point_range.size > 1
+                range_s += "-" + chr[transition.code_point_range.last]
               end
             end
             accepts_s = dest_state.accepts ? " *" : ""
