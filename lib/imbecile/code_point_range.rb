@@ -50,6 +50,8 @@ module Imbecile
           if code_point_range.first > (last_cp + 1)
             new_ranges << CodePointRange.new(last_cp + 1, code_point_range.first - 1)
             last_cp = code_point_range.last
+          else
+            last_cp = [last_cp, code_point_range.last].max
           end
         end
         if last_cp < MAX_CODE_POINT
