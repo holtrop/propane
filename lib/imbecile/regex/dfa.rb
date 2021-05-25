@@ -60,13 +60,15 @@ module Imbecile
         end
         rv = ""
         @states.each_with_index do |state, state_id|
-          rv += "#{state_id}:\n"
+          accepts_s = state.accepts ? " (#{state.accepts})" : ""
+          rv += "#{state_id}#{accepts_s}:\n"
           state.transitions.each do |transition|
             range_s = chr[transition.code_point_range.first]
             if transition.code_point_range.size > 1
               range_s += "-" + chr[transition.code_point_range.last]
             end
-            rv += "  #{range_s} => #{transition.destination.id}\n"
+            accepts_s = transition.destination.accepts ? " (#{transition.destination.accepts})" : ""
+            rv += "  #{range_s} => #{transition.destination.id}#{accepts_s}\n"
           end
         end
         rv
@@ -85,6 +87,17 @@ module Imbecile
 
       def process_nfa_state_set(nfa_state_set)
         state = @states[@nfa_state_sets[nfa_state_set]]
+        nfa_state_set.each do |nfa_state|
+          if nfa_state.accepts
+            if state.accepts
+              if nfa_state.accepts.to_i < state.accepts.to_i
+                state.accepts = nfa_state.accepts
+              end
+            else
+              state.accepts = nfa_state.accepts
+            end
+          end
+        end
         transitions = transitions_for(nfa_state_set)
         while transitions.size > 0
           subrange = CodePointRange.first_subrange(transitions.map(&:code_point_range))
