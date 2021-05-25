@@ -132,26 +132,26 @@ module Imbecile
       end
       def to_nfa
         nfa = NFA.new
-        unit_nfa = @unit.to_nfa
-        nfa.start_state.add_transition(nil, unit_nfa.start_state)
-        if @min_count == 0
-          nfa.start_state.add_transition(nil, nfa.end_state)
-        else
-          (@min_count - 1).times do
-            prev_nfa = unit_nfa
-            unit_nfa = @unit.to_nfa
-            prev_nfa.end_state.add_transition(nil, unit_nfa.start_state)
-          end
+        last_state = nfa.start_state
+        unit_nfa = nil
+        @min_count.times do
+          unit_nfa = @unit.to_nfa
+          last_state.add_transition(nil, unit_nfa.start_state)
+          last_state = unit_nfa.end_state
         end
-        unit_nfa.end_state.add_transition(nil, nfa.end_state)
+        last_state.add_transition(nil, nfa.end_state)
         if @max_count.nil?
+          if @min_count == 0
+            unit_nfa = @unit.to_nfa
+            last_state.add_transition(nil, unit_nfa.start_state)
+          end
           unit_nfa.end_state.add_transition(nil, unit_nfa.start_state)
         else
           (@max_count - @min_count).times do
-            prev_nfa = unit_nfa
             unit_nfa = @unit.to_nfa
-            prev_nfa.end_state.add_transition(nil, unit_nfa.start_state)
+            last_state.add_transition(nil, unit_nfa.start_state)
             unit_nfa.end_state.add_transition(nil, nfa.end_state)
+            last_state = unit_nfa.end_state
           end
         end
         nfa
