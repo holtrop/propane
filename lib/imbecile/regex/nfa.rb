@@ -104,8 +104,8 @@ module Imbecile
                 range_s += "-" + chr[transition.code_point_range.last]
               end
             end
-            accepts_s = dest_state.accepts ? " *" : ""
-            rv += "  #{range_s} => #{state_id[dest_state]}#{accepts_s}\n"
+            accepts_s = transition.destination.accepts ? " *" : ""
+            rv += "  #{range_s} => #{state_id[transition.destination]}#{accepts_s}\n"
           end
         end
         while to_visit.size > 0
