@@ -44,6 +44,7 @@ module Imbecile
         token_def[:regex].nfa.end_state.accepts = token_name
       end
       dfa = Regex::DFA.new(@tokens.map {|token_name, token_def| token_def[:regex].nfa})
+      puts dfa
     end
 
   end

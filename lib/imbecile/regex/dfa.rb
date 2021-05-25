@@ -5,6 +5,8 @@ module Imbecile
 
       class State
 
+        attr_reader :id
+
         class Transition
 
           attr_reader :code_point_range
@@ -12,6 +14,7 @@ module Imbecile
 
           def initialize(code_point_range, destination)
             @code_point_range = code_point_range
+            @destination = destination
           end
 
         end
@@ -19,7 +22,8 @@ module Imbecile
         attr_accessor :accepts
         attr_reader :transitions
 
-        def initialize
+        def initialize(id)
+          @id = id
           @transitions = []
         end
 
@@ -46,13 +50,35 @@ module Imbecile
         end
       end
 
+      def to_s
+        chr = lambda do |value|
+          if value < 32 || value > 127
+            "{#{value}}"
+          else
+            value.chr
+          end
+        end
+        rv = ""
+        @states.each_with_index do |state, state_id|
+          rv += "#{state_id}:\n"
+          state.transitions.each do |transition|
+            range_s = chr[transition.code_point_range.first]
+            if transition.code_point_range.size > 1
+              range_s += "-" + chr[transition.code_point_range.last]
+            end
+            rv += "  #{range_s} => #{transition.destination.id}\n"
+          end
+        end
+        rv
+      end
+
       private
 
       def register_nfa_state_set(nfa_state_set)
         unless @nfa_state_sets.include?(nfa_state_set)
           state_id = @states.size
           @nfa_state_sets[nfa_state_set] = state_id
-          @states << State.new
+          @states << State.new(state_id)
           @to_process << nfa_state_set
         end
       end
@@ -67,6 +93,9 @@ module Imbecile
               result << transition.destination
             end
             result
+          end
+          dest_nfa_states = dest_nfa_states.reduce(Set.new) do |result, dest_nfa_state|
+            result + dest_nfa_state.nil_transition_states
           end
           register_nfa_state_set(dest_nfa_states)
           dest_state = @states[@nfa_state_sets[dest_nfa_states]]
