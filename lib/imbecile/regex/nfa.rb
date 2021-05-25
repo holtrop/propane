@@ -12,6 +12,7 @@ module Imbecile
 
           def initialize(code_point_range, destination)
             @code_point_range = code_point_range
+            @destination = destination
           end
 
           def nil?
