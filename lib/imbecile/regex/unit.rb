@@ -146,6 +146,7 @@ module Imbecile
             last_state.add_transition(nil, unit_nfa.start_state)
           end
           unit_nfa.end_state.add_transition(nil, unit_nfa.start_state)
+          unit_nfa.end_state.add_transition(nil, nfa.end_state)
         else
           (@max_count - @min_count).times do
             unit_nfa = @unit.to_nfa
