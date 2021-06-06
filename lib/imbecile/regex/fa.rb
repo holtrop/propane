@@ -28,7 +28,7 @@ module Imbecile
           states[state]
         end
         visit = lambda do |state|
-          accepts_s = state.accepts ? " *" : ""
+          accepts_s = state.accepts ? " #{state.accepts}" : ""
           rv += "#{state_id[state]}#{accepts_s}:\n"
           state.transitions.each do |transition|
             if transition.nil?
@@ -39,7 +39,7 @@ module Imbecile
                 range_s += "-" + chr[transition.code_point_range.last]
               end
             end
-            accepts_s = transition.destination.accepts ? " *" : ""
+            accepts_s = transition.destination.accepts ? " #{transition.destination.accepts}" : ""
             rv += "  #{range_s} => #{state_id[transition.destination]}#{accepts_s}\n"
           end
         end
