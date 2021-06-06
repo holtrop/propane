@@ -33,15 +33,18 @@ module Imbecile
     end
 
     def process_nfa_state_set(nfa_state_set)
-      state = @states[@nfa_state_sets[nfa_state_set]]
-      nfa_state_set.each do |nfa_state|
-        if nfa_state.accepts
-          if state.accepts
-            if nfa_state.accepts.id < state.accepts.id
+      state_id = @nfa_state_sets[nfa_state_set]
+      state = @states[state_id]
+      if state_id > 0
+        nfa_state_set.each do |nfa_state|
+          if nfa_state.accepts
+            if state.accepts
+              if nfa_state.accepts.id < state.accepts.id
+                state.accepts = nfa_state.accepts
+              end
+            else
               state.accepts = nfa_state.accepts
             end
-          else
-            state.accepts = nfa_state.accepts
           end
         end
       end
