@@ -1,39 +1,10 @@
 module Imbecile
   class Regex
 
-    class DFA
-
-      class State
-
-        attr_reader :id
-
-        class Transition
-
-          attr_reader :code_point_range
-          attr_reader :destination
-
-          def initialize(code_point_range, destination)
-            @code_point_range = code_point_range
-            @destination = destination
-          end
-
-        end
-
-        attr_accessor :accepts
-        attr_reader :transitions
-
-        def initialize(id)
-          @id = id
-          @transitions = []
-        end
-
-        def add_transition(code_point_range, destination)
-          @transitions << Transition.new(code_point_range, destination)
-        end
-
-      end
+    class DFA < FA
 
       def initialize(nfas)
+        super()
         start_nfa = NFA.new
         nfas.each do |nfa|
           start_nfa.start_state.add_transition(nil, nfa.start_state)
@@ -48,30 +19,7 @@ module Imbecile
           @to_process.delete(state_set)
           process_nfa_state_set(state_set)
         end
-      end
-
-      def to_s
-        chr = lambda do |value|
-          if value < 32 || value > 127
-            "{#{value}}"
-          else
-            value.chr
-          end
-        end
-        rv = ""
-        @states.each_with_index do |state, state_id|
-          accepts_s = state.accepts ? " (#{state.accepts})" : ""
-          rv += "#{state_id}#{accepts_s}:\n"
-          state.transitions.each do |transition|
-            range_s = chr[transition.code_point_range.first]
-            if transition.code_point_range.size > 1
-              range_s += "-" + chr[transition.code_point_range.last]
-            end
-            accepts_s = transition.destination.accepts ? " (#{transition.destination.accepts})" : ""
-            rv += "  #{range_s} => #{transition.destination.id}#{accepts_s}\n"
-          end
-        end
-        rv
+        @start_state = @states[0]
       end
 
       private
@@ -80,7 +28,7 @@ module Imbecile
         unless @nfa_state_sets.include?(nfa_state_set)
           state_id = @states.size
           @nfa_state_sets[nfa_state_set] = state_id
-          @states << State.new(state_id)
+          @states << State.new
           @to_process << nfa_state_set
         end
       end
