@@ -44,14 +44,6 @@ module Imbecile
           raise Error.new("Unexpected input on line #{line_number}: #{line}")
         end
       end
-
-      # Build NFA from each token expression.
-      nfas = @tokens.map do |token|
-        puts token.nfa
-        token.nfa
-      end
-      dfa = Regex::DFA.new(nfas)
-      puts dfa
     end
 
   end

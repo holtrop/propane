@@ -8,9 +8,9 @@ require_relative "imbecile/regex"
 require_relative "imbecile/regex/fa"
 require_relative "imbecile/regex/fa/state"
 require_relative "imbecile/regex/fa/state/transition"
-require_relative "imbecile/regex/dfa"
 require_relative "imbecile/regex/nfa"
 require_relative "imbecile/regex/unit"
+require_relative "imbecile/token_dfa"
 require_relative "imbecile/version"
 
 module Imbecile
@@ -23,6 +23,12 @@ module Imbecile
     def run(input_file, output_file)
       begin
         grammar = Grammar.new(File.read(input_file))
+        # Build NFA from each token expression.
+        grammar.tokens.each do |token|
+          puts token.nfa
+        end
+        token_dfa = TokenDFA.new(grammar.tokens)
+        puts token_dfa
       rescue Error => e
         $stderr.puts e.message
         return 2
