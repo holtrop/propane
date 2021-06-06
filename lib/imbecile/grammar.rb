@@ -1,15 +1,21 @@
 module Imbecile
   class Grammar
 
-    # @return [String, nil] Module name.
+    # @return [String, nil]
+    #   Module name.
     attr_reader :modulename
 
-    # @return [String, nil] Class name.
+    # @return [String, nil]
+    #   Class name.
     attr_reader :classname
 
+    # @return [Array<Token>]
+    #   Tokens.
+    attr_reader :tokens
+
     def initialize(input)
-      @tokens = {}
-      @rules = {}
+      @tokens = []
+      token_names = Set.new
       input.each_line.each_with_index do |line, line_index|
         line = line.chomp
         line_number = line_index + 1
@@ -29,10 +35,11 @@ module Imbecile
           unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
             raise Error.new("Invalid token name #{name} on line #{line_number}")
           end
-          if @tokens[name]
+          if token_names.include?(name)
             raise Error.new("Duplicate token name #{name} on line #{line_number}")
           end
-          @tokens[name] = {pattern: pattern}
+          @tokens << Token.new(name, pattern, @tokens.size)
+          token_names << name
         else
           raise Error.new("Unexpected input on line #{line_number}: #{line}")
         end
@@ -40,12 +47,14 @@ module Imbecile
 
       # Build NFA from each token expression.
       i = 0
-      @tokens.each do |token_name, token_def|
-        token_def[:regex] = Regex.new(token_def[:pattern])
-        token_def[:regex].nfa.end_state.accepts = "#{i}:#{token_name}"
+      nfas = @tokens.map do |token|
+        regex = Regex.new(token.pattern)
+        regex.nfa.end_state.accepts = "#{i}:#{token.name}"
+        puts regex.nfa
         i += 1
+        regex.nfa
       end
-      dfa = Regex::DFA.new(@tokens.map {|token_name, token_def| token_def[:regex].nfa})
+      dfa = Regex::DFA.new(nfas)
       puts dfa
     end
 
