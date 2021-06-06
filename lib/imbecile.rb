@@ -21,7 +21,7 @@ module Imbecile
 
     def run(input_file, output_file)
       begin
-        grammar = Grammar.new(input_file)
+        grammar = Grammar.new(File.read(input_file))
       rescue Error => e
         $stderr.puts e.message
         return 2

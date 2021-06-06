@@ -7,10 +7,10 @@ module Imbecile
     # @return [String, nil] Class name.
     attr_reader :classname
 
-    def initialize(input_file)
+    def initialize(input)
       @tokens = {}
       @rules = {}
-      File.read(input_file).each_line.each_with_index do |line, line_index|
+      input.each_line.each_with_index do |line, line_index|
         line = line.chomp
         line_number = line_index + 1
         if line =~ /^\s*#/
