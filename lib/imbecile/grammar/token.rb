@@ -15,10 +15,21 @@ module Imbecile
       #   Token ID.
       attr_reader :id
 
+      # @return [Regex::NFA]
+      #   Regex NFA for matching the token.
+      attr_reader :nfa
+
       def initialize(name, pattern, id)
         @name = name
         @pattern = pattern
         @id = id
+        regex = Regex.new(pattern)
+        regex.nfa.end_state.accepts = self
+        @nfa = regex.nfa
+      end
+
+      def to_s
+        @name
       end
 
     end

@@ -46,13 +46,9 @@ module Imbecile
       end
 
       # Build NFA from each token expression.
-      i = 0
       nfas = @tokens.map do |token|
-        regex = Regex.new(token.pattern)
-        regex.nfa.end_state.accepts = "#{i}:#{token.name}"
-        puts regex.nfa
-        i += 1
-        regex.nfa
+        puts token.nfa
+        token.nfa
       end
       dfa = Regex::DFA.new(nfas)
       puts dfa

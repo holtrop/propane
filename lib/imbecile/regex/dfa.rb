@@ -38,7 +38,7 @@ module Imbecile
         nfa_state_set.each do |nfa_state|
           if nfa_state.accepts
             if state.accepts
-              if nfa_state.accepts.to_i < state.accepts.to_i
+              if nfa_state.accepts.id < state.accepts.id
                 state.accepts = nfa_state.accepts
               end
             else
