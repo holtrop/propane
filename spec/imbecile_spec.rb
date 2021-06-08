@@ -11,7 +11,7 @@ class TestLexer
       input_chars.slice!(0, lexed_token[1].size)
     end
     unless input_chars.empty?
-      raise "Unmatched input"
+      raise "Unmatched input #{input_chars.join(" ")}"
     end
     output
   end
@@ -21,19 +21,21 @@ class TestLexer
     s = ""
     current_state = @token_dfa.start_state
     last_accepts = nil
+    last_s = nil
     input_chars.each_with_index do |input_char, index|
       if next_state = transition(current_state, input_char)
+        s += input_char
         current_state = next_state
         if current_state.accepts
           last_accepts = current_state.accepts
+          last_s = s
         end
-        s += input_char
       else
         break
       end
     end
     if last_accepts
-      [last_accepts, s]
+      [last_accepts.name, last_s]
     end
   end
 
@@ -47,5 +49,47 @@ class TestLexer
   end
 end
 
+def run(grammar, input)
+  g = Imbecile::Grammar.new(grammar)
+  token_dfa = Imbecile::TokenDFA.new(g.tokens)
+  test_lexer = TestLexer.new(token_dfa)
+  test_lexer.lex(input)
+end
+
 describe Imbecile do
+  it "lexes a simple token" do
+    expect(run(<<EOF, "foo")).to eq [["foo", "foo"]]
+token foo
+EOF
+  end
+
+  it "lexes two tokens" do
+    expected = [
+      ["foo", "foo"],
+      ["bar", "bar"],
+    ]
+    expect(run(<<EOF, "foobar")).to eq expected
+token foo
+token bar
+EOF
+  end
+
+  it "lexes the longer of multiple options" do
+    expected = [
+      ["identifier", "foobar"],
+    ]
+    expect(run(<<EOF, "foobar")).to eq expected
+token foo
+token bar
+token identifier [a-z]+
+EOF
+    expected = [
+      ["plusplus", "++"],
+      ["plus", "+"],
+    ]
+    expect(run(<<EOF, "+++")).to eq expected
+token plus \\+
+token plusplus \\+\\+
+EOF
+  end
 end
