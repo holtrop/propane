@@ -51,7 +51,7 @@ end
 
 def run(grammar, input)
   g = Imbecile::Grammar.new(grammar)
-  token_dfa = Imbecile::TokenDFA.new(g.tokens)
+  token_dfa = Imbecile::LexerDFA.new(g.tokens)
   test_lexer = TestLexer.new(token_dfa)
   test_lexer.lex(input)
 end

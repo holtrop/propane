@@ -10,7 +10,7 @@ require_relative "imbecile/regex/fa/state"
 require_relative "imbecile/regex/fa/state/transition"
 require_relative "imbecile/regex/nfa"
 require_relative "imbecile/regex/unit"
-require_relative "imbecile/token_dfa"
+require_relative "imbecile/lexer_dfa"
 require_relative "imbecile/version"
 
 module Imbecile
@@ -27,8 +27,8 @@ module Imbecile
         grammar.tokens.each do |token|
           puts token.nfa
         end
-        token_dfa = TokenDFA.new(grammar.tokens)
-        puts token_dfa
+        lexer_dfa = LexerDFA.new(grammar.tokens)
+        puts lexer_dfa
       rescue Error => e
         $stderr.puts e.message
         return 2
