@@ -40,6 +40,9 @@ module Imbecile
           end
           @tokens << Token.new(name, pattern, @tokens.size)
           token_names << name
+        elsif line =~ /^\s*drop\s+(\S+)$/
+          pattern = $1
+          @tokens << Token.new(nil, pattern, @tokens.size)
         else
           raise Error.new("Unexpected input on line #{line_number}: #{line}")
         end

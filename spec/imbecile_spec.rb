@@ -105,4 +105,17 @@ token bar
 token WS \\s+
 EOF
   end
+
+  it "allows dropping a matched pattern" do
+    expected = [
+      ["foo", "foo"],
+      [nil, " \t"],
+      ["bar", "bar"],
+    ]
+    expect(run(<<EOF, "foo \tbar")).to eq expected
+token foo
+token bar
+drop \\s+
+EOF
+  end
 end
