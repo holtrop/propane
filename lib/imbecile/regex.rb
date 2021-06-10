@@ -136,6 +136,15 @@ module Imbecile
         case c
         when "d"
           CharacterRangeUnit.new("0", "9")
+        when "s"
+          ccu = CharacterClassUnit.new
+          ccu << CharacterRangeUnit.new(" ")
+          ccu << CharacterRangeUnit.new("\t")
+          ccu << CharacterRangeUnit.new("\r")
+          ccu << CharacterRangeUnit.new("\n")
+          ccu << CharacterRangeUnit.new("\f")
+          ccu << CharacterRangeUnit.new("\v")
+          ccu
         else
           CharacterRangeUnit.new(c)
         end

@@ -92,4 +92,17 @@ token plus \\+
 token plusplus \\+\\+
 EOF
   end
+
+  it "lexes whitespace" do
+    expected = [
+      ["foo", "foo"],
+      ["WS", " \t"],
+      ["bar", "bar"],
+    ]
+    expect(run(<<EOF, "foo \tbar")).to eq expected
+token foo
+token bar
+token WS \\s+
+EOF
+  end
 end

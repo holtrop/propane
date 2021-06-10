@@ -98,6 +98,15 @@ module Imbecile
       def method_missing(*args)
         @units.__send__(*args)
       end
+      def <<(thing)
+        if thing.is_a?(CharacterClassUnit)
+          thing.each do |ccu_unit|
+            @units << ccu_unit
+          end
+        else
+          @units << thing
+        end
+      end
       def last_unit
         @units[-1]
       end
