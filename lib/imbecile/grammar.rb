@@ -15,37 +15,45 @@ module Imbecile
 
     def initialize(input)
       @tokens = []
-      token_names = Set.new
-      input.each_line.each_with_index do |line, line_index|
-        line = line.chomp
-        line_number = line_index + 1
-        if line =~ /^\s*#/
-          # Skip comment lines.
-        elsif line =~ /^\s*$/
-          # Skip blank lines.
-        elsif line =~ /^\s*module\s+(\S+)$/
-          @modulename = $1
-        elsif line =~ /^\s*class\s+(\S+)$/
-          @classname = $1
-        elsif line =~ /^\s*token\s+(\S+)(?:\s+(\S+))?$/
-          name, pattern = $1, $2
-          if pattern.to_s == ""
-            pattern = name
-          end
-          unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
-            raise Error.new("Invalid token name #{name} on line #{line_number}")
-          end
-          if token_names.include?(name)
-            raise Error.new("Duplicate token name #{name} on line #{line_number}")
-          end
-          @tokens << Token.new(name, pattern, @tokens.size)
-          token_names << name
-        elsif line =~ /^\s*drop\s+(\S+)$/
-          pattern = $1
-          @tokens << Token.new(nil, pattern, @tokens.size)
-        else
-          raise Error.new("Unexpected input on line #{line_number}: #{line}")
+      @token_names = Set.new
+      input = input.gsub("\r\n", "\n")
+      while !input.empty?
+        consume(input)
+      end
+    end
+
+    private
+
+    def consume(input)
+      if input.slice!(/\A\s+/)
+        # Skip white space.
+      elsif input.slice!(/\A#.*\n/)
+        # Skip comment lines.
+      elsif input.slice!(/\Amodule\s+(\S+)\n/)
+        @modulename = $1
+      elsif input.slice!(/\Aclass\s+(\S+)\n/)
+        @classname = $1
+      elsif input.slice!(/\Atoken\s+(\S+)(?:\s+(\S+))?\n/)
+        name, pattern = $1, $2
+        if pattern.nil?
+          pattern = name
         end
+        unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
+          raise Error.new("Invalid token name #{name}")
+        end
+        if @token_names.include?(name)
+          raise Error.new("Duplicate token name #{name}")
+        end
+        @tokens << Token.new(name, pattern, @tokens.size)
+        @token_names << name
+      elsif input.slice!(/\Adrop\s+(\S+)\n/)
+        pattern = $1
+        @tokens << Token.new(nil, pattern, @tokens.size)
+      else
+        if input.size > 25
+          input = input.slice(0..20) + "..."
+        end
+        raise Error.new("Unexpected grammar input: #{input}")
       end
     end
 
