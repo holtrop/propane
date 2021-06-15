@@ -15,6 +15,7 @@ module Imbecile
 
     def initialize(input)
       @tokens = []
+      @rules = []
       @token_names = Set.new
       input = input.gsub("\r\n", "\n")
       while !input.empty?
@@ -49,6 +50,9 @@ module Imbecile
       elsif input.slice!(/\Adrop\s+(\S+)\n/)
         pattern = $1
         @tokens << Token.new(nil, pattern, @tokens.size)
+      elsif input.slice!(/\Arule\s+(\S+)\s+\[(.*?)\] <<\n(.*?)^>>\n/m)
+        rule_name, rule, code = $1, $2, $3
+        @rules << Rule.new(rule_name, rule, code)
       else
         if input.size > 25
           input = input.slice(0..20) + "..."
