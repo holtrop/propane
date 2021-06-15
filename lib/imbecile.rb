@@ -2,6 +2,7 @@ require "erb"
 require "set"
 require_relative "imbecile/cli"
 require_relative "imbecile/code_point_range"
+require_relative "imbecile/generator"
 require_relative "imbecile/grammar"
 require_relative "imbecile/grammar/rule"
 require_relative "imbecile/grammar/token"
@@ -24,21 +25,11 @@ module Imbecile
     def run(input_file, output_file)
       begin
         grammar = Grammar.new(File.read(input_file))
-        # Build NFA from each token expression.
-        grammar.tokens.each do |token|
-          puts token.nfa
-        end
-        lexer_dfa = LexerDFA.new(grammar.tokens)
-        puts lexer_dfa
+        generator = Generator.new(grammar)
+        generator.generate(output_file)
       rescue Error => e
         $stderr.puts e.message
         return 2
-      end
-      classname = grammar.classname || output_file.sub(%r{[^a-zA-Z0-9].*}, "").capitalize
-      erb = ERB.new(File.read(File.join(File.dirname(File.expand_path(__FILE__)), "../assets/parser.d.erb")), nil, "<>")
-      result = erb.result(binding.clone)
-      File.open(output_file, "wb") do |fh|
-        fh.write(result)
       end
       return 0
     end
