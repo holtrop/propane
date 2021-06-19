@@ -3,8 +3,9 @@ module Imbecile
   # Class to generate the parser generator source.
   class Generator
 
-    def initialize(grammar)
+    def initialize(grammar, log_file)
       @grammar = grammar
+      @log_file = log_file
     end
 
     def generate(output_file)

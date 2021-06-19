@@ -22,10 +22,10 @@ module Imbecile
 
   class << self
 
-    def run(input_file, output_file)
+    def run(input_file, output_file, log_file)
       begin
         grammar = Grammar.new(File.read(input_file))
-        generator = Generator.new(grammar)
+        generator = Generator.new(grammar, log_file)
         generator.generate(output_file)
       rescue Error => e
         $stderr.puts e.message
