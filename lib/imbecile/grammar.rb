@@ -13,6 +13,10 @@ module Imbecile
     #   Tokens.
     attr_reader :tokens
 
+    # @return [Array<Rule>]
+    #   Rules.
+    attr_reader :rules
+
     def initialize(input)
       @tokens = []
       @rules = []
