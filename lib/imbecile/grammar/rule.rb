@@ -3,6 +3,8 @@ module Imbecile
 
     class Rule
 
+      attr_reader :components
+
       def initialize(name, rule, code)
         @name = name
         rule_components = rule.split(/\s+/)
