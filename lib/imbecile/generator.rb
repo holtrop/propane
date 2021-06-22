@@ -9,6 +9,19 @@ module Imbecile
     end
 
     def generate(output_file)
+      token_names = @grammar.tokens.each_with_object({}) do |token, token_names|
+        if token_names.include?(token.name)
+          raise Error.new("Duplicate token name #{token.name}")
+        end
+        token_names[token.name] = token
+      end
+      rule_names = @grammar.rules.each_with_object({}) do |rule, rule_names|
+        if token_names.include?(rule.name)
+          raise Error.new("Rule name collides with token name #{rule.name}")
+        end
+        rule_names[rule.name] ||= []
+        rule_names[rule.name] << rule
+      end
       lexer_dfa = LexerDFA.new(@grammar.tokens)
       classname = @grammar.classname || output_file.sub(%r{[^a-zA-Z0-9].*}, "").capitalize
       erb = ERB.new(File.read(File.join(File.dirname(File.expand_path(__FILE__)), "../../assets/parser.d.erb")), nil, "<>")

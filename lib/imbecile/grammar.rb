@@ -16,7 +16,6 @@ module Imbecile
     def initialize(input)
       @tokens = []
       @rules = []
-      @token_names = Set.new
       input = input.gsub("\r\n", "\n")
       while !input.empty?
         consume(input)
@@ -42,11 +41,7 @@ module Imbecile
         unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
           raise Error.new("Invalid token name #{name}")
         end
-        if @token_names.include?(name)
-          raise Error.new("Duplicate token name #{name}")
-        end
         @tokens << Token.new(name, pattern, @tokens.size)
-        @token_names << name
       elsif input.slice!(/\Adrop\s+(\S+)\n/)
         pattern = $1
         @tokens << Token.new(nil, pattern, @tokens.size)
