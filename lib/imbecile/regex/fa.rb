@@ -18,18 +18,10 @@ module Imbecile
           end
         end
         rv = ""
-        states = {start_state => 0}
-        to_visit = [start_state]
-        state_id = lambda do |state|
-          unless states.include?(state)
-            states[state] = states.values.max + 1
-            to_visit << state
-          end
-          states[state]
-        end
-        visit = lambda do |state|
+        states = enumerate
+        states.each do |state, id|
           accepts_s = state.accepts ? " #{state.accepts}" : ""
-          rv += "#{state_id[state]}#{accepts_s}:\n"
+          rv += "#{id}#{accepts_s}:\n"
           state.transitions.each do |transition|
             if transition.nil?
               range_s = "nil"
@@ -40,14 +32,26 @@ module Imbecile
               end
             end
             accepts_s = transition.destination.accepts ? " #{transition.destination.accepts}" : ""
-            rv += "  #{range_s} => #{state_id[transition.destination]}#{accepts_s}\n"
+            rv += "  #{range_s} => #{id}#{accepts_s}\n"
           end
         end
-        while to_visit.size > 0
-          visit[to_visit[0]]
-          to_visit.slice!(0)
-        end
         rv
+      end
+
+      def enumerate
+        id = 0
+        states = {}
+        visit = lambda do |state|
+          unless states.include?(state)
+            id += 1
+            states[state] = id
+            state.transitions.each do |transition|
+              visit[transition.destination]
+            end
+          end
+        end
+        visit[@start_state]
+        states
       end
 
     end
