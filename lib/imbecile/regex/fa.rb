@@ -39,19 +39,22 @@ module Imbecile
       end
 
       def enumerate
-        id = 0
-        states = {}
-        visit = lambda do |state|
-          unless states.include?(state)
-            id += 1
-            states[state] = id
-            state.transitions.each do |transition|
-              visit[transition.destination]
+        @_enumerated ||=
+          begin
+            id = 0
+            states = {}
+            visit = lambda do |state|
+              unless states.include?(state)
+                id += 1
+                states[state] = id
+                state.transitions.each do |transition|
+                  visit[transition.destination]
+                end
+              end
             end
+            visit[@start_state]
+            states
           end
-        end
-        visit[@start_state]
-        states
       end
 
     end

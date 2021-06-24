@@ -10,4 +10,33 @@ class <%= classname %>
         TOKEN_<%= token.c_name %>,
 <% end %>
     }
+
+    private struct Transition
+    {
+        uint first;
+        uint last;
+        uint dest;
+    }
+
+    private struct LexerState
+    {
+        Transition[] transitions;
+        size_t accepts;
+    }
+
+    private static const LexerState lexer_states[] = [
+<% lexer_dfa.enumerate.each do |state, index| %>
+        LexerState([
+<%   state.transitions.each do |transition| %>
+                Transition(<%= transition.code_point_range.first %>, <%= transition.code_point_range.last %>, <%= lexer_dfa.enumerate[transition.destination] %>),
+<%   end %>
+            ],
+<%   if state.accepts %>
+            <%= state.accepts.id %>,
+<%   else %>
+            cast(size_t)-1,
+<%   end %>
+            ),
+<% end %>
+    ];
 }
