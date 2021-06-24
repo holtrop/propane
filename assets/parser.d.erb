@@ -4,4 +4,10 @@ module <%= @grammar.modulename %>;
 <% end %>
 class <%= classname %>
 {
+    enum
+    {
+<% @grammar.tokens.each do |token| %>
+        TOKEN_<%= token.c_name %>,
+<% end %>
+    }
 }

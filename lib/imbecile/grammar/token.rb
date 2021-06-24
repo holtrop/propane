@@ -28,6 +28,10 @@ module Imbecile
         @nfa = regex.nfa
       end
 
+      def c_name
+        @name.upcase
+      end
+
       def to_s
         @name
       end
