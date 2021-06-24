@@ -57,6 +57,27 @@ module Imbecile
           end
       end
 
+      def build_tables
+        transition_table = []
+        state_table = []
+        states = enumerate
+        states.each do |state, id|
+          state_table << {
+            transition_table_index: transition_table.size,
+            n_transitions: state.transitions.size,
+            accepts: state.accepts ? state.accepts.id : 0xFFFFFFFF,
+          }
+          state.transitions.each do |transition|
+            transition_table << {
+              first: transition.code_point_range.first,
+              last: transition.code_point_range.last,
+              destination: states[transition.destination],
+            }
+          end
+        end
+        [transition_table, state_table]
+      end
+
     end
 
   end
