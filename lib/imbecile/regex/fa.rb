@@ -32,7 +32,7 @@ module Imbecile
               end
             end
             accepts_s = transition.destination.accepts ? " #{transition.destination.accepts}" : ""
-            rv += "  #{range_s} => #{id}#{accepts_s}\n"
+            rv += "  #{range_s} => #{states[transition.destination]}#{accepts_s}\n"
           end
         end
         rv
