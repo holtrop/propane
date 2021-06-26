@@ -56,7 +56,7 @@ def run(grammar, input)
   test_lexer.lex(input)
 end
 
-describe Imbecile do
+describe Imbecile::LexerDFA do
   it "lexes a simple token" do
     expect(run(<<EOF, "foo")).to eq [["foo", "foo"]]
 token foo
