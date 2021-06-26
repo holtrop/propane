@@ -30,13 +30,13 @@ class <%= classname %>
 <% transition_table, state_table = lexer_dfa.build_tables %>
     private static const Transition transitions[] = [
 <% transition_table.each do |transition_table_entry| %>
-        Transition(<%= transition_table_entry[:first] %>, <%= transition_table_entry[:last] %>, <%= transition_table_entry[:destination] %>),
+        Transition(<%= transition_table_entry[:first] %>u, <%= transition_table_entry[:last] %>u, <%= transition_table_entry[:destination] %>u),
 <% end %>
     ];
 
     private static const LexerState lexer_states[] = [
 <% state_table.each do |state_table_entry| %>
-        LexerState(<%= state_table_entry[:transition_table_index] %>, <%= state_table_entry[:n_transitions] %>, <%= state_table_entry[:accepts] %>),
+        LexerState(<%= state_table_entry[:transition_table_index] %>u, <%= state_table_entry[:n_transitions] %>u, <%= state_table_entry[:accepts] %>u),
 <% end %>
     ];
 }
