@@ -6,8 +6,10 @@ class <%= classname %>
 {
     enum
     {
-<% @grammar.tokens.each do |token| %>
-        TOKEN_<%= token.c_name %>,
+<% @grammar.tokens.each_with_index do |token, index| %>
+<%   if token.name %>
+        TOKEN_<%= token.c_name %> = <%= index %>,
+<%   end %>
 <% end %>
     }
 

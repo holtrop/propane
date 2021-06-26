@@ -62,6 +62,16 @@ module Imbecile
         state_table = []
         states = enumerate
         states.each do |state, id|
+          accepts =
+            if state.accepts
+              if state.accepts.name
+                state.accepts.id
+              else
+                0xFFFFFFFE # drop token
+              end
+            else
+              0xFFFFFFFF # not an accepting state
+            end
           state_table << {
             transition_table_index: transition_table.size,
             n_transitions: state.transitions.size,
