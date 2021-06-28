@@ -17,6 +17,15 @@ require_relative "imbecile/version"
 
 module Imbecile
 
+  # Decoding error.
+  TOKEN_DECODE_ERROR = 0xFFFFFFFD
+
+  # Token ID for a "dropped" token.
+  TOKEN_DROP = 0xFFFFFFFE
+
+  # Invalid token ID.
+  TOKEN_NONE = 0xFFFFFFFF
+
   class Error < RuntimeError
   end
 
