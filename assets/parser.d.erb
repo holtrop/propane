@@ -49,4 +49,20 @@ class <%= classname %>
         LexerState(<%= state_table_entry[:transition_table_index] %>u, <%= state_table_entry[:n_transitions] %>u, <%= state_table_entry[:accepts] %>u),
 <% end %>
     ];
+
+    static string[] lex(const(ubyte)[] input)
+    {
+        string[] tokens;
+        string token = lex_token(&input);
+        if (token !is null)
+        {
+            tokens ~= token;
+        }
+        return tokens;
+    }
+
+    private static string lex_token(const(ubyte)[] * input)
+    {
+        return null;
+    }
 }
