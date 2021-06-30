@@ -63,6 +63,13 @@ class <%= classname %>
 
     private static string lex_token(const(ubyte)[] * input)
     {
+        uint code_point_length;
+        uint code_point = decode_code_point(input, &code_point_length);
         return null;
+    }
+
+    private static uint decode_code_point(const(ubyte)[] * input, uint * code_point_length)
+    {
+        return 0u;
     }
 }
