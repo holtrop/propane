@@ -13,6 +13,16 @@ class <%= classname %>
 <% end %>
     }
 
+    static immutable string TokenNames[] = [
+<% @grammar.tokens.each_with_index do |token, index| %>
+<%   if token.name %>
+        "<%= token.name %>",
+<%   else %>
+        null,
+<%   end %>
+<% end %>
+    ];
+
     private struct Transition
     {
         uint first;
