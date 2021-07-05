@@ -4,6 +4,71 @@ module <%= @grammar.modulename %>;
 <% end %>
 class <%= classname %>
 {
+    class Decoder
+    {
+        enum
+        {
+            CODE_POINT_INVALID = 0xFFFFFFFE,
+            CODE_POINT_EOF = 0xFFFFFFFF,
+        }
+
+        static uint decode_code_point(const(ubyte) * input, size_t input_length, size_t * code_point_length)
+        {
+            if (input_length == 0u)
+            {
+                return CODE_POINT_EOF;
+            }
+            ubyte c = *input;
+            uint result;
+            if ((c & 0x80u) == 0u)
+            {
+                result = c;
+                *code_point_length = 1u;
+            }
+            else
+            {
+                ubyte following_bytes;
+                if ((c & 0xE0u) == 0xC0u)
+                {
+                    result = c & 0x1Fu;
+                    following_bytes = 1u;
+                }
+                else if ((c & 0xF0u) == 0xE0u)
+                {
+                    result = c & 0x0Fu;
+                    following_bytes = 2u;
+                }
+                else if ((c & 0xF8u) == 0xF0u)
+                {
+                    result = c & 0x07u;
+                    following_bytes = 3u;
+                }
+                else if ((c & 0xFCu) == 0xF8u)
+                {
+                    result = c & 0x03u;
+                    following_bytes = 4u;
+                }
+                else if ((c & 0xFEu) == 0xFCu)
+                {
+                    result = c & 0x01u;
+                    following_bytes = 5u;
+                }
+                if (input_length <= following_bytes)
+                {
+                    return CODE_POINT_INVALID;
+                }
+                *code_point_length = following_bytes + 1u;
+                while (following_bytes-- > 0u)
+                {
+                    input++;
+                    result <<= 6u;
+                    result |= *input & 0x3Fu;
+                }
+            }
+            return result;
+        }
+    }
+
     enum
     {
 <% @grammar.tokens.each_with_index do |token, index| %>
@@ -53,7 +118,7 @@ class <%= classname %>
     static string[] lex(const(ubyte)[] input)
     {
         string[] tokens;
-        string token = lex_token(&input);
+        string token = lex_token(input.ptr, input.length);
         if (token !is null)
         {
             tokens ~= token;
@@ -61,15 +126,10 @@ class <%= classname %>
         return tokens;
     }
 
-    private static string lex_token(const(ubyte)[] * input)
+    private static string lex_token(const(ubyte) * input, size_t input_length)
     {
-        uint code_point_length;
-        uint code_point = decode_code_point(input, &code_point_length);
+        size_t code_point_length;
+        uint code_point = Decoder.decode_code_point(input, input_length, &code_point_length);
         return null;
-    }
-
-    private static uint decode_code_point(const(ubyte)[] * input, uint * code_point_length)
-    {
-        return 0u;
     }
 }
