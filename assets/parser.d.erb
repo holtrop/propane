@@ -27,7 +27,7 @@ class <%= classname %>
 <% end %>
     ];
 
-    class Decoder
+    static class Decoder
     {
         enum
         {
@@ -35,60 +35,67 @@ class <%= classname %>
             CODE_POINT_EOF = 0xFFFFFFFF,
         }
 
-        static uint decode_code_point(const(ubyte) * input, size_t input_length, size_t * code_point_length)
+        struct DecodedCodePoint
+        {
+            uint code_point;
+            uint code_point_length;
+        }
+
+        static DecodedCodePoint decode_code_point(const(ubyte) * input, size_t input_length)
         {
             if (input_length == 0u)
             {
-                return CODE_POINT_EOF;
+                return DecodedCodePoint(CODE_POINT_EOF, 0u);
             }
             ubyte c = *input;
-            uint result;
+            uint code_point;
+            uint code_point_length;
             if ((c & 0x80u) == 0u)
             {
-                result = c;
-                *code_point_length = 1u;
+                code_point = c;
+                code_point_length = 1u;
             }
             else
             {
                 ubyte following_bytes;
                 if ((c & 0xE0u) == 0xC0u)
                 {
-                    result = c & 0x1Fu;
+                    code_point = c & 0x1Fu;
                     following_bytes = 1u;
                 }
                 else if ((c & 0xF0u) == 0xE0u)
                 {
-                    result = c & 0x0Fu;
+                    code_point = c & 0x0Fu;
                     following_bytes = 2u;
                 }
                 else if ((c & 0xF8u) == 0xF0u)
                 {
-                    result = c & 0x07u;
+                    code_point = c & 0x07u;
                     following_bytes = 3u;
                 }
                 else if ((c & 0xFCu) == 0xF8u)
                 {
-                    result = c & 0x03u;
+                    code_point = c & 0x03u;
                     following_bytes = 4u;
                 }
                 else if ((c & 0xFEu) == 0xFCu)
                 {
-                    result = c & 0x01u;
+                    code_point = c & 0x01u;
                     following_bytes = 5u;
                 }
                 if (input_length <= following_bytes)
                 {
-                    return CODE_POINT_INVALID;
+                    return DecodedCodePoint(CODE_POINT_INVALID, 0u);
                 }
-                *code_point_length = following_bytes + 1u;
+                code_point_length = following_bytes + 1u;
                 while (following_bytes-- > 0u)
                 {
                     input++;
-                    result <<= 6u;
-                    result |= *input & 0x3Fu;
+                    code_point <<= 6u;
+                    code_point |= *input & 0x3Fu;
                 }
             }
-            return result;
+            return DecodedCodePoint(code_point, code_point_length);
         }
     }
 
@@ -168,22 +175,21 @@ class <%= classname %>
             uint current_state;
             for (;;)
             {
-                size_t code_point_length;
-                uint code_point = Decoder.decode_code_point(&m_input[m_input_position], m_input_length - m_input_position, &code_point_length);
-                if (code_point == Decoder.CODE_POINT_INVALID)
+                auto decoded = Decoder.decode_code_point(&m_input[m_input_position], m_input_length - m_input_position);
+                if (decoded.code_point == Decoder.CODE_POINT_INVALID)
                 {
                     lt.token = TOKEN_DECODE_ERROR;
                     return lt;
                 }
                 bool lex_continue = false;
-                if (code_point != Decoder.CODE_POINT_EOF)
+                if (decoded.code_point != Decoder.CODE_POINT_EOF)
                 {
-                    uint dest = transition(current_state, code_point);
+                    uint dest = transition(current_state, decoded.code_point);
                     if (dest != cast(uint)-1)
                     {
                         lex_continue = true;
-                        attempt_info.length += code_point_length;
-                        if (code_point == '\n')
+                        attempt_info.length += decoded.code_point_length;
+                        if (decoded.code_point == '\n')
                         {
                             attempt_info.delta_row++;
                             attempt_info.delta_col = 0u;
