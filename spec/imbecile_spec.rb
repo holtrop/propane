@@ -1,16 +1,16 @@
 require "fileutils"
 
 def write_grammar(grammar)
-  File.write("spec/run/test.i", grammar)
+  File.write("spec/run/testparser.i", grammar)
 end
 
 def build_parser
-  result = system(*%w[./imbecile.sh spec/run/test.i spec/run/test.d])
+  result = system(*%w[./imbecile.sh spec/run/testparser.i spec/run/testparser.d])
   expect(result).to be_truthy
 end
 
-def compile
-  result = system(*%w[gdc -o spec/run/test spec/run/test.d])
+def compile(test_file)
+  result = system(*%w[gdc -o spec/run/testparser spec/run/testparser.d], test_file)
   expect(result).to be_truthy
 end
 
@@ -30,6 +30,6 @@ rule Start [] <<
 >>
 EOF
     build_parser
-    compile
+    compile("spec/test_d_lexer.d")
   end
 end
