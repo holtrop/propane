@@ -26,7 +26,7 @@ module Imbecile
         raise Error.new("Start rule not found")
       end
       lexer_dfa = LexerDFA.new(@grammar.tokens)
-      classname = @grammar.classname || output_file.sub(%r{[^a-zA-Z0-9].*}, "").capitalize
+      classname = @grammar.classname || File.basename(output_file).sub(%r{[^a-zA-Z0-9].*}, "").capitalize
       erb = ERB.new(File.read(File.join(File.dirname(File.expand_path(__FILE__)), "../../assets/parser.d.erb")), nil, "<>")
       result = erb.result(binding.clone)
       File.open(output_file, "wb") do |fh|
