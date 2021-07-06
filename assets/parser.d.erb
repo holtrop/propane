@@ -161,8 +161,16 @@ class <%= classname %>
         LexedToken lex_token()
         {
             LexedToken lt = LexedToken(m_input_row, m_input_col, TOKEN_NONE);
-            size_t token_length;
-            size_t token_attempt_length;
+            struct LexedTokenState
+            {
+                size_t length;
+                size_t delta_row;
+                size_t delta_col;
+                uint token;
+            }
+            LexedTokenState last_accepts_info;
+            last_accepts_info.token = TOKEN_NONE;
+            LexedTokenState attempt_info;
             uint current_state;
             for (;;)
             {
@@ -177,6 +185,44 @@ class <%= classname %>
                 if (code_point != Decoder.CODE_POINT_EOF)
                 {
                     uint dest = transition(current_state, code_point);
+                    if (dest != cast(uint)-1)
+                    {
+                        lex_continue = true;
+                        attempt_info.length += code_point_length;
+                        if (code_point == '\n')
+                        {
+                            attempt_info.delta_row++;
+                            attempt_info.delta_col = 0u;
+                        }
+                        else
+                        {
+                            attempt_info.delta_col++;
+                        }
+                        current_state = dest;
+                        if (states[current_state].accepts != TOKEN_NONE)
+                        {
+                            attempt_info.token = states[current_state].accepts;
+                            last_accepts_info = attempt_info;
+                        }
+                    }
+                }
+                if (!lex_continue)
+                {
+                    if (last_accepts_info.token != TOKEN_NONE)
+                    {
+                        lt.token = last_accepts_info.token;
+                        m_input_position += last_accepts_info.length;
+                        m_input_row += last_accepts_info.delta_row;
+                        if (last_accepts_info.delta_row != 0u)
+                        {
+                            m_input_col = last_accepts_info.delta_col;
+                        }
+                        else
+                        {
+                            m_input_col += last_accepts_info.delta_col;
+                        }
+                    }
+                    break;
                 }
             }
             return lt;
