@@ -17,6 +17,9 @@ require_relative "imbecile/version"
 
 module Imbecile
 
+  # EOF.
+  TOKEN_EOF = 0xFFFFFFFC
+
   # Decoding error.
   TOKEN_DECODE_ERROR = 0xFFFFFFFD
 
