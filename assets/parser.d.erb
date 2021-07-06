@@ -128,24 +128,6 @@ class <%= classname %>
             uint token;
         }
 
-        static string[] lex(const(ubyte)[] input)
-        {
-            string[] tokens;
-            string token = lex_token(input.ptr, input.length);
-            if (token !is null)
-            {
-                tokens ~= token;
-            }
-            return tokens;
-        }
-
-        private static string lex_token(const(ubyte) * input, size_t input_length)
-        {
-            size_t code_point_length;
-            uint code_point = Decoder.decode_code_point(input, input_length, &code_point_length);
-            return null;
-        }
-
         private const(ubyte) * m_input;
         private size_t m_input_length;
         private size_t m_input_position;
