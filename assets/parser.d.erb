@@ -121,6 +121,13 @@ class <%= classname %>
 <% end %>
         ];
 
+        struct LexedToken
+        {
+            size_t row;
+            size_t col;
+            uint token;
+        }
+
         static string[] lex(const(ubyte)[] input)
         {
             string[] tokens;
@@ -137,6 +144,56 @@ class <%= classname %>
             size_t code_point_length;
             uint code_point = Decoder.decode_code_point(input, input_length, &code_point_length);
             return null;
+        }
+
+        private const(ubyte) * m_input;
+        private size_t m_input_length;
+        private size_t m_input_position;
+        private size_t m_input_row;
+        private size_t m_input_col;
+
+        this(const(ubyte) * input, size_t input_length)
+        {
+            m_input = input;
+            m_input_length = input_length;
+        }
+
+        LexedToken lex_token()
+        {
+            LexedToken lt = LexedToken(m_input_row, m_input_col, TOKEN_NONE);
+            size_t token_length;
+            size_t token_attempt_length;
+            uint current_state;
+            for (;;)
+            {
+                size_t code_point_length;
+                uint code_point = Decoder.decode_code_point(&m_input[m_input_position], m_input_length - m_input_position, &code_point_length);
+                if (code_point == Decoder.CODE_POINT_INVALID)
+                {
+                    lt.token = TOKEN_DECODE_ERROR;
+                    return lt;
+                }
+                bool lex_continue = false;
+                if (code_point != Decoder.CODE_POINT_EOF)
+                {
+                    uint dest = transition(current_state, code_point);
+                }
+            }
+            return lt;
+        }
+
+        private uint transition(uint current_state, uint code_point)
+        {
+            uint transition_table_index = states[current_state].transition_table_index;
+            for (uint i = 0u; i < states[current_state].n_transitions; i++)
+            {
+                if ((transitions[transition_table_index].first <= code_point) &&
+                    (code_point <= transitions[transition_table_index].last))
+                {
+                    return transitions[transition_table_index].destination;
+                }
+            }
+            return cast(uint)-1;
         }
     }
 }
