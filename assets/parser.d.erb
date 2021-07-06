@@ -132,6 +132,7 @@ class <%= classname %>
         {
             size_t row;
             size_t col;
+            size_t length;
             uint token;
         }
 
@@ -161,7 +162,7 @@ class <%= classname %>
 
         private LexedToken attempt_lex_token()
         {
-            LexedToken lt = LexedToken(m_input_row, m_input_col, TOKEN_NONE);
+            LexedToken lt = LexedToken(m_input_row, m_input_col, 0, TOKEN_NONE);
             struct LexedTokenState
             {
                 size_t length;
@@ -216,6 +217,7 @@ class <%= classname %>
                     if (last_accepts_info.token != TOKEN_NONE)
                     {
                         lt.token = last_accepts_info.token;
+                        lt.length = last_accepts_info.length;
                         m_input_position += last_accepts_info.length;
                         m_input_row += last_accepts_info.delta_row;
                         if (last_accepts_info.delta_row != 0u)
