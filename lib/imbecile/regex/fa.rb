@@ -45,8 +45,8 @@ module Imbecile
             states = {}
             visit = lambda do |state|
               unless states.include?(state)
-                id += 1
                 states[state] = id
+                id += 1
                 state.transitions.each do |transition|
                   visit[transition.destination]
                 end
