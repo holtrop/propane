@@ -39,6 +39,12 @@ unittest
     input_length -= dcp.code_point_length;
     dcp = Testparser.Decoder.decode_code_point(input, input_length);
     assert(dcp == DCP(Testparser.Decoder.CODE_POINT_EOF, 0u));
+
+    inputstring = "\xf0\x9f\xa7\xa1";
+    input = cast(const(ubyte) *)inputstring.ptr;
+    input_length = inputstring.length;
+    dcp = Testparser.Decoder.decode_code_point(input, input_length);
+    assert(dcp == DCP(0x1F9E1, 4u));
 }
 
 unittest
