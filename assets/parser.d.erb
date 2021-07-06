@@ -233,10 +233,10 @@ class <%= classname %>
             uint transition_table_index = states[current_state].transition_table_index;
             for (uint i = 0u; i < states[current_state].n_transitions; i++)
             {
-                if ((transitions[transition_table_index].first <= code_point) &&
-                    (code_point <= transitions[transition_table_index].last))
+                if ((transitions[transition_table_index + i].first <= code_point) &&
+                    (code_point <= transitions[transition_table_index + i].last))
                 {
-                    return transitions[transition_table_index].destination;
+                    return transitions[transition_table_index + i].destination;
                 }
             }
             return cast(uint)-1;
