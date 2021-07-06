@@ -175,7 +175,7 @@ class <%= classname %>
             uint current_state;
             for (;;)
             {
-                auto decoded = Decoder.decode_code_point(&m_input[m_input_position], m_input_length - m_input_position);
+                auto decoded = Decoder.decode_code_point(&m_input[m_input_position + attempt_info.length], m_input_length - m_input_position - attempt_info.length);
                 if (decoded.code_point == Decoder.CODE_POINT_INVALID)
                 {
                     lt.token = TOKEN_DECODE_ERROR;
