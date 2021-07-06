@@ -53,4 +53,11 @@ unittest
     string input = "5 + 4 * \n677 + 567";
     Testparser.Lexer lexer = new Testparser.Lexer(cast(const(ubyte) *)input.ptr, input.length);
     assert(lexer.lex_token() == LT(0, 0, Testparser.TOKEN_INT));
+    assert(lexer.lex_token() == LT(0, 2, Testparser.TOKEN_PLUS));
+    assert(lexer.lex_token() == LT(0, 4, Testparser.TOKEN_INT));
+    assert(lexer.lex_token() == LT(0, 6, Testparser.TOKEN_TIMES));
+    assert(lexer.lex_token() == LT(1, 0, Testparser.TOKEN_INT));
+    assert(lexer.lex_token() == LT(1, 4, Testparser.TOKEN_PLUS));
+    assert(lexer.lex_token() == LT(1, 6, Testparser.TOKEN_INT));
+    assert(lexer.lex_token() == LT(1, 9, Testparser.TOKEN_EOF));
 }

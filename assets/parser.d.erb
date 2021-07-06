@@ -206,6 +206,11 @@ class <%= classname %>
                         }
                     }
                 }
+                else if (attempt_info.length == 0u)
+                {
+                    lt.token = TOKEN_EOF;
+                    break;
+                }
                 if (!lex_continue)
                 {
                     if (last_accepts_info.token != TOKEN_NONE)
