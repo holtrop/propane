@@ -142,6 +142,18 @@ class <%= classname %>
 
         LexedToken lex_token()
         {
+            for (;;)
+            {
+                LexedToken lt = attempt_lex_token();
+                if (lt.token != TOKEN_DROP)
+                {
+                    return lt;
+                }
+            }
+        }
+
+        private LexedToken attempt_lex_token()
+        {
             LexedToken lt = LexedToken(m_input_row, m_input_col, TOKEN_NONE);
             struct LexedTokenState
             {
