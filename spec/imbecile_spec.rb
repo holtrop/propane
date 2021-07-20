@@ -31,7 +31,7 @@ token int \\d+
 token plus \\+
 token times \\*
 drop \\s+
-rule Start [] <<
+Start: [] <<
 >>
 EOF
     build_parser
