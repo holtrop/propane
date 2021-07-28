@@ -51,6 +51,7 @@ module Imbecile
         @tokens << Token.new(nil, pattern, @tokens.size)
       elsif input.slice!(/\A(\S+)\s*:\s*\[(.*?)\] <<\n(.*?)^>>\n/m)
         rule_name, rule, code = $1, $2, $3
+        rule = rule.strip.split(/\s+/)
         @rules << Rule.new(rule_name, rule, code)
       else
         if input.size > 25
