@@ -51,12 +51,12 @@ end
 
 def run(grammar, input)
   g = Imbecile::Grammar.new(grammar)
-  token_dfa = Imbecile::LexerDFA.new(g.tokens)
+  token_dfa = Imbecile::Lexer::DFA.new(g.tokens)
   test_lexer = TestLexer.new(token_dfa)
   test_lexer.lex(input)
 end
 
-describe Imbecile::LexerDFA do
+describe Imbecile::Lexer::DFA do
   it "lexes a simple token" do
     expect(run(<<EOF, "foo")).to eq [["foo", "foo"]]
 token foo
