@@ -1,6 +1,6 @@
 module Imbecile
 
-  class LexerDFA < Regex::FA
+  class LexerDFA < FA
 
     def initialize(tokens)
       super()
