@@ -1,4 +1,4 @@
-module Imbecile
+class Imbecile
   class CodePointRange
 
     MAX_CODE_POINT = 0xFFFFFFFF

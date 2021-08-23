@@ -1,4 +1,4 @@
-module Imbecile
+class Imbecile
   module CLI
 
     USAGE = <<EOF

@@ -1,4 +1,4 @@
-module Imbecile
+class Imbecile
 
   class Rule
 

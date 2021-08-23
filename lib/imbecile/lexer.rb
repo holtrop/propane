@@ -1,12 +1,12 @@
-module Imbecile
+class Imbecile
   class Lexer
 
     # @return [DFA]
     #   Lexer DFA.
     attr_accessor :dfa
 
-    def initialize(grammar)
-      @dfa = DFA.new(grammar.tokens)
+    def initialize(tokens)
+      @dfa = DFA.new(tokens)
     end
 
   end

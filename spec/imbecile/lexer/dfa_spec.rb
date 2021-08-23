@@ -50,8 +50,8 @@ class TestLexer
 end
 
 def run(grammar, input)
-  g = Imbecile::Grammar.new(grammar)
-  token_dfa = Imbecile::Lexer::DFA.new(g.tokens)
+  imbecile = Imbecile.new(grammar)
+  token_dfa = Imbecile::Lexer::DFA.new(imbecile.instance_variable_get(:@tokens))
   test_lexer = TestLexer.new(token_dfa)
   test_lexer.lex(input)
 end

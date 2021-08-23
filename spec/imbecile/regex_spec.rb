@@ -1,4 +1,4 @@
-module Imbecile
+class Imbecile
   RSpec.describe Regex do
 
     it "parses an empty expression" do

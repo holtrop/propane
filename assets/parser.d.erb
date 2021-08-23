@@ -1,12 +1,12 @@
-<% if @grammar.modulename %>
-module <%= @grammar.modulename %>;
+<% if @modulename %>
+module <%= @modulename %>;
 
 <% end %>
 class <%= classname %>
 {
     enum
     {
-<% @grammar.tokens.each_with_index do |token, index| %>
+<% @tokens.each_with_index do |token, index| %>
 <%   if token.name %>
         TOKEN_<%= token.c_name %> = <%= index %>,
 <%   end %>
@@ -18,7 +18,7 @@ class <%= classname %>
     }
 
     static immutable string TokenNames[] = [
-<% @grammar.tokens.each_with_index do |token, index| %>
+<% @tokens.each_with_index do |token, index| %>
 <%   if token.name %>
         "<%= token.name %>",
 <%   else %>
