@@ -57,6 +57,17 @@ class Imbecile
     unless rule_names["Start"]
       raise Error.new("Start rule not found")
     end
+    @rules.each do |rule|
+      rule.components.map! do |component|
+        if token_names[component]
+          token_names[component]
+        elsif rule_names[component]
+          rule_names[component]
+        else
+          raise Error.new("Symbol #{component} not found")
+        end
+      end
+    end
     lexer = Lexer.new(@tokens)
     classname = @classname || File.basename(output_file).sub(%r{[^a-zA-Z0-9].*}, "").capitalize
     erb = ERB.new(File.read(File.join(File.dirname(File.expand_path(__FILE__)), "../assets/parser.d.erb")), nil, "<>")
