@@ -118,24 +118,6 @@ class Imbecile
         end
       end
     end
-    new_rules = []
-    begin
-      @rules += new_rules
-      new_rules = []
-      @rules.delete_if do |rule|
-        replaced = false
-        rule.components.each_with_index do |component, index|
-          if component.is_a?(Array)
-            component.each do |new_component|
-              new_components = rule.components[0, index] + [new_component] + rule.components[index + 1, rule.components.size]
-              new_rules << Rule.new(rule.name, new_components, rule.code)
-            end
-            replaced = true
-          end
-        end
-        replaced
-      end
-    end while new_rules.size > 0
   end
 
   class << self
