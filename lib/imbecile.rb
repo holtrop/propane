@@ -36,7 +36,7 @@ class Imbecile
 
   def initialize(input)
     @tokens = []
-    @rules = []
+    @rules = {}
     input = input.gsub("\r\n", "\n")
     while !input.empty?
       parse_grammar(input)
@@ -79,9 +79,10 @@ class Imbecile
       pattern = $1
       @tokens << Token.new(nil, pattern, @tokens.size)
     elsif input.slice!(/\A(\S+)\s*:\s*\[(.*?)\] <<\n(.*?)^>>\n/m)
-      rule_name, rule, code = $1, $2, $3
-      rule = rule.strip.split(/\s+/)
-      @rules << Rule.new(rule_name, rule, code)
+      rule_name, components, code = $1, $2, $3
+      components = components.strip.split(/\s+/)
+      @rules[rule_name] ||= Rule.new(rule_name)
+      @rules[rule_name].add_pattern(components, code)
     else
       if input.size > 25
         input = input.slice(0..20) + "..."
@@ -97,24 +98,24 @@ class Imbecile
       end
       token_names[token.name] = token
     end
-    rule_names = @rules.each_with_object({}) do |rule, rule_names|
-      if token_names.include?(rule.name)
-        raise Error.new("Rule name collides with token name #{rule.name}")
+    @rules.each do |rule_name, rule|
+      if token_names.include?(rule_name)
+        raise Error.new("Rule name collides with token name #{rule_name}")
       end
-      rule_names[rule.name] ||= []
-      rule_names[rule.name] << rule
     end
-    unless rule_names["Start"]
+    unless @rules["Start"]
       raise Error.new("Start rule not found")
     end
-    @rules.each do |rule|
-      rule.components.map! do |component|
-        if token_names[component]
-          token_names[component]
-        elsif rule_names[component]
-          rule_names[component]
-        else
-          raise Error.new("Symbol #{component} not found")
+    @rules.each do |rule_name, rule|
+      rule.patterns.each do |pattern|
+        pattern.components.map! do |component|
+          if token_names[component]
+            token_names[component]
+          elsif @rules[component]
+            @rules[component]
+          else
+            raise Error.new("Symbol #{component} not found")
+          end
         end
       end
     end

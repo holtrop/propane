@@ -3,24 +3,24 @@ class Imbecile
 
     class Item
 
-      attr_reader :rule
+      attr_reader :pattern
       attr_reader :position
 
-      def initialize(rule, position)
-        @rule = rule
+      def initialize(pattern, position)
+        @pattern = pattern
         @position = position
       end
 
       def next_component
-        @rule.components[@position]
+        @pattern.components[@position]
       end
 
       def hash
-        [@rule, @position].hash
+        [@pattern, @position].hash
       end
 
       def ==(other)
-        @rule == other.rule && @position == other.position
+        @pattern == other.pattern && @position == other.position
       end
 
       def eql?(other)
@@ -28,9 +28,9 @@ class Imbecile
       end
 
       def closed_items
-        if @rule.components[@position].is_a?(Array)
-          @rule.components[@position].map do |rule|
-            Item.new(rule, 0)
+        if @pattern.components[@position].is_a?(Rule)
+          @pattern.components[@position].patterns.map do |pattern|
+            Item.new(pattern, 0)
           end
         else
           []
