@@ -7,6 +7,7 @@ require_relative "imbecile/fa/state"
 require_relative "imbecile/fa/state/transition"
 require_relative "imbecile/lexer"
 require_relative "imbecile/lexer/dfa"
+require_relative "imbecile/parser"
 require_relative "imbecile/regex"
 require_relative "imbecile/regex/nfa"
 require_relative "imbecile/regex/unit"
@@ -41,34 +42,9 @@ class Imbecile
   end
 
   def generate(output_file, log_file)
-    token_names = @tokens.each_with_object({}) do |token, token_names|
-      if token_names.include?(token.name)
-        raise Error.new("Duplicate token name #{token.name}")
-      end
-      token_names[token.name] = token
-    end
-    rule_names = @rules.each_with_object({}) do |rule, rule_names|
-      if token_names.include?(rule.name)
-        raise Error.new("Rule name collides with token name #{rule.name}")
-      end
-      rule_names[rule.name] ||= []
-      rule_names[rule.name] << rule
-    end
-    unless rule_names["Start"]
-      raise Error.new("Start rule not found")
-    end
-    @rules.each do |rule|
-      rule.components.map! do |component|
-        if token_names[component]
-          token_names[component]
-        elsif rule_names[component]
-          rule_names[component]
-        else
-          raise Error.new("Symbol #{component} not found")
-        end
-      end
-    end
+    expand_rules
     lexer = Lexer.new(@tokens)
+    parser = Parser.new(@tokens, @rules)
     classname = @classname || File.basename(output_file).sub(%r{[^a-zA-Z0-9].*}, "").capitalize
     erb = ERB.new(File.read(File.join(File.dirname(File.expand_path(__FILE__)), "../assets/parser.d.erb")), nil, "<>")
     result = erb.result(binding.clone)
@@ -110,6 +86,54 @@ class Imbecile
       end
       raise Error.new("Unexpected grammar input: #{input}")
     end
+  end
+
+  def expand_rules
+    token_names = @tokens.each_with_object({}) do |token, token_names|
+      if token_names.include?(token.name)
+        raise Error.new("Duplicate token name #{token.name}")
+      end
+      token_names[token.name] = token
+    end
+    rule_names = @rules.each_with_object({}) do |rule, rule_names|
+      if token_names.include?(rule.name)
+        raise Error.new("Rule name collides with token name #{rule.name}")
+      end
+      rule_names[rule.name] ||= []
+      rule_names[rule.name] << rule
+    end
+    unless rule_names["Start"]
+      raise Error.new("Start rule not found")
+    end
+    @rules.each do |rule|
+      rule.components.map! do |component|
+        if token_names[component]
+          token_names[component]
+        elsif rule_names[component]
+          rule_names[component]
+        else
+          raise Error.new("Symbol #{component} not found")
+        end
+      end
+    end
+    new_rules = []
+    begin
+      @rules += new_rules
+      new_rules = []
+      @rules.delete_if do |rule|
+        replaced = false
+        rule.components.each_with_index do |component, index|
+          if component.is_a?(Array)
+            component.each do |new_component|
+              new_components = rule.components[0, index] + [new_component] + rule.components[index + 1, rule.components.size]
+              new_rules << Rule.new(rule.name, new_components, rule.code)
+            end
+            replaced = true
+          end
+        end
+        replaced
+      end
+    end while new_rules.size > 0
   end
 
   class << self
