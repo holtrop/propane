@@ -27,6 +27,16 @@ class Imbecile
         self == other
       end
 
+      def closed_items
+        if @rule.components[@position].is_a?(Array)
+          @rule.components[@position].map do |rule|
+            Item.new(rule, 0)
+          end
+        else
+          []
+        end
+      end
+
     end
 
   end

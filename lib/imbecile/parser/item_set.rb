@@ -13,8 +13,7 @@ class Imbecile
           this_eval_items = eval_items
           eval_items = Set.new
           this_eval_items.each do |item|
-            if item.next_component.is_a?(Rule)
-            end
+            eval_items += item.closed_items
           end
           @items += eval_items
         end
