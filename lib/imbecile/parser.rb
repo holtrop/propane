@@ -10,15 +10,26 @@ class Imbecile
         pattern.components << token_eof
         Item.new(pattern, 0)
       end
-      start_item_set = ItemSet.new(start_items)
+      eval_item_sets = Set.new
+      eval_item_sets << ItemSet.new(start_items)
 
-      puts "Start item set:"
-      puts start_item_set
-      start_item_set.follow_symbols.each do |follow_symbol|
-        follow_set = start_item_set.follow_set(follow_symbol)
-        puts
-        puts "follow set:"
-        puts follow_set
+      while eval_item_sets.size > 0
+        this_eval_item_sets = eval_item_sets
+        eval_item_sets = Set.new
+        this_eval_item_sets.each do |item_set|
+          unless item_sets_set.include?(item_set)
+            item_set.id = @item_sets.size
+            @item_sets << item_set
+            item_sets_set << item_set
+            puts "Item set #{item_set.id}:"
+            puts item_set
+            puts
+            item_set.follow_symbols.each do |follow_symbol|
+              follow_set = item_set.follow_set(follow_symbol)
+              eval_item_sets << follow_set
+            end
+          end
+        end
       end
     end
 

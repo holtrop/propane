@@ -5,13 +5,15 @@ class Imbecile
 
       attr_reader :items
 
+      attr_accessor :id
+
       def initialize(items)
         @items = Set.new(items)
         close!
       end
 
       def follow_symbols
-        Set.new(@items.map(&:follow_symbol))
+        Set.new(@items.map(&:follow_symbol).compact)
       end
 
       def follow_set(symbol)
