@@ -37,6 +37,32 @@ class Imbecile
         end
       end
 
+      def follow_symbol
+        @pattern.components[@position]
+      end
+
+      def followed_by?(symbol)
+        follow_symbol == symbol
+      end
+
+      def next_position
+        Item.new(@pattern, @position + 1)
+      end
+
+      def to_s
+        parts = []
+        @pattern.components.each_with_index do |symbol, index|
+          if @position == index
+            parts << "."
+          end
+          parts << symbol.name
+        end
+        if @position == @pattern.components.size
+          parts << "."
+        end
+        parts.join(" ")
+      end
+
     end
 
   end

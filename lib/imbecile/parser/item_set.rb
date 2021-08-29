@@ -3,9 +3,38 @@ class Imbecile
 
     class ItemSet
 
+      attr_reader :items
+
       def initialize(items)
         @items = Set.new(items)
+        close!
       end
+
+      def follow_symbols
+        Set.new(@items.map(&:follow_symbol))
+      end
+
+      def follow_set(symbol)
+        ItemSet.new(items_followed_by(symbol).map(&:next_position))
+      end
+
+      def hash
+        @items.hash
+      end
+
+      def ==(other)
+        @items.eql?(other.items)
+      end
+
+      def eql?(other)
+        self == other
+      end
+
+      def to_s
+        @items.map(&:to_s).join("\n")
+      end
+
+      private
 
       def close!
         eval_items = @items
@@ -16,6 +45,12 @@ class Imbecile
             eval_items += item.closed_items
           end
           @items += eval_items
+        end
+      end
+
+      def items_followed_by(symbol)
+        @items.select do |item|
+          item.followed_by?(symbol)
         end
       end
 
