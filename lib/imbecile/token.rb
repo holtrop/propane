@@ -22,9 +22,11 @@ class Imbecile
       @name = name
       @pattern = pattern
       @id = id
-      regex = Regex.new(pattern)
-      regex.nfa.end_state.accepts = self
-      @nfa = regex.nfa
+      unless pattern.nil?
+        regex = Regex.new(pattern)
+        regex.nfa.end_state.accepts = self
+        @nfa = regex.nfa
+      end
     end
 
     def c_name
