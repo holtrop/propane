@@ -44,7 +44,11 @@ class Imbecile
           this_eval_items = eval_items
           eval_items = Set.new
           this_eval_items.each do |item|
-            eval_items += item.closed_items
+            item.closed_items.each do |new_item|
+              unless @items.include?(new_item)
+                eval_items << new_item
+              end
+            end
           end
           @items += eval_items
         end
