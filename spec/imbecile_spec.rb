@@ -64,4 +64,20 @@ B: [one] <<
 EOF
     build_parser
   end
+
+  it "generates a parser with duplicate rules" do
+    write_grammar <<EOF
+token a
+token b
+Start: [R1] <<
+>>
+Start: [R2] <<
+>>
+R1: [a b] <<
+>>
+R2: [a b] <<
+>>
+EOF
+    build_parser
+  end
 end
