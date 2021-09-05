@@ -25,8 +25,10 @@ class Imbecile
             puts item_set
             puts
             item_set.follow_symbols.each do |follow_symbol|
-              follow_set = item_set.follow_set(follow_symbol)
-              eval_item_sets << follow_set
+              unless follow_symbol == token_eof
+                follow_set = item_set.follow_set(follow_symbol)
+                eval_item_sets << follow_set
+              end
             end
           end
         end
