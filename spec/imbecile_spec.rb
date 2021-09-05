@@ -42,4 +42,26 @@ EOF
     compile("spec/test_d_lexer.d")
     run
   end
+
+  it "generates a parser" do
+    write_grammar <<EOF
+token plus \\+
+token times \\*
+token zero 0
+token one 1
+Start: [E] <<
+>>
+E: [E times B] <<
+>>
+E: [E plus B] <<
+>>
+E: [B] <<
+>>
+B: [zero] <<
+>>
+B: [one] <<
+>>
+EOF
+    build_parser
+  end
 end
