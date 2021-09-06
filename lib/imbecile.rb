@@ -81,8 +81,8 @@ class Imbecile
     elsif input.slice!(/\A(\S+)\s*:\s*\[(.*?)\] <<\n(.*?)^>>\n/m)
       rule_name, components, code = $1, $2, $3
       components = components.strip.split(/\s+/)
-      @rules[rule_name] ||= Rule.new(rule_name)
-      @rules[rule_name].add_pattern(components, code)
+      @rules[rule_name] ||= []
+      @rules[rule_name] << Rule.new(rule_name, components, code)
     else
       if input.size > 25
         input = input.slice(0..20) + "..."
@@ -106,9 +106,9 @@ class Imbecile
     unless @rules["Start"]
       raise Error.new("Start rule not found")
     end
-    @rules.each do |rule_name, rule|
-      rule.patterns.each do |pattern|
-        pattern.components.map! do |component|
+    @rules.each do |rule_name, rules|
+      rules.each do |rule|
+        rule.components.map! do |component|
           if token_names[component]
             token_names[component]
           elsif @rules[component]

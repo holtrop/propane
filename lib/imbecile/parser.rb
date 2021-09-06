@@ -6,9 +6,9 @@ class Imbecile
       token_eof = Token.new("$", nil, TOKEN_EOF)
       @item_sets = []
       item_sets_set = Set.new
-      start_items = rules["Start"].patterns.map do |pattern|
-        pattern.components << token_eof
-        Item.new(pattern, 0)
+      start_items = rules["Start"].map do |rule|
+        rule.components << token_eof
+        Item.new(rule, 0)
       end
       eval_item_sets = Set.new
       eval_item_sets << ItemSet.new(start_items)
