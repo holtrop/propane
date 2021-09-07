@@ -65,13 +65,13 @@ EOF
     build_parser
   end
 
-  it "generates a parser with duplicate rules" do
+  it "distinguishes between multiple identical rules with lookahead symbol" do
     write_grammar <<EOF
 token a
 token b
-Start: [R1] <<
+Start: [R1 a] <<
 >>
-Start: [R2] <<
+Start: [R2 b] <<
 >>
 R1: [a b] <<
 >>
