@@ -7,8 +7,13 @@ class Imbecile
 
       attr_accessor :id
 
+      # @return [Hash]
+      #   Maps a follow symbol to its item set.
+      attr_reader :follow_item_set
+
       def initialize(items)
         @items = Set.new(items)
+        @follow_item_set = {}
         close!
       end
 
@@ -16,7 +21,7 @@ class Imbecile
         Set.new(@items.map(&:follow_symbol).compact)
       end
 
-      def follow_set(symbol)
+      def build_follow_set(symbol)
         ItemSet.new(items_followed_by(symbol).map(&:next_position))
       end
 
