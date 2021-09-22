@@ -80,4 +80,18 @@ R2: [a b] <<
 EOF
     build_parser
   end
+
+  it "handles reducing a rule that could be arrived at from multiple states" do
+    write_grammar <<EOF
+token a
+token b
+Start: [a R1] <<
+>>
+Start: [b R1] <<
+>>
+R1: [b] <<
+>>
+EOF
+    build_parser
+  end
 end
