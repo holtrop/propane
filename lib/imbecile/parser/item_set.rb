@@ -11,9 +11,14 @@ class Imbecile
       #   Maps a follow symbol to its item set.
       attr_reader :follow_item_set
 
+      # @return [Set]
+      #   Item sets leading to this item set.
+      attr_reader :in_sets
+
       def initialize(items)
         @items = Set.new(items)
         @follow_item_set = {}
+        @in_sets = Set.new
         close!
       end
 

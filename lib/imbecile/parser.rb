@@ -34,6 +34,10 @@ class Imbecile
       @item_sets.each do |item_set|
         process_item_set(item_set)
         puts "Item set #{item_set.id}:"
+        ids = item_set.in_sets.map(&:id)
+        if ids.size > 0
+          puts "    (in from #{ids.join(", ")})"
+        end
         puts item_set
         item_set.follow_item_set.each do |follow_symbol, follow_item_set|
           if follow_symbol.is_a?(Token)
@@ -54,6 +58,7 @@ class Imbecile
         unless follow_symbol == @token_eof
           follow_set = @item_sets_set[item_set.build_follow_set(follow_symbol)]
           item_set.follow_item_set[follow_symbol] = follow_set
+          follow_set.in_sets << item_set
         end
       end
     end
