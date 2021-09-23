@@ -51,6 +51,27 @@ class Imbecile
       end
     end
 
+    def build_tables
+      shift_table = []
+      state_table = []
+      @item_sets.each do |item_set|
+        shift_entries = item_set.follow_symbols.select do |follow_symbol|
+          follow_symbol.is_a?(Token)
+        end.map do |follow_symbol|
+          {
+            token_id: follow_symbol.id,
+            state_id: item_set.follow_item_set[follow_symbol].id,
+          }
+        end
+        state_table << {
+          shift_index: shift_table.size,
+          n_shifts: shift_entries.size,
+        }
+        shift_table += shift_entries
+      end
+      [state_table, shift_table]
+    end
+
     private
 
     def process_item_set(item_set)
