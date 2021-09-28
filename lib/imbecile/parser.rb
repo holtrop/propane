@@ -6,9 +6,9 @@ class Imbecile
       @token_eof = Token.new("$", nil, TOKEN_EOF)
       @item_sets = []
       @item_sets_set = {}
-      start_items = rules["Start"].map do |rule|
-        rule.components << @token_eof
-        Item.new(rule, 0)
+      start_items = rules["Start"].patterns.map do |pattern|
+        pattern.components << @token_eof
+        Item.new(pattern, 0)
       end
       eval_item_sets = Set.new
       eval_item_sets << ItemSet.new(start_items)
@@ -40,12 +40,7 @@ class Imbecile
         end
         puts item_set
         item_set.follow_item_set.each do |follow_symbol, follow_item_set|
-          if follow_symbol.is_a?(Token)
-            name = follow_symbol.name
-          else
-            name = follow_symbol[0].name
-          end
-          puts " #{name} => #{follow_item_set.id}"
+          puts " #{follow_symbol.name} => #{follow_item_set.id}"
         end
         puts
       end

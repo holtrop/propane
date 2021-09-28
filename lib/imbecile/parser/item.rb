@@ -3,24 +3,24 @@ class Imbecile
 
     class Item
 
-      attr_reader :rule
+      attr_reader :pattern
       attr_reader :position
 
-      def initialize(rule, position)
-        @rule = rule
+      def initialize(pattern, position)
+        @pattern = pattern
         @position = position
       end
 
       def next_component
-        @rule.components[@position]
+        @pattern.components[@position]
       end
 
       def hash
-        [@rule, @position].hash
+        [@pattern, @position].hash
       end
 
       def ==(other)
-        @rule == other.rule && @position == other.position
+        @pattern == other.pattern && @position == other.position
       end
 
       def eql?(other)
@@ -28,9 +28,9 @@ class Imbecile
       end
 
       def closed_items
-        if @rule.components[@position].is_a?(Array)
-          @rule.components[@position].map do |rule|
-            Item.new(rule, 0)
+        if @pattern.components[@position].is_a?(Rule)
+          @pattern.components[@position].patterns.map do |pattern|
+            Item.new(pattern, 0)
           end
         else
           []
@@ -38,7 +38,7 @@ class Imbecile
       end
 
       def follow_symbol
-        @rule.components[@position]
+        @pattern.components[@position]
       end
 
       def followed_by?(symbol)
@@ -46,25 +46,21 @@ class Imbecile
       end
 
       def next_position
-        Item.new(@rule, @position + 1)
+        Item.new(@pattern, @position + 1)
       end
 
       def to_s
         parts = []
-        @rule.components.each_with_index do |symbol, index|
+        @pattern.components.each_with_index do |symbol, index|
           if @position == index
             parts << "."
           end
-          if symbol.is_a?(Token)
-            parts << symbol.name
-          else
-            parts << symbol[0].name
-          end
+          parts << symbol.name
         end
-        if @position == @rule.components.size
+        if @position == @pattern.components.size
           parts << "."
         end
-        "#{@rule.name} -> #{parts.join(" ")}"
+        "#{@pattern.rule.name} -> #{parts.join(" ")}"
       end
 
     end

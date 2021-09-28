@@ -2,16 +2,36 @@ class Imbecile
 
   class Rule
 
+    class Pattern
+
+      attr_reader :rule
+
+      attr_reader :components
+
+      attr_reader :code
+
+      def initialize(rule, components, code)
+        @rule = rule
+        @components = components
+        @code = code
+      end
+
+    end
+
+    attr_reader :id
+
     attr_reader :name
 
-    attr_reader :components
+    attr_reader :patterns
 
-    attr_reader :code
-
-    def initialize(name, components, code)
+    def initialize(name, id)
       @name = name
-      @components = components
-      @code = code
+      @id = id
+      @patterns = []
+    end
+
+    def add_pattern(components, code)
+      @patterns << Pattern.new(self, components, code)
     end
 
   end
