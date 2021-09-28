@@ -6,7 +6,7 @@ class Imbecile
       def initialize(tokens)
         super()
         start_nfa = Regex::NFA.new
-        tokens.each do |token|
+        tokens.each do |name, token|
           start_nfa.start_state.add_transition(nil, token.nfa.start_state)
         end
         @nfa_state_sets = {}

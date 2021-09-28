@@ -35,7 +35,7 @@ class Imbecile
   end
 
   def initialize(input)
-    @tokens = []
+    @tokens = {}
     @rules = {}
     input = input.gsub("\r\n", "\n")
     while !input.empty?
@@ -74,10 +74,14 @@ class Imbecile
       unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
         raise Error.new("Invalid token name #{name}")
       end
-      @tokens << Token.new(name, pattern, @tokens.size)
+      if @tokens[name]
+        raise Error.new("Duplicate token name #{name}")
+      else
+        @tokens[name] = Token.new(name, pattern, @tokens.size)
+      end
     elsif input.slice!(/\Adrop\s+(\S+)\n/)
       pattern = $1
-      @tokens << Token.new(nil, pattern, @tokens.size)
+      @tokens[name] = Token.new(nil, pattern, @tokens.size)
     elsif input.slice!(/\A(\S+)\s*:\s*\[(.*?)\] <<\n(.*?)^>>\n/m)
       rule_name, components, code = $1, $2, $3
       components = components.strip.split(/\s+/)
@@ -92,14 +96,8 @@ class Imbecile
   end
 
   def expand_rules
-    token_names = @tokens.each_with_object({}) do |token, token_names|
-      if token_names.include?(token.name)
-        raise Error.new("Duplicate token name #{token.name}")
-      end
-      token_names[token.name] = token
-    end
     @rules.each do |rule_name, rule|
-      if token_names.include?(rule_name)
+      if @tokens.include?(rule_name)
         raise Error.new("Rule name collides with token name #{rule_name}")
       end
     end
@@ -109,8 +107,8 @@ class Imbecile
     @rules.each do |rule_name, rule|
       rule.patterns.each do |rule|
         rule.components.map! do |component|
-          if token_names[component]
-            token_names[component]
+          if @tokens[component]
+            @tokens[component]
           elsif @rules[component]
             @rules[component]
           else
