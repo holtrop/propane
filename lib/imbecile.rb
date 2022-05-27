@@ -48,7 +48,7 @@ class Imbecile
     lexer = Lexer.new(@tokens)
     parser = Parser.new(@tokens, @rules)
     classname = @classname || File.basename(output_file).sub(%r{[^a-zA-Z0-9].*}, "").capitalize
-    erb = ERB.new(File.read(File.join(File.dirname(File.expand_path(__FILE__)), "../assets/parser.d.erb")), nil, "<>")
+    erb = ERB.new(File.read(File.join(File.dirname(File.expand_path(__FILE__)), "../assets/parser.d.erb")), trim_mode: "<>")
     result = erb.result(binding.clone)
     File.open(output_file, "wb") do |fh|
       fh.write(result)
