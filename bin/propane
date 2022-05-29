@@ -1,0 +1,5 @@
+#!/usr/bin/env ruby
+
+require "propane"
+
+exit Propane::CLI.run(ARGV.dup)
