@@ -13,7 +13,7 @@ require_relative "propane/parser/item_set"
 require_relative "propane/regex"
 require_relative "propane/regex/nfa"
 require_relative "propane/regex/unit"
-require_relative "propane/rule"
+require_relative "propane/rule_set"
 require_relative "propane/token"
 require_relative "propane/version"
 
@@ -36,7 +36,7 @@ class Propane
 
   def initialize(input)
     @tokens = {}
-    @rules = {}
+    @rule_sets = {}
     input = input.gsub("\r\n", "\n")
     while !input.empty?
       parse_grammar(input)
@@ -46,7 +46,7 @@ class Propane
   def generate(output_file, log_file)
     expand_rules
     lexer = Lexer.new(@tokens)
-    parser = Parser.new(@tokens, @rules)
+    parser = Parser.new(@tokens, @rule_sets)
     classname = @classname || File.basename(output_file).sub(%r{[^a-zA-Z0-9].*}, "").capitalize
     erb = ERB.new(File.read(File.join(File.dirname(File.expand_path(__FILE__)), "../assets/parser.d.erb")), trim_mode: "<>")
     result = erb.result(binding.clone)
@@ -85,8 +85,8 @@ class Propane
     elsif input.slice!(/\A(\S+)\s*:\s*\[(.*?)\] <<\n(.*?)^>>\n/m)
       rule_name, components, code = $1, $2, $3
       components = components.strip.split(/\s+/)
-      @rules[rule_name] ||= Rule.new(rule_name, @rules.size)
-      @rules[rule_name].add_pattern(components, code)
+      @rule_sets[rule_name] ||= RuleSet.new(rule_name, @rule_sets.size)
+      @rule_sets[rule_name].add_pattern(components, code)
     else
       if input.size > 25
         input = input.slice(0..20) + "..."
@@ -96,21 +96,21 @@ class Propane
   end
 
   def expand_rules
-    @rules.each do |rule_name, rule|
+    @rule_sets.each do |rule_name, rule_set|
       if @tokens.include?(rule_name)
         raise Error.new("Rule name collides with token name #{rule_name}")
       end
     end
-    unless @rules["Start"]
+    unless @rule_sets["Start"]
       raise Error.new("Start rule not found")
     end
-    @rules.each do |rule_name, rule|
-      rule.patterns.each do |rule|
+    @rule_sets.each do |rule_name, rule_set|
+      rule_set.patterns.each do |rule|
         rule.components.map! do |component|
           if @tokens[component]
             @tokens[component]
-          elsif @rules[component]
-            @rules[component]
+          elsif @rule_sets[component]
+            @rule_sets[component]
           else
             raise Error.new("Symbol #{component} not found")
           end

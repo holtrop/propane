@@ -28,7 +28,7 @@ class Propane
       end
 
       def closed_items
-        if @pattern.components[@position].is_a?(Rule)
+        if @pattern.components[@position].is_a?(RuleSet)
           @pattern.components[@position].patterns.map do |pattern|
             Item.new(pattern, 0)
           end
@@ -60,7 +60,7 @@ class Propane
         if @position == @pattern.components.size
           parts << "."
         end
-        "#{@pattern.rule.name} -> #{parts.join(" ")}"
+        "#{@pattern.rule_set.name} -> #{parts.join(" ")}"
       end
 
     end
