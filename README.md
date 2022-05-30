@@ -1,24 +1,17 @@
-# Propane
+# The Propane Parser Generator
 
-Welcome to your new gem! In this directory, you'll find the files you need to be able to package up your Ruby library into a gem. Put your Ruby code in the file `lib/propane`. To experiment with that code, run `bin/console` for an interactive prompt.
+Propane is an LR Parser Generator (LPG) which:
 
-TODO: Delete this and the text above, and describe your gem
+  * accepts LR(0), SLR, and LALR grammars
+  * generates a built-in lexer to tokenize input
+  * supports UTF-8 lexer inputs
+  * generates a table-driven parser to parse input in linear time
+  * is MIT-licensed
+  * is distributable as a standalone Ruby script
 
 ## Installation
 
-Add this line to your application's Gemfile:
-
-```ruby
-gem 'propane'
-```
-
-And then execute:
-
-    $ bundle install
-
-Or install it yourself as:
-
-    $ gem install propane
+TODO
 
 ## Usage
 
@@ -26,15 +19,13 @@ TODO: Write usage instructions here
 
 ## Development
 
-After checking out the repo, run `bin/setup` to install dependencies. You can also run `bin/console` for an interactive prompt that will allow you to experiment.
-
-To install this gem onto your local machine, run `bundle exec rake install`. To release a new version, update the version number in `version.rb`, and then run `bundle exec rake release`, which will create a git tag for the version, push git commits and tags, and push the `.gem` file to [rubygems.org](https://rubygems.org).
+After checking out the repository, run `bundle install` to install dependencies.
+Run `rake spec` to execute tests.
 
 ## Contributing
 
-Bug reports and pull requests are welcome on GitHub at https://github.com/[USERNAME]/propane.
-
+Bug reports and pull requests are welcome on GitHub at https://github.com/holtrop/propane.
 
 ## License
 
-The gem is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
+Propane is available as open source under the terms of the [MIT License](https://opensource.org/licenses/MIT).
