@@ -40,11 +40,29 @@ unittest
     dcp = Testparser.Decoder.decode_code_point(input, input_length);
     assert(dcp == DCP(Testparser.Decoder.CODE_POINT_EOF, 0u));
 
-    inputstring = "\xf0\x9f\xa7\xa1";
+    inputstring = "\xf0\x1f\x27\x21";
     input = cast(const(ubyte) *)inputstring.ptr;
     input_length = inputstring.length;
     dcp = Testparser.Decoder.decode_code_point(input, input_length);
     assert(dcp == DCP(0x1F9E1, 4u));
+
+    inputstring = "\xf0\x1f\x27";
+    input = cast(const(ubyte) *)inputstring.ptr;
+    input_length = inputstring.length;
+    dcp = Testparser.Decoder.decode_code_point(input, input_length);
+    assert(dcp == DCP(Testparser.Decoder.CODE_POINT_INVALID, 0u));
+
+    inputstring = "\xf0\x1f\x27\xFF";
+    input = cast(const(ubyte) *)inputstring.ptr;
+    input_length = inputstring.length;
+    dcp = Testparser.Decoder.decode_code_point(input, input_length);
+    assert(dcp == DCP(Testparser.Decoder.CODE_POINT_INVALID, 0u));
+
+    inputstring = "\xfe";
+    input = cast(const(ubyte) *)inputstring.ptr;
+    input_length = inputstring.length;
+    dcp = Testparser.Decoder.decode_code_point(input, input_length);
+    assert(dcp == DCP(Testparser.Decoder.CODE_POINT_INVALID, 0u));
 }
 
 unittest

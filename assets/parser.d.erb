@@ -83,6 +83,10 @@ class <%= classname %>
                     code_point = c & 0x01u;
                     following_bytes = 5u;
                 }
+                else
+                {
+                    return DecodedCodePoint(CODE_POINT_INVALID, 0u);
+                }
                 if (input_length <= following_bytes)
                 {
                     return DecodedCodePoint(CODE_POINT_INVALID, 0u);
@@ -91,8 +95,12 @@ class <%= classname %>
                 while (following_bytes-- > 0u)
                 {
                     input++;
-                    code_point <<= 6u;
-                    code_point |= *input & 0x3Fu;
+                    ubyte b = *input;
+                    if ((b & 0xC0u) != 0u)
+                    {
+                        return DecodedCodePoint(CODE_POINT_INVALID, 0u);
+                    }
+                    code_point = (code_point << 6u) | b;
                 }
             }
             return DecodedCodePoint(code_point, code_point_length);
