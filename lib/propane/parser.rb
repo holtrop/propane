@@ -2,13 +2,13 @@ class Propane
 
   class Parser
 
-    def initialize(tokens, rules)
+    def initialize(tokens, rule_sets)
       @token_eof = Token.new("$", nil, TOKEN_EOF)
       @item_sets = []
       @item_sets_set = {}
-      start_items = rules["Start"].patterns.map do |pattern|
-        pattern.components << @token_eof
-        Item.new(pattern, 0)
+      start_items = rule_sets["Start"].rules.map do |rule|
+        rule.components << @token_eof
+        Item.new(rule, 0)
       end
       eval_item_sets = Set.new
       eval_item_sets << ItemSet.new(start_items)

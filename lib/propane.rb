@@ -14,6 +14,7 @@ require_relative "propane/regex"
 require_relative "propane/regex/nfa"
 require_relative "propane/regex/unit"
 require_relative "propane/rule_set"
+require_relative "propane/rule"
 require_relative "propane/token"
 require_relative "propane/version"
 
@@ -86,7 +87,7 @@ class Propane
       rule_name, components, code = $1, $2, $3
       components = components.strip.split(/\s+/)
       @rule_sets[rule_name] ||= RuleSet.new(rule_name, @rule_sets.size)
-      @rule_sets[rule_name].add_pattern(components, code)
+      @rule_sets[rule_name].add_rule(components, code)
     else
       if input.size > 25
         input = input.slice(0..20) + "..."
@@ -105,7 +106,7 @@ class Propane
       raise Error.new("Start rule not found")
     end
     @rule_sets.each do |rule_name, rule_set|
-      rule_set.patterns.each do |rule|
+      rule_set.rules.each do |rule|
         rule.components.map! do |component|
           if @tokens[component]
             @tokens[component]

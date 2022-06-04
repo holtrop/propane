@@ -3,24 +3,24 @@ class Propane
 
     class Item
 
-      attr_reader :pattern
+      attr_reader :rule
       attr_reader :position
 
-      def initialize(pattern, position)
-        @pattern = pattern
+      def initialize(rule, position)
+        @rule = rule
         @position = position
       end
 
       def next_component
-        @pattern.components[@position]
+        @rule.components[@position]
       end
 
       def hash
-        [@pattern, @position].hash
+        [@rule, @position].hash
       end
 
       def ==(other)
-        @pattern == other.pattern && @position == other.position
+        @rule == other.rule && @position == other.position
       end
 
       def eql?(other)
@@ -28,9 +28,9 @@ class Propane
       end
 
       def closed_items
-        if @pattern.components[@position].is_a?(RuleSet)
-          @pattern.components[@position].patterns.map do |pattern|
-            Item.new(pattern, 0)
+        if @rule.components[@position].is_a?(RuleSet)
+          @rule.components[@position].rules.map do |rule|
+            Item.new(rule, 0)
           end
         else
           []
@@ -38,7 +38,7 @@ class Propane
       end
 
       def follow_symbol
-        @pattern.components[@position]
+        @rule.components[@position]
       end
 
       def followed_by?(symbol)
@@ -46,21 +46,21 @@ class Propane
       end
 
       def next_position
-        Item.new(@pattern, @position + 1)
+        Item.new(@rule, @position + 1)
       end
 
       def to_s
         parts = []
-        @pattern.components.each_with_index do |symbol, index|
+        @rule.components.each_with_index do |symbol, index|
           if @position == index
             parts << "."
           end
           parts << symbol.name
         end
-        if @position == @pattern.components.size
+        if @position == @rule.components.size
           parts << "."
         end
-        "#{@pattern.rule_set.name} -> #{parts.join(" ")}"
+        "#{@rule.name} -> #{parts.join(" ")}"
       end
 
     end
