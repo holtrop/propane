@@ -2,11 +2,11 @@ require "fileutils"
 
 describe Propane do
   def write_grammar(grammar)
-    File.write("spec/run/testparser.i", grammar)
+    File.write("spec/run/testparser.propane", grammar)
   end
 
   def build_parser
-    result = system(*%w[./propane.sh spec/run/testparser.i spec/run/testparser.d])
+    result = system(*%w[./propane.sh spec/run/testparser.propane spec/run/testparser.d])
     expect(result).to be_truthy
   end
 
