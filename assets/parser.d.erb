@@ -123,7 +123,7 @@ class <%= classname %>
             uint accepts;
         }
 
-<% transition_table, state_table = lexer.dfa.build_tables %>
+<% transition_table, state_table = lexer.build_tables %>
         private static const Transition transitions[] = [
 <% transition_table.each do |transition_table_entry| %>
             Transition(<%= transition_table_entry[:first] %>u, <%= transition_table_entry[:last] %>u, <%= transition_table_entry[:destination] %>u),
