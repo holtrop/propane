@@ -14,8 +14,8 @@ class Propane
       @rules = []
     end
 
-    def add_rule(components, code)
-      @rules << Rule.new(@name, components, code)
+    def add_rule(rule)
+      @rules << rule
     end
 
   end
