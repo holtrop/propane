@@ -21,10 +21,10 @@ class Propane
             item_set.id = @item_sets.size
             @item_sets << item_set
             @item_sets_set[item_set] = item_set
-            item_set.follow_symbols.each do |follow_symbol|
-              unless follow_symbol == @token_eof
-                follow_set = item_set.build_follow_set(follow_symbol)
-                eval_item_sets << follow_set
+            item_set.following_symbols.each do |following_symbol|
+              unless following_symbol == @token_eof
+                following_set = item_set.build_following_item_set(following_symbol)
+                eval_item_sets << following_set
               end
             end
           end
@@ -39,8 +39,8 @@ class Propane
           puts "    (in from #{ids.join(", ")})"
         end
         puts item_set
-        item_set.follow_item_set.each do |follow_symbol, follow_item_set|
-          puts " #{follow_symbol.name} => #{follow_item_set.id}"
+        item_set.following_item_set.each do |following_symbol, following_item_set|
+          puts " #{following_symbol.name} => #{following_item_set.id}"
         end
         puts
       end
@@ -50,12 +50,12 @@ class Propane
       shift_table = []
       state_table = []
       @item_sets.each do |item_set|
-        shift_entries = item_set.follow_symbols.select do |follow_symbol|
-          follow_symbol.is_a?(Token)
-        end.map do |follow_symbol|
+        shift_entries = item_set.following_symbols.select do |following_symbol|
+          following_symbol.is_a?(Token)
+        end.map do |following_symbol|
           {
-            token_id: follow_symbol.id,
-            state_id: item_set.follow_item_set[follow_symbol].id,
+            token_id: following_symbol.id,
+            state_id: item_set.following_item_set[following_symbol].id,
           }
         end
         state_table << {
@@ -70,11 +70,11 @@ class Propane
     private
 
     def process_item_set(item_set)
-      item_set.follow_symbols.each do |follow_symbol|
-        unless follow_symbol == @token_eof
-          follow_set = @item_sets_set[item_set.build_follow_set(follow_symbol)]
-          item_set.follow_item_set[follow_symbol] = follow_set
-          follow_set.in_sets << item_set
+      item_set.following_symbols.each do |following_symbol|
+        unless following_symbol == @token_eof
+          following_set = @item_sets_set[item_set.build_following_item_set(following_symbol)]
+          item_set.following_item_set[following_symbol] = following_set
+          following_set.in_sets << item_set
         end
       end
     end

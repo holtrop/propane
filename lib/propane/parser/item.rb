@@ -1,32 +1,67 @@
 class Propane
   class Parser
 
+    # Represent a parser "item", which is a position in a Rule that the parser
+    # could potentially be at.
     class Item
 
+      # @return [Rule]
+      #   The Rule corresponding to this Item.
       attr_reader :rule
+
+      # @return [Integer]
+      #   The parse position in this item.
       attr_reader :position
 
+      # Construct an Item.
+      #
+      # @param rule [Rule]
+      #   The Rule corresponding to this Item.
+      # @param position [Integer]
+      #   The parse position in this Item.
       def initialize(rule, position)
         @rule = rule
         @position = position
       end
 
-      def next_component
-        @rule.components[@position]
-      end
-
+      # Hash function.
+      #
+      # @return [Integer]
+      #   Hash code.
       def hash
         [@rule, @position].hash
       end
 
+      # Compare Item objects.
+      #
+      # @param other [Item]
+      #   Item to compare to.
+      #
+      # @return [Boolean]
+      #   Whether the Items are equal.
       def ==(other)
         @rule == other.rule && @position == other.position
       end
 
+      # Compare Item objects.
+      #
+      # @param other [Item]
+      #   Item to compare to.
+      #
+      # @return [Boolean]
+      #   Whether the Items are equal.
       def eql?(other)
         self == other
       end
 
+      # Return the set of Items obtained by "closing" the current item.
+      #
+      # If the following symbol for the current item is another Rule name, then
+      # this method will return all Items for that Rule with a position of 0.
+      # Otherwise, an empty Array is returned.
+      #
+      # @return [Array<Item>]
+      #   Items obtained by "closing" the current item.
       def closed_items
         if @rule.components[@position].is_a?(RuleSet)
           @rule.components[@position].rules.map do |rule|
@@ -37,29 +72,46 @@ class Propane
         end
       end
 
-      def follow_symbol
+      # Get the following symbol for the Item.
+      #
+      # That is, the symbol which follows the parse position marker in the
+      # current Item.
+      #
+      # @return [Token, RuleSet, nil]
+      #   Following symbol for the Item.
+      def following_symbol
         @rule.components[@position]
       end
 
+      # Get whether this Item is followed by the provided symbol.
+      #
+      # @param symbol [Token, RuleSet]
+      #   Symbol to query.
+      #
+      # @return [Boolean]
+      #   Whether this Item is followed by the provided symbol.
       def followed_by?(symbol)
-        follow_symbol == symbol
+        following_symbol == symbol
       end
 
-      def next_position
+      # Get the following item for this Item.
+      #
+      # That is, the Item formed by moving the parse position marker one place
+      # forward from its position in this Item.
+      #
+      # @return [Item]
+      #   The following item for this Item.
+      def following_item
         Item.new(@rule, @position + 1)
       end
 
+      # Represent the Item as a String.
+      #
+      # @return [String]
+      #   The Item represented as a String.
       def to_s
-        parts = []
-        @rule.components.each_with_index do |symbol, index|
-          if @position == index
-            parts << "."
-          end
-          parts << symbol.name
-        end
-        if @position == @rule.components.size
-          parts << "."
-        end
+        parts = @rule.components.map(&:name)
+        parts[@position, 0] = "."
         "#{@rule.name} -> #{parts.join(" ")}"
       end
 
