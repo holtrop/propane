@@ -37,10 +37,10 @@ class Propane
           unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
             raise Error.new("Invalid token name #{name}")
           end
-          @tokens << Token.new(name, pattern, @tokens.size, line_number)
+          @tokens << Token.new(name: name, pattern: pattern, id: @tokens.size, line_number: line_number)
         elsif sliced = input.slice!(/\Adrop\s+(\S+)\n/)
           pattern = $1
-          @drop_tokens << Token.new(nil, pattern, nil, line_number)
+          @drop_tokens << Token.new(pattern: pattern, line_number: line_number)
         elsif sliced = input.slice!(/\A(\S+)\s*:\s*\[(.*?)\] <<\n(.*?)^>>\n/m)
           rule_name, components, code = $1, $2, $3
           components = components.strip.split(/\s+/)

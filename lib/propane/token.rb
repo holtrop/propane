@@ -2,15 +2,15 @@ class Propane
 
   class Token
 
-    # @return [String]
+    # @return [String, nil]
     #   Token name.
     attr_reader :name
 
-    # @return [String]
+    # @return [String, nil]
     #   Token pattern.
     attr_reader :pattern
 
-    # @return [Integer]
+    # @return [Integer, nil]
     #   Token ID.
     attr_reader :id
 
@@ -18,27 +18,29 @@ class Propane
     #   Line number where the token was defined in the input grammar.
     attr_reader :line_number
 
-    # @return [Regex::NFA]
+    # @return [Regex::NFA, nil]
     #   Regex NFA for matching the token.
     attr_reader :nfa
 
     # Construct a Token.
     #
-    # @param name [String]
+    # @param options [Hash]
+    #   Optional parameters.
+    # @option options [String, nil] :name
     #   Token name.
-    # @param pattern [String]
+    # @option options [String, nil] :pattern
     #   Token pattern.
-    # @param id [Integer]
+    # @option options [Integer, nil] :id
     #   Token ID.
-    # @param line_number [Integer, nil]
+    # @option options [Integer, nil] :line_number
     #   Line number where the token was defined in the input grammar.
-    def initialize(name, pattern, id, line_number)
-      @name = name
-      @pattern = pattern
-      @id = id
-      @line_number = line_number
-      unless pattern.nil?
-        regex = Regex.new(pattern)
+    def initialize(options)
+      @name = options[:name]
+      @pattern = options[:pattern]
+      @id = options[:id]
+      @line_number = options[:line_number]
+      unless @pattern.nil?
+        regex = Regex.new(@pattern)
         regex.nfa.end_state.accepts = self
         @nfa = regex.nfa
       end
