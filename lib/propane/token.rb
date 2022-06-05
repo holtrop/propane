@@ -48,6 +48,14 @@ class Propane
       @name.upcase
     end
 
+    # Whether the token is a drop token.
+    #
+    # @return [Boolean]
+    #   Whether the token is a drop token.
+    def drop?
+      @name.nil?
+    end
+
     def to_s
       @name
     end

@@ -2,7 +2,7 @@ class Propane
 
   class Parser
 
-    def initialize(tokens, rule_sets)
+    def initialize(rule_sets)
       @token_eof = Token.new("$", nil, TOKEN_EOF, nil)
       @item_sets = []
       @item_sets_set = {}

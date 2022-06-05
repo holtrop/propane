@@ -5,8 +5,8 @@ class Propane
     #   Lexer DFA.
     attr_accessor :dfa
 
-    def initialize(tokens)
-      @dfa = DFA.new(tokens)
+    def initialize(tokens, drop_tokens)
+      @dfa = DFA.new(tokens, drop_tokens)
     end
 
     def build_tables
@@ -17,10 +17,10 @@ class Propane
         accepts =
           if state.accepts.nil?
             TOKEN_NONE
-          elsif state.accepts.name
-            state.accepts.id
-          else
+          elsif state.accepts.drop?
             TOKEN_DROP
+          else
+            state.accepts.id
           end
         state_table << {
           transition_table_index: transition_table.size,

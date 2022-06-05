@@ -6,10 +6,8 @@ class <%= classname %>
 {
     enum
     {
-<% @tokens.each_with_index do |(name, token), index| %>
-<%   if token.name %>
+<% @grammar.tokens.each_with_index do |token, index| %>
         TOKEN_<%= token.c_name %> = <%= index %>,
-<%   end %>
 <% end %>
         TOKEN_EOF = <%= TOKEN_EOF %>,
         TOKEN_DECODE_ERROR = <%= TOKEN_DECODE_ERROR %>,
@@ -18,12 +16,8 @@ class <%= classname %>
     }
 
     static immutable string TokenNames[] = [
-<% @tokens.each_with_index do |(name, token), index| %>
-<%   if token.name %>
+<% @grammar.tokens.each_with_index do |token, index| %>
         "<%= token.name %>",
-<%   else %>
-        null,
-<%   end %>
 <% end %>
     ];
 

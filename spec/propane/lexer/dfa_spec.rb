@@ -50,8 +50,8 @@ class TestLexer
 end
 
 def run(grammar, input)
-  propane = Propane.new(grammar)
-  token_dfa = Propane::Lexer::DFA.new(propane.instance_variable_get(:@tokens))
+  grammar = Propane::Grammar.new(grammar)
+  token_dfa = Propane::Lexer::DFA.new(grammar.tokens, grammar.drop_tokens)
   test_lexer = TestLexer.new(token_dfa)
   test_lexer.lex(input)
 end

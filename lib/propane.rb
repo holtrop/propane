@@ -37,17 +37,16 @@ class Propane
   end
 
   def initialize(input)
-    grammar = Grammar.new(input)
-    @classname = grammar.classname
-    @modulename = grammar.modulename
-    @tokens = grammar.tokens
-    @rule_sets = grammar.rule_sets
+    @grammar = Grammar.new(input)
+    @classname = @grammar.classname
+    @modulename = @grammar.modulename
+    @rule_sets = @grammar.rule_sets
   end
 
   def generate(output_file, log_file)
     expand_rules
-    lexer = Lexer.new(@tokens)
-    parser = Parser.new(@tokens, @rule_sets)
+    lexer = Lexer.new(@grammar.tokens, @grammar.drop_tokens)
+    parser = Parser.new(@rule_sets)
     classname = @classname || File.basename(output_file).sub(%r{[^a-zA-Z0-9].*}, "").capitalize
     erb = ERB.new(File.read(File.join(File.dirname(File.expand_path(__FILE__)), "../assets/parser.d.erb")), trim_mode: "<>")
     result = erb.result(binding.clone)
@@ -59,9 +58,16 @@ class Propane
   private
 
   def expand_rules
+    tokens_by_name = {}
+    @grammar.tokens.each do |token|
+      if tokens_by_name.include?(token.name)
+        raise Error.new("Duplicate token name #{token.name.inspect}")
+      end
+      tokens_by_name[token.name] = token
+    end
     @rule_sets.each do |rule_name, rule_set|
-      if @tokens.include?(rule_name)
-        raise Error.new("Rule name collides with token name #{rule_name}")
+      if tokens_by_name.include?(rule_name)
+        raise Error.new("Rule name collides with token name #{rule_name.inspect}")
       end
     end
     unless @rule_sets["Start"]
@@ -70,8 +76,8 @@ class Propane
     @rule_sets.each do |rule_name, rule_set|
       rule_set.rules.each do |rule|
         rule.components.map! do |component|
-          if @tokens[component]
-            @tokens[component]
+          if tokens_by_name[component]
+            tokens_by_name[component]
           elsif @rule_sets[component]
             @rule_sets[component]
           else

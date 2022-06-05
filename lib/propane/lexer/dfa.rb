@@ -3,10 +3,10 @@ class Propane
 
     class DFA < FA
 
-      def initialize(tokens)
+      def initialize(tokens, drop_tokens)
         super()
         start_nfa = Regex::NFA.new
-        tokens.each do |name, token|
+        (tokens + drop_tokens).each do |token|
           start_nfa.start_state.add_transition(nil, token.nfa.start_state)
         end
         @nfa_state_sets = {}
