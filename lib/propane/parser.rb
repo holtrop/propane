@@ -2,11 +2,11 @@ class Propane
 
   class Parser
 
-    def initialize(rule_sets)
+    def initialize(start_rule_set)
       @token_eof = Token.new(name: "$", id: TOKEN_EOF)
       @item_sets = []
       @item_sets_set = {}
-      start_items = rule_sets["Start"].rules.map do |rule|
+      start_items = start_rule_set.rules.map do |rule|
         rule.components << @token_eof
         Item.new(rule, 0)
       end

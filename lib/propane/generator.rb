@@ -8,8 +8,6 @@ class Propane
       @log_file = log_file
       @classname = @grammar.classname || File.basename(output_file).sub(%r{[^a-zA-Z0-9].*}, "").capitalize
       process_grammar!
-      @lexer = Lexer.new(@grammar.tokens, @grammar.drop_tokens)
-      @parser = Parser.new(@grammar.rule_sets)
     end
 
     def generate
@@ -30,27 +28,30 @@ class Propane
         end
         tokens_by_name[token.name] = token
       end
-      @grammar.rule_sets.each do |rule_name, rule_set|
-        if tokens_by_name.include?(rule_name)
-          raise Error.new("Rule name collides with token name #{rule_name.inspect}")
+      rule_sets = {}
+      @grammar.rules.each do |rule|
+        if tokens_by_name.include?(rule.name)
+          raise Error.new("Rule name collides with token name #{rule.name.inspect}")
         end
+        rule_sets[rule.name] ||= RuleSet.new(rule.name)
+        rule_sets[rule.name] << rule
       end
-      unless @grammar.rule_sets["Start"]
+      unless rule_sets["Start"]
         raise Error.new("Start rule not found")
       end
-      @grammar.rule_sets.each do |rule_name, rule_set|
-        rule_set.rules.each do |rule|
-          rule.components.map! do |component|
-            if tokens_by_name[component]
-              tokens_by_name[component]
-            elsif @grammar.rule_sets[component]
-              @grammar.rule_sets[component]
-            else
-              raise Error.new("Symbol #{component} not found")
-            end
+      @grammar.rules.each do |rule|
+        rule.components.map! do |component|
+          if tokens_by_name[component]
+            tokens_by_name[component]
+          elsif rule_sets[component]
+            rule_sets[component]
+          else
+            raise Error.new("Symbol #{component} not found")
           end
         end
       end
+      @lexer = Lexer.new(@grammar.tokens, @grammar.drop_tokens)
+      @parser = Parser.new(rule_sets["Start"])
     end
 
   end

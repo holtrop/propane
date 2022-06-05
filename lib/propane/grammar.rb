@@ -5,13 +5,13 @@ class Propane
     attr_reader :classname
     attr_reader :drop_tokens
     attr_reader :modulename
-    attr_reader :rule_sets
+    attr_reader :rules
     attr_reader :tokens
 
     def initialize(input)
       @tokens = []
       @drop_tokens = []
-      @rule_sets = {}
+      @rules = []
       input = input.gsub("\r\n", "\n")
       parse_grammar(input)
     end
@@ -44,9 +44,7 @@ class Propane
         elsif sliced = input.slice!(/\A(\S+)\s*:\s*\[(.*?)\] <<\n(.*?)^>>\n/m)
           rule_name, components, code = $1, $2, $3
           components = components.strip.split(/\s+/)
-          @rule_sets[rule_name] ||= RuleSet.new(rule_name, @rule_sets.size)
-          rule = Rule.new(rule_name, components, code, line_number)
-          @rule_sets[rule_name].add_rule(rule)
+          @rules << Rule.new(rule_name, components, code, line_number)
         else
           if input.size > 25
             input = input.slice(0..20) + "..."
