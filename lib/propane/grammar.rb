@@ -41,7 +41,7 @@ class Propane
         elsif sliced = input.slice!(/\Adrop\s+(\S+)\n/)
           pattern = $1
           @drop_tokens << Token.new(pattern: pattern, line_number: line_number)
-        elsif sliced = input.slice!(/\A(\S+)\s*:\s*\[(.*?)\] <<\n(.*?)^>>\n/m)
+        elsif sliced = input.slice!(/\A(\S+)\s*->\s*(.*?)(?:;|<<\n(.*?)^>>\n)/m)
           rule_name, components, code = $1, $2, $3
           components = components.strip.split(/\s+/)
           @rules << Rule.new(rule_name, components, code, line_number)

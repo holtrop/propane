@@ -31,11 +31,10 @@ token int \\d+
 token plus \\+
 token times \\*
 drop \\s+
-Start: [Foo] <<
+Start -> Foo;
+Foo -> int <<
 >>
-Foo: [int] <<
->>
-Foo: [plus] <<
+Foo -> plus <<
 >>
 EOF
     build_parser
@@ -49,18 +48,12 @@ token plus \\+
 token times \\*
 token zero 0
 token one 1
-Start: [E] <<
->>
-E: [E times B] <<
->>
-E: [E plus B] <<
->>
-E: [B] <<
->>
-B: [zero] <<
->>
-B: [one] <<
->>
+Start -> E;
+E -> E times B;
+E -> E plus B;
+E -> B;
+B -> zero;
+B -> one;
 EOF
     build_parser
   end
@@ -69,14 +62,10 @@ EOF
     write_grammar <<EOF
 token a
 token b
-Start: [R1 a] <<
->>
-Start: [R2 b] <<
->>
-R1: [a b] <<
->>
-R2: [a b] <<
->>
+Start -> R1 a;
+Start -> R2 b;
+R1 -> a b;
+R2 -> a b;
 EOF
     build_parser
   end
@@ -85,12 +74,9 @@ EOF
     write_grammar <<EOF
 token a
 token b
-Start: [a R1] <<
->>
-Start: [b R1] <<
->>
-R1: [b] <<
->>
+Start -> a R1;
+Start -> b R1;
+R1 -> b;
 EOF
     build_parser
   end
