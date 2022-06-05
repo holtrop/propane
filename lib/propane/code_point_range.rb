@@ -1,7 +1,7 @@
 class Propane
   class CodePointRange
 
-    MAX_CODE_POINT = 0xFFFFFFFF
+    MAX_CODE_POINT = 0x7FFFFFFF
 
     attr_reader :first
     attr_reader :last

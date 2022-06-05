@@ -54,10 +54,10 @@ class Propane
            CodePointRange.new(200, 300)])).to eq [
              CodePointRange.new(0, 59),
              CodePointRange.new(102, 199),
-             CodePointRange.new(301, 0xFFFFFFFF)]
+             CodePointRange.new(301, 0x7FFFFFFF)]
         expect(CodePointRange.invert_ranges(
           [CodePointRange.new(0, 500),
-           CodePointRange.new(7000, 0xFFFFFFFF)])).to eq [
+           CodePointRange.new(7000, 0x7FFFFFFF)])).to eq [
              CodePointRange.new(501, 6999)]
       end
     end
