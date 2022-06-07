@@ -44,7 +44,7 @@ class Propane
         elsif sliced = input.slice!(/\A(\S+)\s*->\s*(.*?)(?:;|<<\n(.*?)^>>\n)/m)
           rule_name, components, code = $1, $2, $3
           components = components.strip.split(/\s+/)
-          @rules << Rule.new(rule_name, components, code, line_number)
+          @rules << Rule.new(rule_name, components, code, line_number, @rules.size)
         else
           if input.size > 25
             input = input.slice(0..20) + "..."
