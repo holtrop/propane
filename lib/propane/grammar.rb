@@ -35,7 +35,7 @@ class Propane
             pattern = name
           end
           unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
-            raise Error.new("Invalid token name #{name}")
+            raise Error.new("Invalid token name #{name.inspect}")
           end
           @tokens << Token.new(name: name, pattern: pattern, id: @tokens.size, line_number: line_number)
         elsif sliced = input.slice!(/\Adrop\s+(\S+)\n/)
@@ -43,8 +43,12 @@ class Propane
           @drop_tokens << Token.new(pattern: pattern, line_number: line_number)
         elsif sliced = input.slice!(/\A(\S+)\s*->\s*(.*?)(?:;|<<\n(.*?)^>>\n)/m)
           rule_name, components, code = $1, $2, $3
+          unless rule_name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
+            raise Error.new("Invalid rule name #{name.inspect}")
+          end
           components = components.strip.split(/\s+/)
-          @rules << Rule.new(rule_name, components, code, line_number, @rules.size)
+          # Reserve rule ID 0 for the "real" start rule.
+          @rules << Rule.new(rule_name, components, code, line_number, @rules.size + 1)
         else
           if input.size > 25
             input = input.slice(0..20) + "..."

@@ -3,15 +3,13 @@ class Propane
   class Parser
 
     def initialize(start_rule_set)
-      @token_eof = Token.new(name: "$", id: TOKEN_EOF)
+      @eof_token = Token.new(name: "$", id: TOKEN_EOF)
+      start_rule = Rule.new("$$", [start_rule_set, @eof_token], nil, nil, 0)
       @item_sets = []
       @item_sets_set = {}
-      start_items = start_rule_set.rules.map do |rule|
-        rule.components << @token_eof
-        Item.new(rule, 0)
-      end
+      start_item = Item.new(start_rule, 0)
       eval_item_sets = Set.new
-      eval_item_sets << ItemSet.new(start_items)
+      eval_item_sets << ItemSet.new([start_item])
 
       while eval_item_sets.size > 0
         this_eval_item_sets = eval_item_sets
@@ -22,7 +20,7 @@ class Propane
             @item_sets << item_set
             @item_sets_set[item_set] = item_set
             item_set.following_symbols.each do |following_symbol|
-              unless following_symbol == @token_eof
+              unless following_symbol == @eof_token
                 following_set = item_set.build_following_item_set(following_symbol)
                 eval_item_sets << following_set
               end
@@ -71,7 +69,7 @@ class Propane
 
     def process_item_set(item_set)
       item_set.following_symbols.each do |following_symbol|
-        unless following_symbol == @token_eof
+        unless following_symbol == @eof_token
           following_set = @item_sets_set[item_set.build_following_item_set(following_symbol)]
           item_set.following_item_set[following_symbol] = following_set
           following_set.in_sets << item_set
