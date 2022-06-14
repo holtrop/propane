@@ -42,6 +42,16 @@ class Propane
       @line_number = line_number
     end
 
+    # Return whether the Rule is empty.
+    #
+    # A Rule is empty if it has no components.
+    #
+    # @return [Boolean]
+    #   Whether the Rule is empty.
+    def empty?
+      @components.empty?
+    end
+
   end
 
 end
