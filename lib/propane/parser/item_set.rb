@@ -17,8 +17,8 @@ class Propane
       #   Maps a following symbol to its ItemSet.
       attr_reader :following_item_set
 
-      # @return [Set]
-      #   Item sets leading to this item set.
+      # @return [Set<ItemSet>]
+      #   ItemSets leading to this item set.
       attr_reader :in_sets
 
       # Build an ItemSet.
@@ -79,6 +79,18 @@ class Propane
       #   Whether the ItemSets are equal.
       def eql?(other)
         self == other
+      end
+
+      # Set of ItemSets that lead to this ItemSet.
+      #
+      # This set includes this ItemSet.
+      #
+      # @return [Set<ItemSet>]
+      #   Set of all ItemSets that lead up to this ItemSet.
+      def leading_item_sets
+        @in_sets.reduce(Set[self]) do |result, item_set|
+          result + item_set.leading_item_sets
+        end
       end
 
       # Represent the ItemSet as a String.
