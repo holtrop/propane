@@ -72,6 +72,15 @@ class Propane
         end
       end
 
+      # Return whether the item is "complete", meaning that the parse position
+      # marker is at the end of the rule.
+      #
+      # @return [Boolean]
+      #   Whether the item is "complete".
+      def complete?
+        @position == @rule.components.size
+      end
+
       # Get the following symbol for the Item.
       #
       # That is, the symbol which follows the parse position marker in the
