@@ -110,15 +110,13 @@ class Propane
       #
       # @return [void]
       def close!
-        eval_items = @items
+        eval_items = @items.dup
         while eval_items.size > 0
-          this_eval_items = eval_items
-          eval_items = Set.new
-          this_eval_items.each do |item|
-            item.closed_items.each do |new_item|
-              unless @items.include?(new_item)
-                eval_items << new_item
-              end
+          item = eval_items.first
+          eval_items.delete(item)
+          item.closed_items.each do |new_item|
+            unless @items.include?(new_item)
+              eval_items << new_item
             end
           end
           @items += eval_items
