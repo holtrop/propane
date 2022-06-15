@@ -8,22 +8,19 @@ class Propane
       @item_sets = []
       @item_sets_set = {}
       start_item = Item.new(start_rule, 0)
-      eval_item_sets = Set.new
-      eval_item_sets << ItemSet.new([start_item])
+      eval_item_sets = Set[ItemSet.new([start_item])]
 
       while eval_item_sets.size > 0
-        this_eval_item_sets = eval_item_sets
-        eval_item_sets = Set.new
-        this_eval_item_sets.each do |item_set|
-          unless @item_sets_set.include?(item_set)
-            item_set.id = @item_sets.size
-            @item_sets << item_set
-            @item_sets_set[item_set] = item_set
-            item_set.following_symbols.each do |following_symbol|
-              unless following_symbol == @eof_token
-                following_set = item_set.build_following_item_set(following_symbol)
-                eval_item_sets << following_set
-              end
+        item_set = eval_item_sets.first
+        eval_item_sets.delete(item_set)
+        unless @item_sets_set.include?(item_set)
+          item_set.id = @item_sets.size
+          @item_sets << item_set
+          @item_sets_set[item_set] = item_set
+          item_set.following_symbols.each do |following_symbol|
+            unless following_symbol == @eof_token
+              following_set = item_set.build_following_item_set(following_symbol)
+              eval_item_sets << following_set
             end
           end
         end
