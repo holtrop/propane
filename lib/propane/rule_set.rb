@@ -10,6 +10,10 @@ class Propane
     #   Rules in the RuleSet.
     attr_reader :rules
 
+    # @return [Boolean]
+    #   Whether the RuleSet could expand to an empty sequence.
+    attr_writer :could_be_empty
+
     # Construct a RuleSet.
     #
     # @param name [String]
@@ -26,9 +30,6 @@ class Propane
     #   Rule to add.
     def <<(rule)
       @rules << rule
-      if rule.empty?
-        @could_be_empty = true
-      end
     end
 
     # Return whether any Rule in the RuleSet is empty.

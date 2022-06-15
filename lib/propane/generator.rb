@@ -50,8 +50,65 @@ class Propane
           end
         end
       end
+      determine_possibly_empty_rulesets!(rule_sets)
       @lexer = Lexer.new(@grammar.tokens, @grammar.drop_tokens)
       @parser = Parser.new(rule_sets["Start"])
+    end
+
+    # Determine which grammar rules could expand to empty sequences.
+    #
+    # @param rule_sets [Hash]
+    #   RuleSets.
+    #
+    # @return [void]
+    def determine_possibly_empty_rulesets!(rule_sets)
+      begin
+        newly_discovered_empty_rulesets = false
+        rule_sets.each do |name, rule_set|
+          unless rule_set.could_be_empty?
+            if could_rule_set_be_empty?(rule_set)
+              newly_discovered_empty_rulesets = true
+              rule_set.could_be_empty = true
+            end
+          end
+        end
+      end while newly_discovered_empty_rulesets
+    end
+
+    # Determine whether a RuleSet could be empty.
+    #
+    # @param rule_set [RuleSet]
+    #   RuleSet to test.
+    #
+    # @return [Boolean]
+    #   Whether the RuleSet could be empty.
+    def could_rule_set_be_empty?(rule_set)
+      rule_set.rules.any? do |rule|
+        could_rule_be_empty?(rule)
+      end
+    end
+
+    # Determine whether a Rule could be empty.
+    #
+    # @param rule [Rule]
+    #   Rule to test.
+    #
+    # @return [Boolean]
+    #   Whether the Rule could be empty.
+    def could_rule_be_empty?(rule)
+      i = 0
+      loop do
+        if i == rule.components.size
+          return true
+        end
+        if rule.components[i].is_a?(Token)
+          return false
+        end
+        if !rule.components[i].could_be_empty?
+          return false
+        end
+        i += 1
+      end
     end
 
   end
