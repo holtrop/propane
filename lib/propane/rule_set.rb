@@ -40,6 +40,30 @@ class Propane
       @could_be_empty
     end
 
+    # Build the start token set for the RuleSet.
+    #
+    # @return [Set<Token>]
+    #   Start token set for the RuleSet.
+    def start_token_set
+      if @_start_token_set.nil?
+        @_start_token_set = Set.new
+        @rules.each do |rule|
+          rule.components.each do |component|
+            if component.is_a?(Token)
+              @_start_token_set << component
+              break
+            else
+              @_start_token_set += component.start_token_set
+              unless component.could_be_empty?
+                break
+              end
+            end
+          end
+        end
+      end
+      @_start_token_set
+    end
+
   end
 
 end
