@@ -86,10 +86,26 @@ class Propane
       # That is, the symbol which follows the parse position marker in the
       # current Item.
       #
+      # @param offset [Integer]
+      #   Offset from current parse position to examine.
+      #
       # @return [Token, RuleSet, nil]
       #   Following symbol for the Item.
-      def following_symbol
-        @rule.components[@position]
+      def following_symbol(offset = 0)
+        @rule.components[@position + offset]
+      end
+
+      # Get the previous symbol for the Item.
+      #
+      # That is, the symbol which precedes the parse position marker in the
+      # current Item.
+      #
+      # @return [Token, RuleSet, nil]
+      #   Previous symbol for this Item.
+      def previous_symbol
+        if @position > 0
+          @rule.components[@position - 1]
+        end
       end
 
       # Get whether this Item is followed by the provided symbol.

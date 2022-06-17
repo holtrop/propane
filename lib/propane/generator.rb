@@ -34,6 +34,7 @@ class Propane
           raise Error.new("Rule name collides with token name #{rule.name.inspect}")
         end
         rule_sets[rule.name] ||= RuleSet.new(rule.name)
+        rule.rule_set = rule_sets[rule.name]
         rule_sets[rule.name] << rule
       end
       unless rule_sets["Start"]
@@ -51,6 +52,11 @@ class Propane
         end
       end
       determine_possibly_empty_rulesets!(rule_sets)
+      puts "Start token set"
+      rule_sets.each do |rule_set_name, rule_set|
+        puts "RuleSet #{rule_set_name}:"
+        puts "  " + rule_set.start_token_set.map(&:name).join(", ")
+      end
       @lexer = Lexer.new(@grammar.tokens, @grammar.drop_tokens)
       @parser = Parser.new(rule_sets["Start"])
     end

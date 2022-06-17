@@ -21,6 +21,14 @@ class Propane
       #   ItemSets leading to this item set.
       attr_reader :in_sets
 
+      # @return [Hash]
+      #   ItemSets reached from this item set. Key is a Token or Rule.
+      attr_reader :out_sets
+
+      # @return [nil, Rule, Hash]
+      #   Reduce actions, mapping lookahead tokens to rules.
+      attr_accessor :reduce_actions
+
       # Build an ItemSet.
       #
       # @param items [Array<Item>]
@@ -29,6 +37,7 @@ class Propane
         @items = Set.new(items)
         @following_item_set = {}
         @in_sets = Set.new
+        @out_sets = {}
         close!
       end
 

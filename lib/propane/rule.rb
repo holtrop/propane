@@ -22,6 +22,10 @@ class Propane
     #   Rule name.
     attr_reader :name
 
+    # @return [RuleSet]
+    #   The RuleSet that this Rule is a part of.
+    attr_accessor :rule_set
+
     # Construct a Rule.
     #
     # @param name [String]
