@@ -60,22 +60,43 @@ class Propane
     def build_tables
       shift_table = []
       state_table = []
+      reduce_table = []
       @item_sets.each do |item_set|
         shift_entries = item_set.following_symbols.select do |following_symbol|
           following_symbol.is_a?(Token)
         end.map do |following_symbol|
+          state_id =
+            if following_symbol == @eof_token
+              0
+            else
+              item_set.following_item_set[following_symbol].id
+            end
           {
             token_id: following_symbol.id,
-            state_id: item_set.following_item_set[following_symbol].id,
+            state_id: state_id,
           }
         end
+        reduce_entries =
+          case ra = item_set.reduce_actions
+          when Rule
+            [{token_id: TOKEN_NONE, rule_id: ra.id, rule_set_id: ra.rule_set.id}]
+          when Hash
+            ra.map do |token, rule|
+              {token_id: token.id, rule_id: rule.id, rule_set_id: rule.rule_set.id}
+            end
+          else
+            []
+          end
         state_table << {
           shift_index: shift_table.size,
           n_shifts: shift_entries.size,
+          reduce_index: reduce_table.size,
+          n_reduces: reduce_entries.size,
         }
         shift_table += shift_entries
+        reduce_table += reduce_entries
       end
-      [state_table, shift_table]
+      [state_table, shift_table, reduce_table]
     end
 
     private

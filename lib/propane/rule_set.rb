@@ -2,6 +2,10 @@ class Propane
 
   class RuleSet
 
+    # @return [Integer]
+    #   ID of the RuleSet.
+    attr_accessor :id
+
     # @return [String]
     #   Name of the RuleSet.
     attr_reader :name
@@ -18,7 +22,10 @@ class Propane
     #
     # @param name [String]
     #   Name of the RuleSet.
-    def initialize(name)
+    # @param id [Integer]
+    #   ID of the RuleSet.
+    def initialize(name, id)
+      @id = id
       @name = name
       @rules = []
       @could_be_empty = false

@@ -118,7 +118,7 @@ class <%= @classname %>
         }
 
 <% transition_table, state_table = @lexer.build_tables %>
-        private static const Transition transitions[] = [
+        private static immutable Transition transitions[] = [
 <% transition_table.each do |transition_table_entry| %>
             Transition(<%= transition_table_entry[:first] %>u, <%= transition_table_entry[:last] %>u, <%= transition_table_entry[:destination] %>u),
 <% end %>
@@ -249,6 +249,56 @@ class <%= @classname %>
                 }
             }
             return cast(uint)-1;
+        }
+    }
+
+    static class Parser
+    {
+        private struct Shift
+        {
+            uint token_id;
+            uint state_id;
+        }
+
+        private struct Reduce
+        {
+            uint token_id;
+            uint rule_id;
+            uint rule_set_id;
+        }
+
+        private struct State
+        {
+            uint shift_table_index;
+            uint n_shift_entries;
+            uint reduce_table_index;
+            uint n_reduce_entries;
+        }
+
+<% state_table, shift_table, reduce_table = @parser.build_tables %>
+        private static immutable Shift shifts[] = [
+<%   shift_table.each do |shift| %>
+            Shift(<%= shift[:token_id] %>u, <%= shift[:state_id] %>u),
+<%   end %>
+        ];
+
+        private static immutable Reduce reduces[] = [
+<%   reduce_table.each do |reduce| %>
+            Reduce(<%= reduce[:token_id] %>u, <%= reduce[:rule_id] %>u, <%= reduce[:rule_set_id] %>u),
+<%   end %>
+        ];
+
+        private static immutable State states[] = [
+<%   state_table.each do |state| %>
+            State(<%= state[:shift_index] %>u, <%= state[:n_shifts] %>u, <%= state[:reduce_index] %>u, <%= state[:n_reduces] %>u),
+<%   end %>
+        ];
+
+        private Lexer m_lexer;
+
+        this(const(ubyte) * input, size_t input_length)
+        {
+            m_lexer = new Lexer(input, input_length);
         }
     }
 }

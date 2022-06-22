@@ -33,7 +33,9 @@ class Propane
         if tokens_by_name.include?(rule.name)
           raise Error.new("Rule name collides with token name #{rule.name.inspect}")
         end
-        rule_sets[rule.name] ||= RuleSet.new(rule.name)
+        @_rule_set_id ||= @grammar.tokens.size
+        rule_sets[rule.name] ||= RuleSet.new(rule.name, @_rule_set_id)
+        @_rule_set_id += 1
         rule.rule_set = rule_sets[rule.name]
         rule_sets[rule.name] << rule
       end
