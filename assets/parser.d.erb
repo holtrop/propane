@@ -9,10 +9,11 @@ class <%= @classname %>
 <% @grammar.tokens.each_with_index do |token, index| %>
         TOKEN_<%= token.c_name %> = <%= index %>,
 <% end %>
-        TOKEN_EOF = <%= TOKEN_EOF %>,
-        TOKEN_DECODE_ERROR = <%= TOKEN_DECODE_ERROR %>,
-        TOKEN_DROP = <%= TOKEN_DROP %>,
-        TOKEN_NONE = <%= TOKEN_NONE %>,
+        _TOKEN_COUNT = <%= @grammar.tokens.size %>,
+        _TOKEN_EOF = <%= TOKEN_EOF %>,
+        _TOKEN_DECODE_ERROR = <%= TOKEN_DECODE_ERROR %>,
+        _TOKEN_DROP = <%= TOKEN_DROP %>,
+        _TOKEN_NONE = <%= TOKEN_NONE %>,
     }
 
     static immutable string TokenNames[] = [
@@ -155,7 +156,7 @@ class <%= @classname %>
             for (;;)
             {
                 LexedToken lt = attempt_lex_token();
-                if (lt.token != TOKEN_DROP)
+                if (lt.token != _TOKEN_DROP)
                 {
                     return lt;
                 }
@@ -164,7 +165,7 @@ class <%= @classname %>
 
         private LexedToken attempt_lex_token()
         {
-            LexedToken lt = LexedToken(m_input_row, m_input_col, 0, TOKEN_NONE);
+            LexedToken lt = LexedToken(m_input_row, m_input_col, 0, _TOKEN_NONE);
             struct LexedTokenState
             {
                 size_t length;
@@ -173,7 +174,7 @@ class <%= @classname %>
                 uint token;
             }
             LexedTokenState last_accepts_info;
-            last_accepts_info.token = TOKEN_NONE;
+            last_accepts_info.token = _TOKEN_NONE;
             LexedTokenState attempt_info;
             uint current_state;
             for (;;)
@@ -181,7 +182,7 @@ class <%= @classname %>
                 auto decoded = Decoder.decode_code_point(&m_input[m_input_position + attempt_info.length], m_input_length - m_input_position - attempt_info.length);
                 if (decoded.code_point == Decoder.CODE_POINT_INVALID)
                 {
-                    lt.token = TOKEN_DECODE_ERROR;
+                    lt.token = _TOKEN_DECODE_ERROR;
                     return lt;
                 }
                 bool lex_continue = false;
@@ -202,7 +203,7 @@ class <%= @classname %>
                             attempt_info.delta_col++;
                         }
                         current_state = dest;
-                        if (states[current_state].accepts != TOKEN_NONE)
+                        if (states[current_state].accepts != _TOKEN_NONE)
                         {
                             attempt_info.token = states[current_state].accepts;
                             last_accepts_info = attempt_info;
@@ -211,12 +212,12 @@ class <%= @classname %>
                 }
                 else if (attempt_info.length == 0u)
                 {
-                    lt.token = TOKEN_EOF;
+                    lt.token = _TOKEN_EOF;
                     break;
                 }
                 if (!lex_continue)
                 {
-                    if (last_accepts_info.token != TOKEN_NONE)
+                    if (last_accepts_info.token != _TOKEN_NONE)
                     {
                         lt.token = last_accepts_info.token;
                         lt.length = last_accepts_info.length;
@@ -256,15 +257,16 @@ class <%= @classname %>
     {
         private struct Shift
         {
-            uint token_id;
-            uint state_id;
+            uint symbol;
+            uint state;
         }
 
         private struct Reduce
         {
-            uint token_id;
-            uint rule_id;
-            uint rule_set_id;
+            uint token;
+            uint rule;
+            uint rule_set;
+            uint n_states;
         }
 
         private struct State
@@ -284,7 +286,7 @@ class <%= @classname %>
 
         private static immutable Reduce reduces[] = [
 <%   reduce_table.each do |reduce| %>
-            Reduce(<%= reduce[:token_id] %>u, <%= reduce[:rule_id] %>u, <%= reduce[:rule_set_id] %>u),
+            Reduce(<%= reduce[:token_id] %>u, <%= reduce[:rule_id] %>u, <%= reduce[:rule_set_id] %>u, <%= reduce[:n_states] %>u),
 <%   end %>
         ];
 
@@ -299,6 +301,83 @@ class <%= @classname %>
         this(const(ubyte) * input, size_t input_length)
         {
             m_lexer = new Lexer(input, input_length);
+        }
+
+        void parse()
+        {
+            Lexer.LexedToken lexed_token;
+            uint token = _TOKEN_NONE;
+            uint[] states = new uint[](1);
+            uint reduced_rule_set = 0xFFFFFFFFu;
+            for (;;)
+            {
+                if (token == _TOKEN_NONE)
+                {
+                    lexed_token = m_lexer.lex_token();
+                    token = lexed_token.token;
+                }
+                uint shift_state = 0xFFFFFFFFu;
+                if (reduced_rule_set != 0xFFFFFFFFu)
+                {
+                    shift_state = check_shift(states[$-1], reduced_rule_set);
+                    reduced_rule_set = 0xFFFFFFFFu;
+                }
+                if (shift_state == 0xFFFFFFFFu)
+                {
+                    shift_state = check_shift(states[$-1], token);
+                }
+                if (shift_state != 0xFFFFFFFFu)
+                {
+                    if (token == _TOKEN_EOF)
+                    {
+                        /* Successful parse. */
+                        return;
+                    }
+                    states ~= shift_state;
+                    token = _TOKEN_NONE;
+                    continue;
+                }
+
+                uint reduce_index = check_reduce(states[$-1], token);
+                if (reduce_index != 0xFFFFFFFFu)
+                {
+                    reduced_rule_set = reduces[reduce_index].rule_set;
+                    states.length -= reduces[reduce_index].n_states;
+                    continue;
+                }
+
+                /* Error, unexpected token. */
+                return;
+            }
+        }
+
+        private uint check_shift(uint state, uint token)
+        {
+            uint start = states[state].shift_table_index;
+            uint end = start + states[state].n_shift_entries;
+            for (uint i = start; i < end; i++)
+            {
+                if (shifts[i].symbol == token)
+                {
+                    return shifts[i].state;
+                }
+            }
+            return 0xFFFFFFFFu;
+        }
+
+        private uint check_reduce(uint state, uint token)
+        {
+            uint start = states[state].reduce_table_index;
+            uint end = start + states[state].n_reduce_entries;
+            for (uint i = start; i < end; i++)
+            {
+                if ((reduces[i].token == token) ||
+                    (reduces[i].token == _TOKEN_NONE))
+                {
+                    return i;
+                }
+            }
+            return 0xFFFFFFFFu;
         }
     }
 }
