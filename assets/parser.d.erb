@@ -2,6 +2,9 @@
 module <%= @grammar.modulename %>;
 
 <% end %>
+
+import std.stdio;
+
 class <%= @classname %>
 {
     enum
@@ -16,7 +19,7 @@ class <%= @classname %>
         _TOKEN_NONE = <%= TOKEN_NONE %>,
     }
 
-    static immutable string TokenNames[] = [
+    static immutable string token_names[] = [
 <% @grammar.tokens.each_with_index do |token, index| %>
         "<%= token.name %>",
 <% end %>
@@ -303,7 +306,7 @@ class <%= @classname %>
             m_lexer = new Lexer(input, input_length);
         }
 
-        void parse()
+        bool parse()
         {
             Lexer.LexedToken lexed_token;
             uint token = _TOKEN_NONE;
@@ -331,7 +334,7 @@ class <%= @classname %>
                     if (token == _TOKEN_EOF)
                     {
                         /* Successful parse. */
-                        return;
+                        return true;
                     }
                     states ~= shift_state;
                     token = _TOKEN_NONE;
@@ -347,18 +350,39 @@ class <%= @classname %>
                 }
 
                 /* Error, unexpected token. */
-                return;
+                write("Unexpected token ");
+                if (token == _TOKEN_EOF)
+                {
+                    writeln("{EOF}");
+                }
+                else if (token < _TOKEN_COUNT)
+                {
+                    writeln(token_names[token]);
+                }
+                else
+                {
+                    writeln("{other}");
+                }
+                return false;
             }
         }
 
-        private uint check_shift(uint state, uint token)
+        private uint check_shift(uint state, uint symbol)
         {
             uint start = states[state].shift_table_index;
             uint end = start + states[state].n_shift_entries;
             for (uint i = start; i < end; i++)
             {
-                if (shifts[i].symbol == token)
+                if (shifts[i].symbol == symbol)
                 {
+                    if (symbol < _TOKEN_COUNT)
+                    {
+                        writeln("Shifting ", token_names[symbol]);
+                    }
+                    else
+                    {
+                        writeln("Shifting rule set ", symbol);
+                    }
                     return shifts[i].state;
                 }
             }
@@ -374,6 +398,7 @@ class <%= @classname %>
                 if ((reduces[i].token == token) ||
                     (reduces[i].token == _TOKEN_NONE))
                 {
+                    writeln("Reducing rule ", reduces[i].rule, ", rule set ", reduces[i].rule_set);
                     return i;
                 }
             }

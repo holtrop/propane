@@ -74,10 +74,13 @@ EOF
     write_grammar <<EOF
 token a
 token b
+drop \\s+
 Start -> a R1;
 Start -> b R1;
 R1 -> b;
 EOF
     build_parser
+    compile("spec/test_d_lexer2.d")
+    run
   end
 end

@@ -62,9 +62,7 @@ class Propane
       state_table = []
       reduce_table = []
       @item_sets.each do |item_set|
-        shift_entries = item_set.following_symbols.select do |following_symbol|
-          following_symbol.is_a?(Token)
-        end.map do |following_symbol|
+        shift_entries = item_set.following_symbols.map do |following_symbol|
           state_id =
             if following_symbol == @eof_token
               0
