@@ -323,7 +323,6 @@ class <%= @classname %>
                 if (reduced_rule_set != 0xFFFFFFFFu)
                 {
                     shift_state = check_shift(states[$-1], reduced_rule_set);
-                    reduced_rule_set = 0xFFFFFFFFu;
                 }
                 if (shift_state == 0xFFFFFFFFu)
                 {
@@ -337,7 +336,14 @@ class <%= @classname %>
                         return true;
                     }
                     states ~= shift_state;
-                    token = _TOKEN_NONE;
+                    if (reduced_rule_set == 0xFFFFFFFFu)
+                    {
+                        token = _TOKEN_NONE;
+                    }
+                    else
+                    {
+                        reduced_rule_set = 0xFFFFFFFFu;
+                    }
                     continue;
                 }
 
@@ -398,7 +404,19 @@ class <%= @classname %>
                 if ((reduces[i].token == token) ||
                     (reduces[i].token == _TOKEN_NONE))
                 {
-                    writeln("Reducing rule ", reduces[i].rule, ", rule set ", reduces[i].rule_set);
+                    write("Reducing rule ", reduces[i].rule, ", rule set ", reduces[i].rule_set, " lookahead ");
+                    if (token < _TOKEN_COUNT)
+                    {
+                        writeln(token_names[token]);
+                    }
+                    else if (token == _TOKEN_EOF)
+                    {
+                        writeln("{EOF}");
+                    }
+                    else
+                    {
+                        writeln("{other}");
+                    }
                     return i;
                 }
             }

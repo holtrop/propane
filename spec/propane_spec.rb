@@ -68,6 +68,8 @@ R1 -> a b;
 R2 -> a b;
 EOF
     build_parser
+    compile("spec/test_d_lexer3.d")
+    run
   end
 
   it "handles reducing a rule that could be arrived at from multiple states" do
