@@ -6,7 +6,7 @@ describe Propane do
   end
 
   def build_parser
-    result = system(*%w[./propane.sh spec/run/testparser.propane spec/run/testparser.d])
+    result = system(*%w[./propane.sh spec/run/testparser.propane spec/run/testparser.d --log spec/run/testparser.log])
     expect(result).to be_truthy
   end
 

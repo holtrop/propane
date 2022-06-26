@@ -5,7 +5,11 @@ class Propane
     def initialize(grammar, output_file, log_file)
       @grammar = grammar
       @output_file = output_file
-      @log_file = log_file
+      if log_file
+        @log = File.open(log_file, "wb")
+      else
+        @log = StringIO.new
+      end
       @classname = @grammar.classname || File.basename(output_file).sub(%r{[^a-zA-Z0-9].*}, "").capitalize
       process_grammar!
     end
@@ -16,6 +20,7 @@ class Propane
       File.open(@output_file, "wb") do |fh|
         fh.write(result)
       end
+      @log.close
     end
 
     private
@@ -34,8 +39,10 @@ class Propane
           raise Error.new("Rule name collides with token name #{rule.name.inspect}")
         end
         @_rule_set_id ||= @grammar.tokens.size
-        rule_sets[rule.name] ||= RuleSet.new(rule.name, @_rule_set_id)
-        @_rule_set_id += 1
+        unless rule_sets[rule.name]
+          rule_sets[rule.name] = RuleSet.new(rule.name, @_rule_set_id)
+          @_rule_set_id += 1
+        end
         rule.rule_set = rule_sets[rule.name]
         rule_sets[rule.name] << rule
       end
@@ -54,13 +61,8 @@ class Propane
         end
       end
       determine_possibly_empty_rulesets!(rule_sets)
-      puts "Start token set"
-      rule_sets.each do |rule_set_name, rule_set|
-        puts "RuleSet #{rule_set_name}:"
-        puts "  " + rule_set.start_token_set.map(&:name).join(", ")
-      end
       @lexer = Lexer.new(@grammar.tokens, @grammar.drop_tokens)
-      @parser = Parser.new(rule_sets["Start"])
+      @parser = Parser.new(@grammar, rule_sets, rule_sets["Start"], @log)
     end
 
     # Determine which grammar rules could expand to empty sequences.

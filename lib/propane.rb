@@ -1,5 +1,6 @@
 require "erb"
 require "set"
+require "stringio"
 require_relative "propane/cli"
 require_relative "propane/code_point_range"
 require_relative "propane/fa"
@@ -18,6 +19,7 @@ require_relative "propane/regex/unit"
 require_relative "propane/rule_set"
 require_relative "propane/rule"
 require_relative "propane/token"
+require_relative "propane/util"
 require_relative "propane/version"
 
 class Propane

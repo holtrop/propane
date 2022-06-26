@@ -56,6 +56,14 @@ class Propane
       @components.empty?
     end
 
+    # Represent the Rule as a String.
+    #
+    # @return [String]
+    #   Rule represented as a String.
+    def to_s
+      "#{@name} -> #{@components.map(&:name).join(" ")}"
+    end
+
   end
 
 end

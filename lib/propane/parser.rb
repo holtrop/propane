@@ -2,12 +2,15 @@ class Propane
 
   class Parser
 
-    def initialize(start_rule_set)
+    def initialize(grammar, rule_sets, start_rule_set, log)
+      @grammar = grammar
+      @rule_sets = rule_sets
+      @log = log
       @eof_token = Token.new(name: "$", id: TOKEN_EOF)
-      start_rule = Rule.new("$$", [start_rule_set, @eof_token], nil, nil, 0)
+      @start_rule = Rule.new("$$", [start_rule_set, @eof_token], nil, nil, 0)
       @item_sets = []
       @item_sets_set = {}
-      start_item = Item.new(start_rule, 0)
+      start_item = Item.new(@start_rule, 0)
       eval_item_sets = Set[ItemSet.new([start_item])]
 
       while eval_item_sets.size > 0
@@ -31,30 +34,7 @@ class Propane
       end
 
       build_reduce_actions!
-
-      @item_sets.each do |item_set|
-        puts "Item set #{item_set.id}:"
-        ids = item_set.in_sets.map(&:id)
-        puts "  In sets: #{ids.join(", ")}"
-        puts "  Out sets:"
-        item_set.out_sets.each do |symbol, out_set|
-          puts "    #{symbol.name} => #{out_set.id}"
-        end
-        puts item_set
-        item_set.following_item_set.each do |following_symbol, following_item_set|
-          puts " #{following_symbol.name} => #{following_item_set.id}"
-        end
-        puts "  Reduce actions:"
-        case item_set.reduce_actions
-        when Rule
-          puts "    * => #{item_set.reduce_actions.id} (#{item_set.reduce_actions.name})"
-        when Hash
-          item_set.reduce_actions.each do |token, rule|
-            puts "    #{token.name} => #{rule.id} (#{rule.name})"
-          end
-        end
-        puts
-      end
+      write_log!
     end
 
     def build_tables
@@ -107,7 +87,6 @@ class Propane
           following_set = @item_sets_set[item_set.build_following_item_set(following_symbol)]
           item_set.following_item_set[following_symbol] = following_set
           following_set.in_sets << item_set
-          item_set.out_sets[following_symbol] = following_set
         end
       end
     end
@@ -223,6 +202,55 @@ class Propane
         end
       end
       lookahead_tokens
+    end
+
+    def write_log!
+      @log.puts Util.banner("Parser Rules")
+      ([@start_rule] + @grammar.rules).each do |rule|
+        @log.puts
+        @log.puts "Rule #{rule.id}:"
+        @log.puts "  #{rule}"
+      end
+
+      @log.puts
+      @log.puts Util.banner("Parser Tokens")
+      @log.puts
+      @grammar.tokens.each do |token|
+        @log.puts "Token #{token.id}: #{token.name}"
+      end
+
+      @log.puts
+      @log.puts Util.banner("Parser Rule Sets")
+      @rule_sets.each do |rule_set_name, rule_set|
+        @log.puts
+        @log.puts "Rule Set #{rule_set.id}: #{rule_set_name}"
+        @log.puts "  Start token set: #{rule_set.start_token_set.map(&:name).join(", ")}"
+      end
+
+      @log.puts
+      @log.puts Util.banner("Parser States")
+      @item_sets.each do |item_set|
+        @log.puts
+        @log.puts "State #{item_set.id}:"
+        @log.puts item_set.to_s.gsub(/^/, "  ")
+        incoming_ids = item_set.in_sets.map(&:id)
+        @log.puts
+        @log.puts "  Incoming states: #{incoming_ids.join(", ")}"
+        @log.puts "  Outgoing states:"
+        item_set.following_item_set.each do |following_symbol, following_item_set|
+          @log.puts "    #{following_symbol.name} => #{following_item_set.id}"
+        end
+        @log.puts
+        @log.puts "  Reduce actions:"
+        case item_set.reduce_actions
+        when Rule
+          @log.puts "    * => #{item_set.reduce_actions.id} (#{item_set.reduce_actions.name})"
+        when Hash
+          item_set.reduce_actions.each do |token, rule|
+            @log.puts "    lookahead #{token.name} => #{rule.name} (#{rule.id}), rule set ##{rule.rule_set.id}"
+          end
+        end
+      end
     end
 
   end
