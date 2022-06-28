@@ -58,6 +58,16 @@ EOF
     build_parser
   end
 
+  it "generates an SLR parser" do
+    write_grammar <<EOF
+token one 1
+Start -> E;
+E -> one E;
+E -> one;
+EOF
+    build_parser
+  end
+
   it "distinguishes between multiple identical rules with lookahead symbol" do
     write_grammar <<EOF
 token a
