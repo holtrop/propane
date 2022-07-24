@@ -59,7 +59,7 @@ end
 describe Propane::Lexer::DFA do
   it "lexes a simple token" do
     expect(run(<<EOF, "foo")).to eq [["foo", "foo"]]
-token foo
+token foo;
 EOF
   end
 
@@ -69,8 +69,8 @@ EOF
       ["bar", "bar"],
     ]
     expect(run(<<EOF, "foobar")).to eq expected
-token foo
-token bar
+token foo;
+token bar;
 EOF
   end
 
@@ -79,17 +79,17 @@ EOF
       ["identifier", "foobar"],
     ]
     expect(run(<<EOF, "foobar")).to eq expected
-token foo
-token bar
-token identifier [a-z]+
+token foo;
+token bar;
+token identifier [a-z]+;
 EOF
     expected = [
       ["plusplus", "++"],
       ["plus", "+"],
     ]
     expect(run(<<EOF, "+++")).to eq expected
-token plus \\+
-token plusplus \\+\\+
+token plus \\+;
+token plusplus \\+\\+;
 EOF
   end
 
@@ -100,9 +100,9 @@ EOF
       ["bar", "bar"],
     ]
     expect(run(<<EOF, "foo \tbar")).to eq expected
-token foo
-token bar
-token WS \\s+
+token foo;
+token bar;
+token WS \\s+;
 EOF
   end
 
@@ -113,9 +113,9 @@ EOF
       ["bar", "bar"],
     ]
     expect(run(<<EOF, "foo \tbar")).to eq expected
-token foo
-token bar
-drop \\s+
+token foo;
+token bar;
+drop \\s+;
 EOF
   end
 end

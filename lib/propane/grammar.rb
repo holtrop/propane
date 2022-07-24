@@ -25,12 +25,12 @@ class Propane
           # Skip white space.
         elsif sliced = input.slice!(/\A#.*\n/)
           # Skip comment lines.
-        elsif sliced = input.slice!(/\Amodule\s+(\S+)\n/)
+        elsif sliced = input.slice!(/\Amodule\s+(\S+)\s*;/)
           @modulename = $1
-        elsif sliced = input.slice!(/\Aclass\s+(\S+)\n/)
+        elsif sliced = input.slice!(/\Aclass\s+(\S+)\s*;/)
           @classname = $1
-        elsif sliced = input.slice!(/\Atoken\s+(\S+)(?:\s+(\S+))?\n/)
-          name, pattern = $1, $2
+        elsif sliced = input.slice!(/\Atoken\s+(\S+?)(?:\s+(.+?))?\s*(?:;|<<\n(.*?)^>>\n)/m)
+          name, pattern, code = $1, $2, $3
           if pattern.nil?
             pattern = name
           end
@@ -38,7 +38,7 @@ class Propane
             raise Error.new("Invalid token name #{name.inspect}")
           end
           @tokens << Token.new(name: name, pattern: pattern, id: @tokens.size, line_number: line_number)
-        elsif sliced = input.slice!(/\Adrop\s+(\S+)\n/)
+        elsif sliced = input.slice!(/\Adrop\s+(\S+)\s*;/)
           pattern = $1
           @drop_tokens << Token.new(pattern: pattern, line_number: line_number)
         elsif sliced = input.slice!(/\A(\S+)\s*->\s*(.*?)(?:;|<<\n(.*?)^>>\n)/m)
