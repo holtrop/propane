@@ -118,4 +118,13 @@ token bar;
 drop \\s+;
 EOF
   end
+
+  it "matches a semicolon" do
+    expected = [
+      ["semicolon", ";"],
+    ]
+    expect(run(<<EOF, ";")).to eq expected
+token semicolon \;;
+EOF
+  end
 end
