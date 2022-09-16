@@ -35,7 +35,8 @@ class TestLexer
       end
     end
     if last_accepts
-      [last_accepts.name, last_s]
+      name = last_accepts.token ? last_accepts.token.name : nil
+      [name, last_s]
     end
   end
 
@@ -51,7 +52,7 @@ end
 
 def run(grammar, input)
   grammar = Propane::Grammar.new(grammar)
-  token_dfa = Propane::Lexer::DFA.new(grammar.tokens, grammar.drop_tokens)
+  token_dfa = Propane::Lexer::DFA.new(grammar.patterns)
   test_lexer = TestLexer.new(token_dfa)
   test_lexer.lex(input)
 end

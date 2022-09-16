@@ -3,14 +3,14 @@ class Propane
   class Grammar
 
     attr_reader :classname
-    attr_reader :drop_tokens
     attr_reader :modulename
+    attr_reader :patterns
     attr_reader :rules
     attr_reader :tokens
 
     def initialize(input)
+      @patterns = []
       @tokens = []
-      @drop_tokens = []
       @rules = []
       input = input.gsub("\r\n", "\n")
       parse_grammar(input)
@@ -37,10 +37,13 @@ class Propane
           unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
             raise Error.new("Invalid token name #{name.inspect}")
           end
-          @tokens << Token.new(name: name, pattern: pattern, id: @tokens.size, line_number: line_number)
+          token = Token.new(name: name, id: @tokens.size, line_number: line_number)
+          @tokens << token
+          pattern = Pattern.new(pattern: pattern, token: token, line_number: line_number)
+          @patterns << pattern
         elsif sliced = input.slice!(/\Adrop\s+(\S+)\s*;/)
           pattern = $1
-          @drop_tokens << Token.new(pattern: pattern, line_number: line_number)
+          @patterns << Pattern.new(pattern: pattern, line_number: line_number, drop: true)
         elsif sliced = input.slice!(/\A(\S+)\s*->\s*(.*?)(?:;|<<\n(.*?)^>>\n)/m)
           rule_name, components, code = $1, $2, $3
           unless rule_name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
