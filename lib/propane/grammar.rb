@@ -41,6 +41,13 @@ class Propane
           @tokens << token
           pattern = Pattern.new(pattern: pattern, token: token, line_number: line_number)
           @patterns << pattern
+        elsif sliced = input.slice!(/\Atokenid\s+(\S+?)\s*;/m)
+          name = $1
+          unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
+            raise Error.new("Invalid token name #{name.inspect}")
+          end
+          token = Token.new(name: name, id: @tokens.size, line_number: line_number)
+          @tokens << token
         elsif sliced = input.slice!(/\Adrop\s+(\S+)\s*;/)
           pattern = $1
           @patterns << Pattern.new(pattern: pattern, line_number: line_number, drop: true)
