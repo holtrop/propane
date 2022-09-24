@@ -22,10 +22,17 @@ class Propane
           else
             state.accepts.token.id
           end
+        code_id =
+          if state.accepts && state.accepts.code_id
+            state.accepts.code_id
+          else
+            0xFFFF_FFFF
+          end
         state_table << {
           transition_table_index: transition_table.size,
           n_transitions: state.transitions.size,
           accepts: accepts,
+          code_id: code_id,
         }
         state.transitions.each do |transition|
           transition_table << {

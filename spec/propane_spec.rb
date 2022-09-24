@@ -95,4 +95,19 @@ EOF
     compile("spec/test_d_lexer2.d")
     run
   end
+
+  it "executes user code when matching lexer token" do
+    write_grammar <<EOF
+token abc <<
+  writeln("abc!");
+>>
+token def;
+Start -> Abcs def;
+Abcs -> ;
+Abcs -> abc Abcs;
+EOF
+    build_parser
+    compile("spec/test_user_code.d")
+    run
+  end
 end

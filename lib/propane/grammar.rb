@@ -12,6 +12,7 @@ class Propane
       @patterns = []
       @tokens = []
       @rules = []
+      @code_id = 0
       input = input.gsub("\r\n", "\n")
       parse_grammar(input)
     end
@@ -29,7 +30,7 @@ class Propane
           @modulename = $1
         elsif sliced = input.slice!(/\Aclass\s+(\S+)\s*;/)
           @classname = $1
-        elsif sliced = input.slice!(/\Atoken\s+(\S+?)(?:\s+(.+?))?\s*(?:;|<<\n(.*?)^>>\n)/m)
+        elsif sliced = input.slice!(/\Atoken\s+(\S+?)(?:\s+([^\n]+?))?\s*(?:;|<<\n(.*?)^>>\n)/m)
           name, pattern, code = $1, $2, $3
           if pattern.nil?
             pattern = name
@@ -39,7 +40,13 @@ class Propane
           end
           token = Token.new(name: name, id: @tokens.size, line_number: line_number)
           @tokens << token
-          pattern = Pattern.new(pattern: pattern, token: token, line_number: line_number)
+          if code
+            code_id = @code_id
+            @code_id += 1
+          else
+            code_id = nil
+          end
+          pattern = Pattern.new(pattern: pattern, token: token, line_number: line_number, code: code, code_id: code_id)
           @patterns << pattern
         elsif sliced = input.slice!(/\Atokenid\s+(\S+?)\s*;/m)
           name = $1
@@ -51,7 +58,7 @@ class Propane
         elsif sliced = input.slice!(/\Adrop\s+(\S+)\s*;/)
           pattern = $1
           @patterns << Pattern.new(pattern: pattern, line_number: line_number, drop: true)
-        elsif sliced = input.slice!(/\A(\S+)\s*->\s*(.*?)(?:;|<<\n(.*?)^>>\n)/m)
+        elsif sliced = input.slice!(/\A(\S+)\s*->\s*([^\n]*?)(?:;|<<\n(.*?)^>>\n)/m)
           rule_name, components, code = $1, $2, $3
           unless rule_name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
             raise Error.new("Invalid rule name #{name.inspect}")

@@ -119,6 +119,7 @@ class <%= @classname %>
             uint transition_table_index;
             uint n_transitions;
             uint accepts;
+            uint code_id;
         }
 
 <% transition_table, state_table = @lexer.build_tables %>
@@ -130,7 +131,10 @@ class <%= @classname %>
 
         private static const State states[] = [
 <% state_table.each do |state_table_entry| %>
-            State(<%= state_table_entry[:transition_table_index] %>u, <%= state_table_entry[:n_transitions] %>u, <%= state_table_entry[:accepts] %>u),
+            State(<%= state_table_entry[:transition_table_index] %>u,
+                  <%= state_table_entry[:n_transitions] %>u,
+                  <%= state_table_entry[:accepts] %>u,
+                  <%= state_table_entry[:code_id] %>u),
 <% end %>
         ];
 
@@ -166,6 +170,31 @@ class <%= @classname %>
             }
         }
 
+        /**
+         * Execute user code associated with a lexer pattern.
+         *
+         * @param code_id The ID of the user code block to execute.
+         *
+         * @return Token ID to accept, or _TOKEN_NONE if the user code does
+         *   not explicitly return a token.
+         */
+        private uint user_code(uint code_id)
+        {
+            switch (code_id)
+            {
+<% @grammar.patterns.each do |pattern| %>
+<%   if pattern.code_id %>
+            case <%= pattern.code_id %>u: {
+<%= pattern.code %>
+            } break;
+<%   end %>
+<% end %>
+            default: break;
+            }
+
+            return _TOKEN_NONE;
+        }
+
         private LexedToken attempt_lex_token()
         {
             LexedToken lt = LexedToken(m_input_row, m_input_col, 0, _TOKEN_NONE);
@@ -175,6 +204,7 @@ class <%= @classname %>
                 size_t delta_row;
                 size_t delta_col;
                 uint token;
+                uint code_id;
             }
             LexedTokenState last_accepts_info;
             last_accepts_info.token = _TOKEN_NONE;
@@ -209,6 +239,7 @@ class <%= @classname %>
                         if (states[current_state].accepts != _TOKEN_NONE)
                         {
                             attempt_info.token = states[current_state].accepts;
+                            attempt_info.code_id = states[current_state].code_id;
                             last_accepts_info = attempt_info;
                         }
                     }
@@ -220,10 +251,24 @@ class <%= @classname %>
                 }
                 if (!lex_continue)
                 {
-                    if (last_accepts_info.token != _TOKEN_NONE)
+                    bool pattern_accepted = false;
+                    uint token_to_accept = last_accepts_info.token;
+                    if (last_accepts_info.code_id != 0xFFFF_FFFFu)
                     {
-                        lt.token = last_accepts_info.token;
-                        lt.length = last_accepts_info.length;
+                        uint user_code_token = user_code(last_accepts_info.code_id);
+                        /* A return of _TOKEN_NONE from user_code() means
+                         * that the user code did not explicitly return a
+                         * token. So only override the token to return if the
+                         * user code does explicitly return a token. */
+                        if (user_code_token != _TOKEN_NONE)
+                        {
+                            token_to_accept = user_code_token;
+                        }
+                        pattern_accepted = true;
+                    }
+                    if (pattern_accepted || (token_to_accept != _TOKEN_NONE))
+                    {
+                        /* Update the input position tracking. */
                         m_input_position += last_accepts_info.length;
                         m_input_row += last_accepts_info.delta_row;
                         if (last_accepts_info.delta_row != 0u)
@@ -235,7 +280,13 @@ class <%= @classname %>
                             m_input_col += last_accepts_info.delta_col;
                         }
                     }
-                    break;
+                    if (token_to_accept != _TOKEN_NONE)
+                    {
+                        /* We have a token to accept. */
+                        lt.token = last_accepts_info.token;
+                        lt.length = last_accepts_info.length;
+                        break;
+                    }
                 }
             }
             return lt;
