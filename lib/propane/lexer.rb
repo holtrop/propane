@@ -14,7 +14,7 @@ class Propane
       state_table = []
       states = @dfa.enumerate
       states.each do |state, id|
-        accepts =
+        token =
           if state.accepts.nil?
             TOKEN_NONE
           elsif state.accepts.drop?
@@ -31,7 +31,7 @@ class Propane
         state_table << {
           transition_table_index: transition_table.size,
           n_transitions: state.transitions.size,
-          accepts: accepts,
+          token: token,
           code_id: code_id,
         }
         state.transitions.each do |transition|
