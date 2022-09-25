@@ -30,10 +30,6 @@ class Propane
       @line_number = options[:line_number]
     end
 
-    def c_name
-      @name.upcase
-    end
-
     def to_s
       @name
     end

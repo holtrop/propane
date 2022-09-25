@@ -10,7 +10,7 @@ class <%= @classname %>
     enum
     {
 <% @grammar.tokens.each_with_index do |token, index| %>
-        TOKEN_<%= token.c_name %> = <%= index %>,
+        TOKEN_<%= token.name %> = <%= index %>,
 <% end %>
         _TOKEN_COUNT = <%= @grammar.tokens.size %>,
         _TOKEN_EOF = <%= TOKEN_EOF %>,
