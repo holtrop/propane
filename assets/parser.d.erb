@@ -198,7 +198,7 @@ class <%= @classname %>
         private LexedToken attempt_lex_token()
         {
             LexedToken lt = LexedToken(m_input_row, m_input_col, 0, _TOKEN_NONE);
-            struct LexedTokenState
+            struct MatchInfo
             {
                 size_t length;
                 size_t delta_row;
@@ -206,13 +206,13 @@ class <%= @classname %>
                 uint token;
                 uint code_id;
             }
-            LexedTokenState last_accepts_info;
-            last_accepts_info.token = _TOKEN_NONE;
-            LexedTokenState attempt_info;
+            MatchInfo longest_match_info;
+            longest_match_info.token = _TOKEN_NONE;
+            MatchInfo attempt_match_info;
             uint current_state;
             for (;;)
             {
-                auto decoded = Decoder.decode_code_point(&m_input[m_input_position + attempt_info.length], m_input_length - m_input_position - attempt_info.length);
+                auto decoded = Decoder.decode_code_point(&m_input[m_input_position + attempt_match_info.length], m_input_length - m_input_position - attempt_match_info.length);
                 if (decoded.code_point == Decoder.CODE_POINT_INVALID)
                 {
                     lt.token = _TOKEN_DECODE_ERROR;
@@ -225,26 +225,26 @@ class <%= @classname %>
                     if (dest != cast(uint)-1)
                     {
                         lex_continue = true;
-                        attempt_info.length += decoded.code_point_length;
+                        attempt_match_info.length += decoded.code_point_length;
                         if (decoded.code_point == '\n')
                         {
-                            attempt_info.delta_row++;
-                            attempt_info.delta_col = 0u;
+                            attempt_match_info.delta_row++;
+                            attempt_match_info.delta_col = 0u;
                         }
                         else
                         {
-                            attempt_info.delta_col++;
+                            attempt_match_info.delta_col++;
                         }
                         current_state = dest;
                         if (states[current_state].accepts != _TOKEN_NONE)
                         {
-                            attempt_info.token = states[current_state].accepts;
-                            attempt_info.code_id = states[current_state].code_id;
-                            last_accepts_info = attempt_info;
+                            attempt_match_info.token = states[current_state].accepts;
+                            attempt_match_info.code_id = states[current_state].code_id;
+                            longest_match_info = attempt_match_info;
                         }
                     }
                 }
-                else if (attempt_info.length == 0u)
+                else if (attempt_match_info.length == 0u)
                 {
                     lt.token = _TOKEN_EOF;
                     break;
@@ -252,10 +252,10 @@ class <%= @classname %>
                 if (!lex_continue)
                 {
                     bool pattern_accepted = false;
-                    uint token_to_accept = last_accepts_info.token;
-                    if (last_accepts_info.code_id != 0xFFFF_FFFFu)
+                    uint token_to_accept = longest_match_info.token;
+                    if (longest_match_info.code_id != 0xFFFF_FFFFu)
                     {
-                        uint user_code_token = user_code(last_accepts_info.code_id);
+                        uint user_code_token = user_code(longest_match_info.code_id);
                         /* A return of _TOKEN_NONE from user_code() means
                          * that the user code did not explicitly return a
                          * token. So only override the token to return if the
@@ -269,22 +269,22 @@ class <%= @classname %>
                     if (pattern_accepted || (token_to_accept != _TOKEN_NONE))
                     {
                         /* Update the input position tracking. */
-                        m_input_position += last_accepts_info.length;
-                        m_input_row += last_accepts_info.delta_row;
-                        if (last_accepts_info.delta_row != 0u)
+                        m_input_position += longest_match_info.length;
+                        m_input_row += longest_match_info.delta_row;
+                        if (longest_match_info.delta_row != 0u)
                         {
-                            m_input_col = last_accepts_info.delta_col;
+                            m_input_col = longest_match_info.delta_col;
                         }
                         else
                         {
-                            m_input_col += last_accepts_info.delta_col;
+                            m_input_col += longest_match_info.delta_col;
                         }
                     }
                     if (token_to_accept != _TOKEN_NONE)
                     {
                         /* We have a token to accept. */
-                        lt.token = last_accepts_info.token;
-                        lt.length = last_accepts_info.length;
+                        lt.token = longest_match_info.token;
+                        lt.length = longest_match_info.length;
                         break;
                     }
                 }
