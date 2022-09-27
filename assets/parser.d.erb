@@ -432,14 +432,14 @@ class <%= @classname %>
             {
                 if (shifts[i].symbol == symbol)
                 {
-                    if (symbol < _TOKEN_COUNT)
-                    {
-                        writeln("Shifting ", token_names[symbol]);
-                    }
-                    else
-                    {
-                        writeln("Shifting rule set ", symbol);
-                    }
+//                    if (symbol < _TOKEN_COUNT)
+//                    {
+//                        writeln("Shifting ", token_names[symbol]);
+//                    }
+//                    else
+//                    {
+//                        writeln("Shifting rule set ", symbol);
+//                    }
                     return shifts[i].state;
                 }
             }
@@ -455,19 +455,19 @@ class <%= @classname %>
                 if ((reduces[i].token == token) ||
                     (reduces[i].token == _TOKEN_NONE))
                 {
-                    write("Reducing rule ", reduces[i].rule, ", rule set ", reduces[i].rule_set, " lookahead ");
-                    if (token < _TOKEN_COUNT)
-                    {
-                        writeln(token_names[token]);
-                    }
-                    else if (token == _TOKEN_EOF)
-                    {
-                        writeln("{EOF}");
-                    }
-                    else
-                    {
-                        writeln("{other}");
-                    }
+//                    write("Reducing rule ", reduces[i].rule, ", rule set ", reduces[i].rule_set, " lookahead ");
+//                    if (token < _TOKEN_COUNT)
+//                    {
+//                        writeln(token_names[token]);
+//                    }
+//                    else if (token == _TOKEN_EOF)
+//                    {
+//                        writeln("{EOF}");
+//                    }
+//                    else
+//                    {
+//                        writeln("{other}");
+//                    }
                     return i;
                 }
             }
