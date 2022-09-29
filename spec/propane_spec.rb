@@ -27,10 +27,10 @@ describe Propane do
 
   it "generates a D lexer" do
     write_grammar <<EOF
-token int \\d+;
-token plus \\+;
-token times \\*;
-drop \\s+;
+token int /\\d+/;
+token plus /\\+/;
+token times /\\*/;
+drop /\\s+/;
 Start -> Foo;
 Foo -> int <<
 >>
@@ -44,10 +44,10 @@ EOF
 
   it "generates a parser" do
     write_grammar <<EOF
-token plus \\+;
-token times \\*;
-token zero 0;
-token one 1;
+token plus /\\+/;
+token times /\\*/;
+token zero /0/;
+token one /1/;
 Start -> E;
 E -> E times B;
 E -> E plus B;
@@ -60,7 +60,7 @@ EOF
 
   it "generates an SLR parser" do
     write_grammar <<EOF
-token one 1;
+token one /1/;
 Start -> E;
 E -> one E;
 E -> one;
@@ -86,7 +86,7 @@ EOF
     write_grammar <<EOF
 token a;
 token b;
-drop \\s+;
+drop /\\s+/;
 Start -> a R1;
 Start -> b R1;
 R1 -> b;

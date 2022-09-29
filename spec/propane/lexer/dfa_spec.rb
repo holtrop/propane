@@ -82,15 +82,15 @@ EOF
     expect(run(<<EOF, "foobar")).to eq expected
 token foo;
 token bar;
-token identifier [a-z]+;
+token identifier /[a-z]+/;
 EOF
     expected = [
       ["plusplus", "++"],
       ["plus", "+"],
     ]
     expect(run(<<EOF, "+++")).to eq expected
-token plus \\+;
-token plusplus \\+\\+;
+token plus /\\+/;
+token plusplus /\\+\\+/;
 EOF
   end
 
@@ -103,7 +103,7 @@ EOF
     expect(run(<<EOF, "foo \tbar")).to eq expected
 token foo;
 token bar;
-token WS \\s+;
+token WS /\\s+/;
 EOF
   end
 
@@ -116,7 +116,7 @@ EOF
     expect(run(<<EOF, "foo \tbar")).to eq expected
 token foo;
 token bar;
-drop \\s+;
+drop /\\s+/;
 EOF
   end
 
@@ -125,7 +125,7 @@ EOF
       ["semicolon", ";"],
     ]
     expect(run(<<EOF, ";")).to eq expected
-token semicolon \;;
+token semicolon /;/;
 EOF
   end
 end

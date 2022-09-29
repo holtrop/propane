@@ -14,6 +14,7 @@ class Propane
       @rules = []
       @code_id = 0
       @line_number = 1
+      @next_line_number = @line_number
       @input = input.gsub("\r\n", "\n")
       parse_grammar!
     end
@@ -27,7 +28,6 @@ class Propane
     end
 
     def parse_statement!
-      @next_line_number = @line_number
       if parse_white_space!
       elsif parse_comment_line!
       elsif parse_module_statement!
@@ -42,53 +42,56 @@ class Propane
         end
         raise Error.new("Unexpected grammar input at line #{@line_number}: #{@input.chomp}")
       end
-      @line_number = @next_line_number
     end
 
     def parse_white_space!
-      consume!(/\A\s+/)
+      consume!(/\s+/)
     end
 
     def parse_comment_line!
-      consume!(/\A#.*\n/)
+      consume!(/#.*\n/)
     end
 
     def parse_module_statement!
-      if md = consume!(/\Amodule\s+(\S+)\s*;/)
+      if consume!(/module\s+/)
+        md = consume!(/([\w.]+)\s*/, "expected module name")
         @modulename = md[1]
+        consume!(/;/, "expected `;'")
       end
     end
 
     def parse_class_statement!
-      if md = consume!(/\Aclass\s+(\S+)\s*;/)
+      if consume!(/class\s+/)
+        md = consume!(/([\w.]+)\s*/, "expected class name")
         @classname = md[1]
+        consume!(/;/, "expected `;'")
       end
     end
 
     def parse_token_statement!
-      if md = consume!(/\Atoken\s+(\S+?)(?:\s+([^\n]+?))?\s*(?:;|<<\n(.*?)^>>\n)/m)
-        name, pattern, code = *md[1, 3]
-        if pattern.nil?
-          pattern = name
+      if consume!(/token\s+/)
+        md = consume!(/([a-zA-Z_][a-zA-Z_0-9]*)/, "expected token name")
+        name = md[1]
+        if consume!(/\s+/)
+          pattern = parse_pattern!
         end
-        unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
-          raise Error.new("Invalid token name #{name.inspect}")
-        end
-        token = Token.new(name: name, id: @tokens.size, line_number: @line_number)
-        @tokens << token
-        if code
+        pattern ||= name
+        consume!(/\s+/)
+        if code = parse_code_block!
           code_id = @code_id
           @code_id += 1
         else
-          code_id = nil
+          consume!(/;/, "expected pattern or `;' or code block")
         end
+        token = Token.new(name: name, id: @tokens.size, line_number: @line_number)
+        @tokens << token
         pattern = Pattern.new(pattern: pattern, token: token, line_number: @line_number, code: code, code_id: code_id)
         @patterns << pattern
       end
     end
 
     def parse_tokenid_statement!
-      if md = consume!(/\Atokenid\s+(\S+?)\s*;/m)
+      if md = consume!(/tokenid\s+(\S+?)\s*;/m)
         name = md[1]
         unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
           raise Error.new("Invalid token name #{name.inspect}")
@@ -99,14 +102,19 @@ class Propane
     end
 
     def parse_drop_statement!
-      if md = consume!(/\Adrop\s+(\S+)\s*;/)
-        pattern = md[1]
+      if md = consume!(/drop\s+/)
+        pattern = parse_pattern!
+        unless pattern
+          raise Error.new("Line #{@line_number}: expected pattern to follow `drop'")
+        end
+        consume!(/\s+/)
+        consume!(/;/, "expected `;'")
         @patterns << Pattern.new(pattern: pattern, line_number: @line_number, drop: true)
       end
     end
 
     def parse_rule_statement!
-      if md = consume!(/\A(\S+)\s*->\s*([^\n]*?)(?:;|<<\n(.*?)^>>\n)/m)
+      if md = consume!(/(\S+)\s*->\s*([^\n]*?)(?:;|<<\n(.*?)^>>\n)/m)
         rule_name, components, code = *md[1, 3]
         unless rule_name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
           raise Error.new("Invalid rule name #{name.inspect}")
@@ -117,22 +125,56 @@ class Propane
       end
     end
 
+    def parse_pattern!
+      if md = consume!(%r{/})
+        pattern = ""
+        while !consume!(%r{/})
+          if consume!(%r{\\})
+            pattern += "\\"
+            if md = consume!(%r{(.)})
+              pattern += md[1]
+            else
+              raise Error.new("Line #{@line_number}: unterminated escape sequence")
+            end
+          elsif md = consume!(%r{(.)})
+            pattern += md[1]
+          end
+        end
+        pattern
+      end
+    end
+
+    def parse_code_block!
+      if md = consume!(/<<\n(.*?)^>>\n/m)
+        md[1]
+      end
+    end
+
     # Check if the input string matches the given regex.
     #
     # If so, remove the match from the input string, and update the line
-    # number.
+    # number. If the regex is not matched and an error message is provided,
+    # the error is raised.
     #
     # @param regex [Regexp]
     #   Regex to attempt to match.
+    # @param error_message [String, nil]
+    #   Error message to display if the regex is not matched. If nil and the
+    #   regex is not matched, an error is not raised.
     #
     # @return [MatchData, nil]
     #   MatchData for the given regex if it was matched and removed from the
     #   input.
-    def consume!(regex)
-      if md = @input.match(regex)
+    def consume!(regex, error_message = nil)
+      @line_number = @next_line_number
+      if md = @input.match(/\A#{regex}/)
         @input.slice!(0, md[0].size)
         @next_line_number += md[0].count("\n")
         md
+      elsif error_message
+        raise Error.new("Line #{@line_number}: Error: #{error_message}")
+      else
+        false
       end
     end
 

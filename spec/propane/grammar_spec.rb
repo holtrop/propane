@@ -10,7 +10,7 @@ class Foobar;
 token while;
 
 token id
-  [a-zA-Z_][a-zA-Z_0-9]*;
+  /[a-zA-Z_][a-zA-Z_0-9]*/;
 
 token token_with_code <<
 Code for the token
@@ -18,7 +18,7 @@ Code for the token
 
 tokenid token_with_no_pattern;
 
-drop \\s+;
+drop /\\s+/;
 
 A -> B <<
   a = 42;
@@ -46,13 +46,13 @@ EOF
 
       o = grammar.tokens.find {|token| token.name == "id"}
       expect(o).to_not be_nil
-      expect(o.line_number).to eq 8
+      expect(o.line_number).to eq 9
       expect(o.id).to eq 1
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
       expect(o).to_not be_nil
       expect(o.pattern).to eq "[a-zA-Z_][a-zA-Z_0-9]*"
-      expect(o.line_number).to eq 8
+      expect(o.line_number).to eq 9
       expect(o.code_id).to be_nil
       expect(o.code).to be_nil
 
