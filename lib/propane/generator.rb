@@ -28,6 +28,7 @@ class Propane
     def process_grammar!
       tokens_by_name = {}
       @grammar.tokens.each do |token|
+        # Check for token name conflicts.
         if tokens_by_name.include?(token.name)
           raise Error.new("Duplicate token name #{token.name.inspect}")
         end
@@ -35,9 +36,11 @@ class Propane
       end
       rule_sets = {}
       @grammar.rules.each do |rule|
+        # Check for token/rule name conflict.
         if tokens_by_name.include?(rule.name)
           raise Error.new("Rule name collides with token name #{rule.name.inspect}")
         end
+        # Build rule sets of all rules with the same name.
         @_rule_set_id ||= @grammar.tokens.size
         unless rule_sets[rule.name]
           rule_sets[rule.name] = RuleSet.new(rule.name, @_rule_set_id)
@@ -46,9 +49,17 @@ class Propane
         rule.rule_set = rule_sets[rule.name]
         rule_sets[rule.name] << rule
       end
+      # Check for start rule.
       unless rule_sets["Start"]
         raise Error.new("Start rule not found")
       end
+      # Generate lexer user code IDs for lexer patterns with user code blocks.
+      @grammar.patterns.select do |pattern|
+        pattern.code
+      end.each_with_index do |pattern, code_id|
+        pattern.code_id = code_id
+      end
+      # Map rule components from names to Token/RuleSet objects.
       @grammar.rules.each do |rule|
         rule.components.map! do |component|
           if tokens_by_name[component]
@@ -61,7 +72,9 @@ class Propane
         end
       end
       determine_possibly_empty_rulesets!(rule_sets)
+      # Generate the lexer.
       @lexer = Lexer.new(@grammar.patterns)
+      # Generate the parser.
       @parser = Parser.new(@grammar, rule_sets, rule_sets["Start"], @log)
     end
 

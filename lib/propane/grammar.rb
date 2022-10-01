@@ -12,7 +12,6 @@ class Propane
       @patterns = []
       @tokens = []
       @rules = []
-      @code_id = 0
       @line_number = 1
       @next_line_number = @line_number
       @input = input.gsub("\r\n", "\n")
@@ -78,15 +77,12 @@ class Propane
         end
         pattern ||= name
         consume!(/\s+/)
-        if code = parse_code_block!
-          code_id = @code_id
-          @code_id += 1
-        else
+        unless code = parse_code_block!
           consume!(/;/, "expected pattern or `;' or code block")
         end
         token = Token.new(name: name, id: @tokens.size, line_number: @line_number)
         @tokens << token
-        pattern = Pattern.new(pattern: pattern, token: token, line_number: @line_number, code: code, code_id: code_id)
+        pattern = Pattern.new(pattern: pattern, token: token, line_number: @line_number, code: code)
         @patterns << pattern
       end
     end
@@ -132,9 +128,7 @@ class Propane
         unless code = parse_code_block!
           raise Error.new("Line #{@line_number}: expected code block to follow pattern")
         end
-        code_id = @code_id
-        @code_id += 1
-        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, code: code, code_id: code_id)
+        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, code: code)
       end
     end
 

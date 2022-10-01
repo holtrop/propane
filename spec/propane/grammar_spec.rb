@@ -41,7 +41,6 @@ EOF
       expect(o).to_not be_nil
       expect(o.pattern).to eq "while"
       expect(o.line_number).to eq 6
-      expect(o.code_id).to be_nil
       expect(o.code).to be_nil
 
       o = grammar.tokens.find {|token| token.name == "id"}
@@ -53,7 +52,6 @@ EOF
       expect(o).to_not be_nil
       expect(o.pattern).to eq "[a-zA-Z_][a-zA-Z_0-9]*"
       expect(o.line_number).to eq 9
-      expect(o.code_id).to be_nil
       expect(o.code).to be_nil
 
       o = grammar.tokens.find {|token| token.name == "token_with_code"}
@@ -65,7 +63,6 @@ EOF
       expect(o).to_not be_nil
       expect(o.pattern).to eq "token_with_code"
       expect(o.line_number).to eq 11
-      expect(o.code_id).to eq 0
       expect(o.code).to eq "Code for the token\n"
 
       o = grammar.tokens.find {|token| token.name == "token_with_no_pattern"}
@@ -79,7 +76,6 @@ EOF
       expect(o).to_not be_nil
       expect(o.line_number).to eq 17
       expect(o.token).to be_nil
-      expect(o.code_id).to be_nil
       expect(o.code).to be_nil
 
       expect(grammar.rules.size).to eq 3
@@ -128,7 +124,6 @@ EOF
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
       expect(o).to_not be_nil
-      expect(o.code_id).to eq 0
       expect(o.code).to eq "  a = b;\n  return c;\n"
 
       o = grammar.tokens.find {|token| token.name == "code2"}
@@ -138,7 +133,6 @@ EOF
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
       expect(o).to_not be_nil
-      expect(o.code_id).to eq 1
       expect(o.code).to eq %[  writeln("Hello there");\n]
     end
   end

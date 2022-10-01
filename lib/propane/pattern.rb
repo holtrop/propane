@@ -8,7 +8,7 @@ class Propane
 
     # @option options [Integer, nil] :code_id
     #   Code block ID.
-    attr_reader :code_id
+    attr_accessor :code_id
 
     # @return [String, nil]
     #   Pattern.
@@ -32,8 +32,6 @@ class Propane
     #   Optional parameters.
     # @option options [String, nil] :code
     #   Code block to execute when the pattern is matched.
-    # @option options [Integer, nil] :code_id
-    #   Code block ID.
     # @option options [Boolean] :drop
     #   Whether this is a drop pattern.
     # @option options [String, nil] :pattern
@@ -44,7 +42,6 @@ class Propane
     #   Line number where the token was defined in the input grammar.
     def initialize(options)
       @code = options[:code]
-      @code_id = options[:code_id]
       @drop = options[:drop]
       @pattern = options[:pattern]
       @token = options[:token]
