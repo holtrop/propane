@@ -19,8 +19,10 @@ class Propane
             TOKEN_NONE
           elsif state.accepts.drop?
             TOKEN_DROP
-          else
+          elsif state.accepts.token
             state.accepts.token.id
+          else
+            TOKEN_NONE
           end
         code_id =
           if state.accepts && state.accepts.code_id

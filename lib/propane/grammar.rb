@@ -32,6 +32,7 @@ class Propane
       elsif parse_comment_line!
       elsif parse_module_statement!
       elsif parse_class_statement!
+      elsif parse_pattern_statement!
       elsif parse_token_statement!
       elsif parse_tokenid_statement!
       elsif parse_drop_statement!
@@ -122,6 +123,18 @@ class Propane
         components = components.strip.split(/\s+/)
         # Reserve rule ID 0 for the "real" start rule.
         @rules << Rule.new(rule_name, components, code, @line_number, @rules.size + 1)
+      end
+    end
+
+    def parse_pattern_statement!
+      if pattern = parse_pattern!
+        consume!(/\s+/)
+        unless code = parse_code_block!
+          raise Error.new("Line #{@line_number}: expected code block to follow pattern")
+        end
+        code_id = @code_id
+        @code_id += 1
+        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, code: code, code_id: code_id)
       end
     end
 

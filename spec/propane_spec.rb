@@ -110,4 +110,17 @@ EOF
     compile("spec/test_user_code.d")
     run
   end
+
+  it "supports a pattern statement" do
+    write_grammar <<EOF
+token abc;
+/def/ <<
+  writeln("def!");
+>>
+Start -> abc;
+EOF
+    build_parser
+    compile("spec/test_pattern.d")
+    run
+  end
 end

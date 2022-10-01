@@ -163,7 +163,7 @@ class <%= @classname %>
             for (;;)
             {
                 LexedToken lt = attempt_lex_token();
-                if (lt.token != _TOKEN_DROP)
+                if ((lt.token != _TOKEN_DROP) && (lt.token != _TOKEN_NONE))
                 {
                     return lt;
                 }
@@ -236,7 +236,8 @@ class <%= @classname %>
                             attempt_match_info.delta_col++;
                         }
                         current_state = dest;
-                        if (states[current_state].token != _TOKEN_NONE)
+                        if ((states[current_state].token != _TOKEN_NONE) ||
+                            (states[current_state].code_id != 0xFFFF_FFFFu))
                         {
                             attempt_match_info.token = states[current_state].token;
                             attempt_match_info.code_id = states[current_state].code_id;
@@ -279,11 +280,7 @@ class <%= @classname %>
                         {
                             m_input_col += longest_match_info.delta_col;
                         }
-                    }
-                    if (token_to_accept != _TOKEN_NONE)
-                    {
-                        /* We have a token to accept. */
-                        lt.token = longest_match_info.token;
+                        lt.token = token_to_accept;
                         lt.length = longest_match_info.length;
                         break;
                     }
