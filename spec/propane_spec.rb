@@ -169,4 +169,27 @@ EOF
       "pass2",
     ])
   end
+
+  it "supports returning tokens from pattern code blocks" do
+    write_grammar <<EOF
+token abc;
+/def/ <<
+  writeln("def!");
+>>
+/ghi/ <<
+  writeln("ghi!");
+  return $token(abc);
+>>
+Start -> abc;
+EOF
+    build_parser
+    compile("spec/test_return_token_from_pattern.d")
+    results = run
+    expect(results.status).to eq 0
+    verify_lines(results.stdout, [
+      "def!",
+      "ghi!",
+      "def!",
+    ])
+  end
 end

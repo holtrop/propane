@@ -184,7 +184,7 @@ class <%= @classname %>
 <% @grammar.patterns.each do |pattern| %>
 <%   if pattern.code_id %>
             case <%= pattern.code_id %>u: {
-<%= pattern.code %>
+<%= expand_code(pattern.code) %>
             } break;
 <%   end %>
 <% end %>

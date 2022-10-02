@@ -142,6 +142,19 @@ class Propane
       end
     end
 
+    # Expand expansions in user code block.
+    #
+    # @param code [String]
+    #   User code block.
+    #
+    # @return [String]
+    #   Expanded user code block.
+    def expand_code(code)
+      code.gsub(/\$token\(([$\w]+)\)/) do |match|
+        "TOKEN_#{Token.code_name($1)}"
+      end
+    end
+
   end
 
 end
