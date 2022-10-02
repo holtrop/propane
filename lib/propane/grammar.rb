@@ -80,7 +80,7 @@ class Propane
         unless code = parse_code_block!
           consume!(/;/, "expected pattern or `;' or code block")
         end
-        token = Token.new(name: name, id: @tokens.size, line_number: @line_number)
+        token = Token.new(name, @line_number)
         @tokens << token
         pattern = Pattern.new(pattern: pattern, token: token, line_number: @line_number, code: code)
         @patterns << pattern
@@ -93,7 +93,7 @@ class Propane
         unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
           raise Error.new("Invalid token name #{name.inspect}")
         end
-        token = Token.new(name: name, id: @tokens.size, line_number: @line_number)
+        token = Token.new(name, @line_number)
         @tokens << token
       end
     end
@@ -117,8 +117,7 @@ class Propane
           raise Error.new("Invalid rule name #{name.inspect}")
         end
         components = components.strip.split(/\s+/)
-        # Reserve rule ID 0 for the "real" start rule.
-        @rules << Rule.new(rule_name, components, code, @line_number, @rules.size + 1)
+        @rules << Rule.new(rule_name, components, code, @line_number)
       end
     end
 

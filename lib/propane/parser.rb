@@ -2,15 +2,13 @@ class Propane
 
   class Parser
 
-    def initialize(grammar, rule_sets, start_rule_set, log)
+    def initialize(grammar, rule_sets, log)
       @grammar = grammar
       @rule_sets = rule_sets
       @log = log
-      @eof_token = Token.new(name: "$", id: TOKEN_EOF)
-      @start_rule = Rule.new("$$", [start_rule_set, @eof_token], nil, nil, 0)
       @item_sets = []
       @item_sets_set = {}
-      start_item = Item.new(@start_rule, 0)
+      start_item = Item.new(grammar.rules.first, 0)
       eval_item_sets = Set[ItemSet.new([start_item])]
 
       while eval_item_sets.size > 0
@@ -21,7 +19,7 @@ class Propane
           @item_sets << item_set
           @item_sets_set[item_set] = item_set
           item_set.following_symbols.each do |following_symbol|
-            unless following_symbol == @eof_token
+            unless following_symbol.name == "$EOF"
               following_set = item_set.build_following_item_set(following_symbol)
               eval_item_sets << following_set
             end
@@ -44,7 +42,7 @@ class Propane
       @item_sets.each do |item_set|
         shift_entries = item_set.following_symbols.map do |following_symbol|
           state_id =
-            if following_symbol == @eof_token
+            if following_symbol.name == "$EOF"
               0
             else
               item_set.following_item_set[following_symbol].id
@@ -83,7 +81,7 @@ class Propane
 
     def process_item_set(item_set)
       item_set.following_symbols.each do |following_symbol|
-        unless following_symbol == @eof_token
+        unless following_symbol.name == "$EOF"
           following_set = @item_sets_set[item_set.build_following_item_set(following_symbol)]
           item_set.following_item_set[following_symbol] = following_set
           following_set.in_sets << item_set
@@ -206,7 +204,7 @@ class Propane
 
     def write_log!
       @log.puts Util.banner("Parser Rules")
-      ([@start_rule] + @grammar.rules).each do |rule|
+      @grammar.rules.each do |rule|
         @log.puts
         @log.puts "Rule #{rule.id}:"
         @log.puts "  #{rule}"

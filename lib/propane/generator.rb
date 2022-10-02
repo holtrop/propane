@@ -26,32 +26,40 @@ class Propane
     private
 
     def process_grammar!
+      # Add EOF token.
+      @grammar.tokens << Token.new("$EOF", nil)
       tokens_by_name = {}
-      @grammar.tokens.each do |token|
+      @grammar.tokens.each_with_index do |token, token_id|
+        # Assign token ID.
+        token.id = token_id
         # Check for token name conflicts.
         if tokens_by_name.include?(token.name)
           raise Error.new("Duplicate token name #{token.name.inspect}")
         end
         tokens_by_name[token.name] = token
       end
+      # Check for user start rule.
+      unless @grammar.rules.find {|rule| rule.name == "Start"}
+        raise Error.new("Start rule not found")
+      end
+      # Add "real" start rule.
+      @grammar.rules.unshift(Rule.new("$Start", ["Start", "$EOF"], nil, nil))
       rule_sets = {}
-      @grammar.rules.each do |rule|
+      rule_set_id = @grammar.tokens.size
+      @grammar.rules.each_with_index do |rule, rule_id|
+        # Assign rule ID.
+        rule.id = rule_id
         # Check for token/rule name conflict.
         if tokens_by_name.include?(rule.name)
           raise Error.new("Rule name collides with token name #{rule.name.inspect}")
         end
         # Build rule sets of all rules with the same name.
-        @_rule_set_id ||= @grammar.tokens.size
         unless rule_sets[rule.name]
-          rule_sets[rule.name] = RuleSet.new(rule.name, @_rule_set_id)
-          @_rule_set_id += 1
+          rule_sets[rule.name] = RuleSet.new(rule.name, rule_set_id)
+          rule_set_id += 1
         end
         rule.rule_set = rule_sets[rule.name]
         rule_sets[rule.name] << rule
-      end
-      # Check for start rule.
-      unless rule_sets["Start"]
-        raise Error.new("Start rule not found")
       end
       # Generate lexer user code IDs for lexer patterns with user code blocks.
       @grammar.patterns.select do |pattern|
@@ -75,7 +83,7 @@ class Propane
       # Generate the lexer.
       @lexer = Lexer.new(@grammar.patterns)
       # Generate the parser.
-      @parser = Parser.new(@grammar, rule_sets, rule_sets["Start"], @log)
+      @parser = Parser.new(@grammar, rule_sets, @log)
     end
 
     # Determine which grammar rules could expand to empty sequences.

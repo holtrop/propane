@@ -77,8 +77,8 @@ unittest
     assert(lexer.lex_token() == LT(1, 0, 3, Testparser.TOKEN_int));
     assert(lexer.lex_token() == LT(1, 4, 1, Testparser.TOKEN_plus));
     assert(lexer.lex_token() == LT(1, 6, 3, Testparser.TOKEN_int));
-    assert(lexer.lex_token() == LT(1, 9, 0, Testparser._TOKEN_EOF));
+    assert(lexer.lex_token() == LT(1, 9, 0, Testparser.TOKEN_0EOF));
 
     lexer = new Testparser.Lexer(null, 0u);
-    assert(lexer.lex_token() == LT(0, 0, 0, Testparser._TOKEN_EOF));
+    assert(lexer.lex_token() == LT(0, 0, 0, Testparser.TOKEN_0EOF));
 }

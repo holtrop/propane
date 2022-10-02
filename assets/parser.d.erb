@@ -10,10 +10,9 @@ class <%= @classname %>
     enum
     {
 <% @grammar.tokens.each_with_index do |token, index| %>
-        TOKEN_<%= token.name %> = <%= index %>,
+        TOKEN_<%= token.code_name %> = <%= index %>,
 <% end %>
         _TOKEN_COUNT = <%= @grammar.tokens.size %>,
-        _TOKEN_EOF = <%= TOKEN_EOF %>,
         _TOKEN_DECODE_ERROR = <%= TOKEN_DECODE_ERROR %>,
         _TOKEN_DROP = <%= TOKEN_DROP %>,
         _TOKEN_NONE = <%= TOKEN_NONE %>,
@@ -247,7 +246,7 @@ class <%= @classname %>
                 }
                 else if (attempt_match_info.length == 0u)
                 {
-                    lt.token = _TOKEN_EOF;
+                    lt.token = TOKEN_0EOF;
                     break;
                 }
                 if (!lex_continue)
@@ -378,7 +377,7 @@ class <%= @classname %>
                 }
                 if (shift_state != 0xFFFFFFFFu)
                 {
-                    if (token == _TOKEN_EOF)
+                    if (token == TOKEN_0EOF)
                     {
                         /* Successful parse. */
                         return true;
@@ -405,11 +404,7 @@ class <%= @classname %>
 
                 /* Error, unexpected token. */
                 write("Unexpected token ");
-                if (token == _TOKEN_EOF)
-                {
-                    writeln("{EOF}");
-                }
-                else if (token < _TOKEN_COUNT)
+                if (token < _TOKEN_COUNT)
                 {
                     writeln(token_names[token]);
                 }
@@ -456,10 +451,6 @@ class <%= @classname %>
 //                    if (token < _TOKEN_COUNT)
 //                    {
 //                        writeln(token_names[token]);
-//                    }
-//                    else if (token == _TOKEN_EOF)
-//                    {
-//                        writeln("{EOF}");
 //                    }
 //                    else
 //                    {

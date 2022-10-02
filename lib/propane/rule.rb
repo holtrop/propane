@@ -12,7 +12,7 @@ class Propane
 
     # @return [Integer]
     #   Rule ID.
-    attr_reader :id
+    attr_accessor :id
 
     # @return [Integer]
     #   Line number where the rule was defined in the input grammar.
@@ -36,13 +36,10 @@ class Propane
     #   User code associated with the rule.
     # @param line_number [Integer]
     #   Line number where the rule was defined in the input grammar.
-    # @param id [Integer]
-    #   Rule ID.
-    def initialize(name, components, code, line_number, id)
+    def initialize(name, components, code, line_number)
       @name = name
       @components = components
       @code = code
-      @id = id
       @line_number = line_number
     end
 

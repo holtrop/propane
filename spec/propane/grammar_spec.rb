@@ -35,7 +35,6 @@ EOF
       o = grammar.tokens.find {|token| token.name == "while"}
       expect(o).to_not be_nil
       expect(o.line_number).to eq 6
-      expect(o.id).to eq 0
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
       expect(o).to_not be_nil
@@ -46,7 +45,6 @@ EOF
       o = grammar.tokens.find {|token| token.name == "id"}
       expect(o).to_not be_nil
       expect(o.line_number).to eq 9
-      expect(o.id).to eq 1
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
       expect(o).to_not be_nil
@@ -57,7 +55,6 @@ EOF
       o = grammar.tokens.find {|token| token.name == "token_with_code"}
       expect(o).to_not be_nil
       expect(o.line_number).to eq 11
-      expect(o.id).to eq 2
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
       expect(o).to_not be_nil
@@ -83,21 +80,18 @@ EOF
       o = grammar.rules[0]
       expect(o.name).to eq "A"
       expect(o.components).to eq %w[B]
-      expect(o.id).to eq 1
       expect(o.line_number).to eq 19
       expect(o.code).to eq "  a = 42;\n"
 
       o = grammar.rules[1]
       expect(o.name).to eq "B"
       expect(o.components).to eq %w[C while id]
-      expect(o.id).to eq 2
       expect(o.line_number).to eq 22
       expect(o.code).to be_nil
 
       o = grammar.rules[2]
       expect(o.name).to eq "B"
       expect(o.components).to eq []
-      expect(o.id).to eq 3
       expect(o.line_number).to eq 23
       expect(o.code).to eq "  b = 0;\n"
     end
@@ -119,7 +113,6 @@ EOF
 
       o = grammar.tokens.find {|token| token.name == "code1"}
       expect(o).to_not be_nil
-      expect(o.id).to eq 0
       expect(o.line_number).to eq 1
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
@@ -128,7 +121,6 @@ EOF
 
       o = grammar.tokens.find {|token| token.name == "code2"}
       expect(o).to_not be_nil
-      expect(o.id).to eq 1
       expect(o.line_number).to eq 6
 
       o = grammar.patterns.find {|pattern| pattern.token == o}

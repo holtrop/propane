@@ -25,9 +25,6 @@ require_relative "propane/version"
 
 class Propane
 
-  # EOF.
-  TOKEN_EOF = 0xFFFFFFFC
-
   # Decoding error.
   TOKEN_DECODE_ERROR = 0xFFFFFFFD
 
