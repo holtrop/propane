@@ -78,7 +78,7 @@ R1 -> a b;
 R2 -> a b;
 EOF
     build_parser
-    compile("spec/test_d_lexer3.d")
+    compile("spec/test_d_parser_identical_rules_lookahead.d")
     run
   end
 
@@ -92,7 +92,7 @@ Start -> b R1;
 R1 -> b;
 EOF
     build_parser
-    compile("spec/test_d_lexer2.d")
+    compile("spec/test_d_parser_rule_from_multiple_states.d")
     run
   end
 
