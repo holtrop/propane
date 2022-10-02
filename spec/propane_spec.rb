@@ -1,4 +1,5 @@
 require "fileutils"
+require "open3"
 
 describe Propane do
   def write_grammar(grammar)
@@ -15,9 +16,35 @@ describe Propane do
     expect(result).to be_truthy
   end
 
+  Results = Struct.new(:stdout, :stderr, :status)
   def run
-    result = system("spec/run/testparser")
-    expect(result).to be_truthy
+    stdout, stderr, status = Open3.capture3("spec/run/testparser")
+    Results.new(stdout, stderr, status)
+  end
+
+  def lines(str)
+    str.lines.map(&:chomp)
+  end
+
+  def verify_lines(lines, patterns)
+    if lines.is_a?(String)
+      lines = lines.lines.map(&:chomp)
+    end
+    patterns.each_with_index do |pattern, i|
+      found_index =
+        if pattern.is_a?(Regexp)
+          lines.find_index {|line| line =~ pattern}
+        else
+          lines.find_index do |line|
+            line.chomp == pattern.chomp
+          end
+        end
+      unless found_index
+        $stderr.puts "Lines:"
+        $stderr.puts lines
+        raise "A line matching #{pattern.inspect} (index #{i}) was not found."
+      end
+    end
   end
 
   before(:each) do
@@ -39,7 +66,8 @@ Foo -> plus <<
 EOF
     build_parser
     compile("spec/test_d_lexer.d")
-    run
+    results = run
+    expect(results.status).to eq 0
   end
 
   it "generates a parser" do
@@ -79,7 +107,8 @@ R2 -> a b;
 EOF
     build_parser
     compile("spec/test_d_parser_identical_rules_lookahead.d")
-    run
+    results = run
+    expect(results.status).to eq 0
   end
 
   it "handles reducing a rule that could be arrived at from multiple states" do
@@ -93,7 +122,8 @@ R1 -> b;
 EOF
     build_parser
     compile("spec/test_d_parser_rule_from_multiple_states.d")
-    run
+    results = run
+    expect(results.status).to eq 0
   end
 
   it "executes user code when matching lexer token" do
@@ -108,7 +138,15 @@ Abcs -> abc Abcs;
 EOF
     build_parser
     compile("spec/test_user_code.d")
-    run
+    results = run
+    expect(results.status).to eq 0
+    verify_lines(results.stdout, [
+      "abc!",
+      "pass1",
+      "abc!",
+      "abc!",
+      "pass2",
+    ])
   end
 
   it "supports a pattern statement" do
@@ -121,6 +159,14 @@ Start -> abc;
 EOF
     build_parser
     compile("spec/test_pattern.d")
-    run
+    results = run
+    expect(results.status).to eq 0
+    verify_lines(results.stdout, [
+      "def!",
+      "pass1",
+      "def!",
+      "def!",
+      "pass2",
+    ])
   end
 end
