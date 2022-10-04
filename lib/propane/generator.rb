@@ -81,7 +81,7 @@ class Propane
       end
       determine_possibly_empty_rulesets!(rule_sets)
       # Generate the lexer.
-      @lexer = Lexer.new(@grammar.patterns)
+      @lexer = Lexer.new(@grammar)
       # Generate the parser.
       @parser = Parser.new(@grammar, rule_sets, @log)
     end

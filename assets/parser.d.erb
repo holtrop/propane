@@ -19,7 +19,6 @@ class <%= @classname %>
         _TOKEN_COUNT = <%= @grammar.tokens.size %>,
         _TOKEN_DECODE_ERROR = <%= TOKEN_DECODE_ERROR %>,
         _TOKEN_DROP = <%= TOKEN_DROP %>,
-        _TOKEN_NONE = <%= TOKEN_NONE %>,
     }
 
     static immutable string token_names[] = [
@@ -166,7 +165,7 @@ class <%= @classname %>
             for (;;)
             {
                 LexedToken lt = attempt_lex_token();
-                if ((lt.token != _TOKEN_DROP) && (lt.token != _TOKEN_NONE))
+                if (lt.token < _TOKEN_COUNT)
                 {
                     return lt;
                 }
@@ -178,7 +177,7 @@ class <%= @classname %>
          *
          * @param code_id The ID of the user code block to execute.
          *
-         * @return Token ID to accept, or _TOKEN_NONE if the user code does
+         * @return Token ID to accept, or _TOKEN_COUNT if the user code does
          *   not explicitly return a token.
          */
         private uint user_code(uint code_id)
@@ -195,12 +194,12 @@ class <%= @classname %>
             default: break;
             }
 
-            return _TOKEN_NONE;
+            return _TOKEN_COUNT;
         }
 
         private LexedToken attempt_lex_token()
         {
-            LexedToken lt = LexedToken(m_input_row, m_input_col, 0, _TOKEN_NONE);
+            LexedToken lt = LexedToken(m_input_row, m_input_col, 0, _TOKEN_COUNT);
             struct MatchInfo
             {
                 size_t length;
@@ -210,7 +209,7 @@ class <%= @classname %>
                 uint code_id;
             }
             MatchInfo longest_match_info;
-            longest_match_info.token = _TOKEN_NONE;
+            longest_match_info.token = _TOKEN_COUNT;
             MatchInfo attempt_match_info;
             uint current_state;
             for (;;)
@@ -239,7 +238,7 @@ class <%= @classname %>
                             attempt_match_info.delta_col++;
                         }
                         current_state = dest;
-                        if ((states[current_state].token != _TOKEN_NONE) ||
+                        if ((states[current_state].token != _TOKEN_COUNT) ||
                             (states[current_state].code_id != 0xFFFF_FFFFu))
                         {
                             attempt_match_info.token = states[current_state].token;
@@ -260,17 +259,17 @@ class <%= @classname %>
                     if (longest_match_info.code_id != 0xFFFF_FFFFu)
                     {
                         uint user_code_token = user_code(longest_match_info.code_id);
-                        /* A return of _TOKEN_NONE from user_code() means
+                        /* A return of _TOKEN_COUNT from user_code() means
                          * that the user code did not explicitly return a
                          * token. So only override the token to return if the
                          * user code does explicitly return a token. */
-                        if (user_code_token != _TOKEN_NONE)
+                        if (user_code_token != _TOKEN_COUNT)
                         {
                             token_to_accept = user_code_token;
                         }
                         pattern_accepted = true;
                     }
-                    if (pattern_accepted || (token_to_accept != _TOKEN_NONE))
+                    if (pattern_accepted || (token_to_accept != _TOKEN_COUNT))
                     {
                         /* Update the input position tracking. */
                         m_input_position += longest_match_info.length;
@@ -360,12 +359,12 @@ class <%= @classname %>
         bool parse()
         {
             Lexer.LexedToken lexed_token;
-            uint token = _TOKEN_NONE;
+            uint token = _TOKEN_COUNT;
             uint[] states = new uint[](1);
             uint reduced_rule_set = 0xFFFFFFFFu;
             for (;;)
             {
-                if (token == _TOKEN_NONE)
+                if (token == _TOKEN_COUNT)
                 {
                     lexed_token = m_lexer.lex_token();
                     token = lexed_token.token;
@@ -389,7 +388,7 @@ class <%= @classname %>
                     states ~= shift_state;
                     if (reduced_rule_set == 0xFFFFFFFFu)
                     {
-                        token = _TOKEN_NONE;
+                        token = _TOKEN_COUNT;
                     }
                     else
                     {
@@ -449,7 +448,7 @@ class <%= @classname %>
             for (uint i = start; i < end; i++)
             {
                 if ((reduces[i].token == token) ||
-                    (reduces[i].token == _TOKEN_NONE))
+                    (reduces[i].token == _TOKEN_COUNT))
                 {
 //                    write("Reducing rule ", reduces[i].rule, ", rule set ", reduces[i].rule_set, " lookahead ");
 //                    if (token < _TOKEN_COUNT)

@@ -5,8 +5,9 @@ class Propane
     #   Lexer DFA.
     attr_accessor :dfa
 
-    def initialize(patterns)
-      @dfa = DFA.new(patterns)
+    def initialize(grammar)
+      @grammar = grammar
+      @dfa = DFA.new(grammar.patterns)
     end
 
     def build_tables
@@ -16,13 +17,13 @@ class Propane
       states.each do |state, id|
         token =
           if state.accepts.nil?
-            TOKEN_NONE
+            @grammar.tokens.size
           elsif state.accepts.drop?
             TOKEN_DROP
           elsif state.accepts.token
             state.accepts.token.id
           else
-            TOKEN_NONE
+            @grammar.tokens.size
           end
         code_id =
           if state.accepts && state.accepts.code_id

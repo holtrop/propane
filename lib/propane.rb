@@ -31,9 +31,6 @@ class Propane
   # Token ID for a "dropped" token.
   TOKEN_DROP = 0xFFFFFFFE
 
-  # Invalid token ID.
-  TOKEN_NONE = 0xFFFFFFFF
-
   class Error < RuntimeError
   end
 
