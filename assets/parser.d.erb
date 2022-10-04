@@ -5,6 +5,10 @@ module <%= @grammar.modulename %>;
 
 import std.stdio;
 
+<% @grammar.code_blocks.each do |code| %>
+<%= code %>
+<% end %>
+
 class <%= @classname %>
 {
     enum

@@ -7,11 +7,13 @@ class Propane
     attr_reader :patterns
     attr_reader :rules
     attr_reader :tokens
+    attr_reader :code_blocks
 
     def initialize(input)
       @patterns = []
       @tokens = []
       @rules = []
+      @code_blocks = []
       @line_number = 1
       @next_line_number = @line_number
       @input = input.gsub("\r\n", "\n")
@@ -36,6 +38,8 @@ class Propane
       elsif parse_tokenid_statement!
       elsif parse_drop_statement!
       elsif parse_rule_statement!
+      elsif code = parse_code_block!
+        @code_blocks << code
       else
         if @input.size > 25
           @input = @input.slice(0..20) + "..."
