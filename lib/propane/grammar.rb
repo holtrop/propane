@@ -16,6 +16,7 @@ class Propane
       @code_blocks = []
       @line_number = 1
       @next_line_number = @line_number
+      @mode = nil
       @input = input.gsub("\r\n", "\n")
       parse_grammar!
     end
@@ -31,6 +32,7 @@ class Propane
     def parse_statement!
       if parse_white_space!
       elsif parse_comment_line!
+      elsif @mode.nil? && parse_mode_label!
       elsif parse_module_statement!
       elsif parse_class_statement!
       elsif parse_pattern_statement!
@@ -38,13 +40,18 @@ class Propane
       elsif parse_tokenid_statement!
       elsif parse_drop_statement!
       elsif parse_rule_statement!
-      elsif code = parse_code_block!
-        @code_blocks << code
+      elsif parse_code_block_statement!
       else
         if @input.size > 25
           @input = @input.slice(0..20) + "..."
         end
         raise Error.new("Unexpected grammar input at line #{@line_number}: #{@input.chomp}")
+      end
+    end
+
+    def parse_mode_label!
+      if md = consume!(/([a-zA-Z_][a-zA-Z_0-9]*)\s*:/)
+        @mode = md[1]
       end
     end
 
@@ -61,6 +68,8 @@ class Propane
         md = consume!(/([\w.]+)\s*/, "expected module name")
         @modulename = md[1]
         consume!(/;/, "expected `;'")
+        @mode = nil
+        true
       end
     end
 
@@ -69,6 +78,8 @@ class Propane
         md = consume!(/([\w.]+)\s*/, "expected class name")
         @classname = md[1]
         consume!(/;/, "expected `;'")
+        @mode = nil
+        true
       end
     end
 
@@ -86,8 +97,10 @@ class Propane
         end
         token = Token.new(name, @line_number)
         @tokens << token
-        pattern = Pattern.new(pattern: pattern, token: token, line_number: @line_number, code: code)
+        pattern = Pattern.new(pattern: pattern, token: token, line_number: @line_number, code: code, mode: @mode)
         @patterns << pattern
+        @mode = nil
+        true
       end
     end
 
@@ -99,6 +112,8 @@ class Propane
         end
         token = Token.new(name, @line_number)
         @tokens << token
+        @mode = nil
+        true
       end
     end
 
@@ -110,7 +125,9 @@ class Propane
         end
         consume!(/\s+/)
         consume!(/;/, "expected `;'")
-        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, drop: true)
+        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, drop: true, mode: @mode)
+        @mode = nil
+        true
       end
     end
 
@@ -122,6 +139,8 @@ class Propane
         end
         components = components.strip.split(/\s+/)
         @rules << Rule.new(rule_name, components, code, @line_number)
+        @mode = nil
+        true
       end
     end
 
@@ -131,7 +150,17 @@ class Propane
         unless code = parse_code_block!
           raise Error.new("Line #{@line_number}: expected code block to follow pattern")
         end
-        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, code: code)
+        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, code: code, mode: @mode)
+        @mode = nil
+        true
+      end
+    end
+
+    def parse_code_block_statement!
+      if code = parse_code_block!
+        @code_blocks << code
+        @mode = nil
+        true
       end
     end
 

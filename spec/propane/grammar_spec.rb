@@ -127,5 +127,49 @@ EOF
       expect(o).to_not be_nil
       expect(o.code).to eq %[  writeln("Hello there");\n]
     end
+
+    it "supports mode labels" do
+      input = <<EOF
+token a;
+m1: token b;
+/foo/ <<
+>>
+m2: /bar/ <<
+>>
+drop /q/;
+m3: drop /r/;
+EOF
+      grammar = Grammar.new(input)
+
+      o = grammar.tokens.find {|token| token.name == "a"}
+      expect(o).to_not be_nil
+
+      o = grammar.patterns.find {|pattern| pattern.token == o}
+      expect(o).to_not be_nil
+      expect(o.mode).to be_nil
+
+      o = grammar.tokens.find {|token| token.name == "b"}
+      expect(o).to_not be_nil
+
+      o = grammar.patterns.find {|pattern| pattern.token == o}
+      expect(o).to_not be_nil
+      expect(o.mode).to eq "m1"
+
+      o = grammar.patterns.find {|pattern| pattern.pattern == "foo"}
+      expect(o).to_not be_nil
+      expect(o.mode).to be_nil
+
+      o = grammar.patterns.find {|pattern| pattern.pattern == "bar"}
+      expect(o).to_not be_nil
+      expect(o.mode).to eq "m2"
+
+      o = grammar.patterns.find {|pattern| pattern.pattern == "q"}
+      expect(o).to_not be_nil
+      expect(o.mode).to be_nil
+
+      o = grammar.patterns.find {|pattern| pattern.pattern == "r"}
+      expect(o).to_not be_nil
+      expect(o.mode).to eq "m3"
+    end
   end
 end
