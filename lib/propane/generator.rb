@@ -26,6 +26,17 @@ class Propane
     private
 
     def process_grammar!
+      # Assign default pattern mode to patterns without a mode assigned.
+      found_default = false
+      @grammar.patterns.each do |pattern|
+        if pattern.mode.nil?
+          pattern.mode = "default"
+          found_default = true
+        end
+      end
+      unless found_default
+        raise Error.new("No patterns found for default mode")
+      end
       # Add EOF token.
       @grammar.tokens << Token.new("$EOF", nil)
       tokens_by_name = {}
@@ -152,6 +163,13 @@ class Propane
     def expand_code(code)
       code.gsub(/\$token\(([$\w]+)\)/) do |match|
         "TOKEN_#{Token.code_name($1)}"
+      end.gsub(/\$mode\(([a-zA-Z_][a-zA-Z_0-9]*)\)/) do |match|
+        mode_name = $1
+        mode_id = @lexer.mode_id(mode_name)
+        unless mode_id
+          raise Error.new("Lexer mode '#{mode_name}' not found")
+        end
+        "m_mode = #{mode_id}u"
       end
     end
 

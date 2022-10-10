@@ -124,19 +124,30 @@ class <%= @classname %>
             uint code_id;
         }
 
-<% transition_table, state_table = @lexer.build_tables %>
+        private struct Mode
+        {
+            uint state_table_offset;
+        }
+
+<% transition_table, state_table, mode_table = @lexer.build_tables %>
         private static immutable Transition transitions[] = [
 <% transition_table.each do |transition_table_entry| %>
             Transition(<%= transition_table_entry[:first] %>u, <%= transition_table_entry[:last] %>u, <%= transition_table_entry[:destination] %>u),
 <% end %>
         ];
 
-        private static const State states[] = [
+        private static immutable State states[] = [
 <% state_table.each do |state_table_entry| %>
             State(<%= state_table_entry[:transition_table_index] %>u,
                   <%= state_table_entry[:n_transitions] %>u,
                   <%= state_table_entry[:token] %>u,
                   <%= state_table_entry[:code_id] %>u),
+<% end %>
+        ];
+
+        private static immutable Mode modes[] = [
+<% mode_table.each do |mode_table_entry| %>
+            Mode(<%= mode_table_entry[:state_table_offset] %>),
 <% end %>
         ];
 
@@ -153,11 +164,13 @@ class <%= @classname %>
         private size_t m_input_position;
         private size_t m_input_row;
         private size_t m_input_col;
+        private size_t m_mode;
 
         this(const(ubyte) * input, size_t input_length)
         {
             m_input = input;
             m_input_length = input_length;
+            m_mode = <%= @lexer.mode_id("default") %>;
         }
 
         LexedToken lex_token()
@@ -211,7 +224,7 @@ class <%= @classname %>
             MatchInfo longest_match_info;
             longest_match_info.token = _TOKEN_COUNT;
             MatchInfo attempt_match_info;
-            uint current_state;
+            uint current_state = modes[m_mode].state_table_offset;
             for (;;)
             {
                 auto decoded = Decoder.decode_code_point(&m_input[m_input_position + attempt_match_info.length], m_input_length - m_input_position - attempt_match_info.length);

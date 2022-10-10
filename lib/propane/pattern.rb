@@ -28,7 +28,7 @@ class Propane
 
     # @return [String, nil]
     #   Lexer mode for this pattern.
-    attr_reader :mode
+    attr_accessor :mode
 
     # Construct a Pattern.
     #

@@ -192,4 +192,37 @@ EOF
       "def!",
     ])
   end
+
+  it "supports lexer modes" do
+    write_grammar <<EOF
+token abc;
+token def;
+tokenid string;
+drop /\\s+/;
+/"/ <<
+  writeln("begin string mode");
+  $mode(string);
+>>
+string: /[^"]+/ <<
+  writeln("captured string");
+>>
+string: /"/ <<
+  $mode(default);
+  return $token(string);
+>>
+Start -> abc string def;
+EOF
+    build_parser
+    compile("spec/test_lexer_modes.d")
+    results = run
+    expect(results.status).to eq 0
+    verify_lines(results.stdout, [
+      "begin string mode",
+      "captured string",
+      "pass1",
+      "begin string mode",
+      "captured string",
+      "pass2",
+    ])
+  end
 end
