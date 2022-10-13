@@ -252,4 +252,25 @@ EOF
       "Start!",
     ])
   end
+
+  it "parses lists" do
+    write_grammar <<EOF
+result_type uint;
+token a;
+Start -> As <<
+  $$ = $1;
+>>
+As -> <<
+  $$ = 0u;
+>>
+As -> As a <<
+  $$ = $1 + 1u;
+>>
+EOF
+    build_parser
+    compile("spec/test_parsing_lists.d")
+    results = run
+    expect(results.status).to eq 0
+    expect(results.stderr).to eq ""
+  end
 end
