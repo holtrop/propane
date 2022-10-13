@@ -19,6 +19,8 @@ describe Propane do
   Results = Struct.new(:stdout, :stderr, :status)
   def run
     stdout, stderr, status = Open3.capture3("spec/run/testparser")
+    File.binwrite("spec/run/.stderr", stderr)
+    File.binwrite("spec/run/.stdout", stdout)
     Results.new(stdout, stderr, status)
   end
 
@@ -223,6 +225,31 @@ EOF
       "begin string mode",
       "captured string",
       "pass2",
+    ])
+  end
+
+  it "executes user code associated with a parser rule" do
+    write_grammar <<EOF
+token a;
+token b;
+Start -> A B <<
+  writeln("Start!");
+>>
+A -> a <<
+  writeln("A!");
+>>
+B -> b <<
+  writeln("B!");
+>>
+EOF
+    build_parser
+    compile("spec/test_parser_rule_user_code.d")
+    results = run
+    expect(results.status).to eq 0
+    verify_lines(results.stdout, [
+      "A!",
+      "B!",
+      "Start!",
     ])
   end
 end

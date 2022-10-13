@@ -386,7 +386,7 @@ class <%= @classname %>
         {
             Lexer.LexedToken lexed_token;
             uint token = _TOKEN_COUNT;
-            StateResult[] states = new StateResult[](1);
+            StateResult[] stateresults = new StateResult[](1);
             uint reduced_rule_set = 0xFFFFFFFFu;
             <%= @grammar.result_type %> reduced_parse_result;
             for (;;)
@@ -399,28 +399,31 @@ class <%= @classname %>
                 uint shift_state = 0xFFFFFFFFu;
                 if (reduced_rule_set != 0xFFFFFFFFu)
                 {
-                    shift_state = check_shift(states[$-1].state, reduced_rule_set);
+                    shift_state = check_shift(stateresults[$-1].state, reduced_rule_set);
                 }
                 if (shift_state == 0xFFFFFFFFu)
                 {
-                    shift_state = check_shift(states[$-1].state, token);
+                    shift_state = check_shift(stateresults[$-1].state, token);
+                    if ((shift_state != 0xFFFFFFFFu) && (token == TOKEN_0EOF))
+                    {
+                        /* Successful parse. */
+                        parse_result = stateresults[$-1].result;
+                        return true;
+                    }
                 }
                 if (shift_state != 0xFFFFFFFFu)
                 {
-                    if (token == TOKEN_0EOF)
-                    {
-                        /* Successful parse. */
-                        parse_result = states[$-1].result;
-                        return true;
-                    }
-                    states ~= StateResult(shift_state);
+                    /* We have something to shift. */
+                    stateresults ~= StateResult(shift_state);
                     if (reduced_rule_set == 0xFFFFFFFFu)
                     {
+                        /* We shifted a token, mark it consumed. */
                         token = _TOKEN_COUNT;
                     }
                     else
                     {
-                        states[$-1].result = reduced_parse_result;
+                        /* We shifted a RuleSet. */
+                        stateresults[$-1].result = reduced_parse_result;
                         <%= @grammar.result_type %> new_parse_result;
                         reduced_parse_result = new_parse_result;
                         reduced_rule_set = 0xFFFFFFFFu;
@@ -428,11 +431,13 @@ class <%= @classname %>
                     continue;
                 }
 
-                uint reduce_index = check_reduce(states[$-1].state, token);
+                uint reduce_index = check_reduce(stateresults[$-1].state, token);
                 if (reduce_index != 0xFFFFFFFFu)
                 {
+                    /* We have something to reduce. */
+                    reduced_parse_result = user_code(reduces[reduce_index].rule, stateresults, reduces[reduce_index].n_states);
                     reduced_rule_set = reduces[reduce_index].rule_set;
-                    states.length -= reduces[reduce_index].n_states;
+                    stateresults.length -= reduces[reduce_index].n_states;
                     continue;
                 }
 
@@ -499,6 +504,32 @@ class <%= @classname %>
                 }
             }
             return 0xFFFFFFFFu;
+        }
+
+        /**
+         * Execute user code associated with a parser rule.
+         *
+         * @param rule The ID of the rule.
+         *
+         * @return Parse result.
+         */
+        private <%= @grammar.result_type %> user_code(uint rule, StateResult[] stateresults, uint n_states)
+        {
+            <%= @grammar.result_type %> _result;
+
+            switch (rule)
+            {
+<% @grammar.rules.each do |rule| %>
+<%   if rule.code %>
+            case <%= rule.id %>u: {
+<%= expand_code(rule.code) %>
+            } break;
+<%   end %>
+<% end %>
+            default: break;
+            }
+
+            return _result;
         }
     }
 }

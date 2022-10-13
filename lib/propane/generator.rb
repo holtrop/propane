@@ -170,6 +170,11 @@ class Propane
           raise Error.new("Lexer mode '#{mode_name}' not found")
         end
         "m_mode = #{mode_id}u"
+      end.gsub(/\$\$/) do |match|
+        "_result"
+      end.gsub(/\$(\d+)/) do |match|
+        index = $1.to_i
+        "stateresults[$-1-n_states+#{index}].result"
       end
     end
 
