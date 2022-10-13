@@ -375,6 +375,8 @@ class <%= @classname %>
 
         private Lexer m_lexer;
 
+        private <%= @grammar.result_type %> parse_result;
+
         this(const(ubyte) * input, size_t input_length)
         {
             m_lexer = new Lexer(input, input_length);
@@ -386,6 +388,7 @@ class <%= @classname %>
             uint token = _TOKEN_COUNT;
             StateResult[] states = new StateResult[](1);
             uint reduced_rule_set = 0xFFFFFFFFu;
+            <%= @grammar.result_type %> reduced_parse_result;
             for (;;)
             {
                 if (token == _TOKEN_COUNT)
@@ -407,6 +410,7 @@ class <%= @classname %>
                     if (token == TOKEN_0EOF)
                     {
                         /* Successful parse. */
+                        parse_result = states[$-1].result;
                         return true;
                     }
                     states ~= StateResult(shift_state);
@@ -416,6 +420,9 @@ class <%= @classname %>
                     }
                     else
                     {
+                        states[$-1].result = reduced_parse_result;
+                        <%= @grammar.result_type %> new_parse_result;
+                        reduced_parse_result = new_parse_result;
                         reduced_rule_set = 0xFFFFFFFFu;
                     }
                     continue;
@@ -441,6 +448,11 @@ class <%= @classname %>
                 }
                 return false;
             }
+        }
+
+        @property <%= @grammar.result_type %> result()
+        {
+            return parse_result;
         }
 
         private uint check_shift(uint state, uint symbol)
