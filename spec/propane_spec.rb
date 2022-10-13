@@ -1,14 +1,22 @@
 require "fileutils"
 require "open3"
 
+Results = Struct.new(:stdout, :stderr, :status)
+
 describe Propane do
   def write_grammar(grammar)
     File.write("spec/run/testparser.propane", grammar)
   end
 
-  def build_parser
-    result = system(*%w[./propane.sh spec/run/testparser.propane spec/run/testparser.d --log spec/run/testparser.log])
-    expect(result).to be_truthy
+  def build_parser(options = {})
+    command = %w[./propane.sh spec/run/testparser.propane spec/run/testparser.d --log spec/run/testparser.log]
+    if (options[:capture])
+      stdout, stderr, status = Open3.capture3(*command)
+      Results.new(stdout, stderr, status)
+    else
+      result = system(*command)
+      expect(result).to be_truthy
+    end
   end
 
   def compile(test_file)
@@ -16,7 +24,6 @@ describe Propane do
     expect(result).to be_truthy
   end
 
-  Results = Struct.new(:stdout, :stderr, :status)
   def run
     stdout, stderr, status = Open3.capture3("spec/run/testparser")
     File.binwrite("spec/run/.stderr", stderr)
@@ -272,5 +279,24 @@ EOF
     results = run
     expect(results.status).to eq 0
     expect(results.stderr).to eq ""
+  end
+
+  it "fails to generate a parser for a LR(1) grammar that is not LALR" do
+    write_grammar <<EOF
+token a;
+token b;
+token c;
+token d;
+token e;
+Start -> a E c;
+Start -> a F d;
+Start -> b F c;
+Start -> b E d;
+E -> e;
+F -> e;
+EOF
+    results = build_parser(capture: true)
+    expect(results.status).to_not eq 0
+    expect(results.stderr).to match %r{reduce/reduce conflict.*\(E\).*\(F\)}
   end
 end
