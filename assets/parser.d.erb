@@ -343,6 +343,17 @@ class <%= @classname %>
             uint n_reduce_entries;
         }
 
+        private struct StateResult
+        {
+            uint state;
+            <%= @grammar.result_type %> result;
+
+            this(uint state)
+            {
+                this.state = state;
+            }
+        }
+
 <% state_table, shift_table, reduce_table = @parser.build_tables %>
         private static immutable Shift shifts[] = [
 <%   shift_table.each do |shift| %>
@@ -373,7 +384,7 @@ class <%= @classname %>
         {
             Lexer.LexedToken lexed_token;
             uint token = _TOKEN_COUNT;
-            uint[] states = new uint[](1);
+            StateResult[] states = new StateResult[](1);
             uint reduced_rule_set = 0xFFFFFFFFu;
             for (;;)
             {
@@ -385,11 +396,11 @@ class <%= @classname %>
                 uint shift_state = 0xFFFFFFFFu;
                 if (reduced_rule_set != 0xFFFFFFFFu)
                 {
-                    shift_state = check_shift(states[$-1], reduced_rule_set);
+                    shift_state = check_shift(states[$-1].state, reduced_rule_set);
                 }
                 if (shift_state == 0xFFFFFFFFu)
                 {
-                    shift_state = check_shift(states[$-1], token);
+                    shift_state = check_shift(states[$-1].state, token);
                 }
                 if (shift_state != 0xFFFFFFFFu)
                 {
@@ -398,7 +409,7 @@ class <%= @classname %>
                         /* Successful parse. */
                         return true;
                     }
-                    states ~= shift_state;
+                    states ~= StateResult(shift_state);
                     if (reduced_rule_set == 0xFFFFFFFFu)
                     {
                         token = _TOKEN_COUNT;
@@ -410,7 +421,7 @@ class <%= @classname %>
                     continue;
                 }
 
-                uint reduce_index = check_reduce(states[$-1], token);
+                uint reduce_index = check_reduce(states[$-1].state, token);
                 if (reduce_index != 0xFFFFFFFFu)
                 {
                     reduced_rule_set = reduces[reduce_index].rule_set;

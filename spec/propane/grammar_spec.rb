@@ -6,6 +6,7 @@ class Propane
 
 module a.b;
 class Foobar;
+result_type   XYZ  *  ;
 
 token while;
 
@@ -31,47 +32,48 @@ EOF
       grammar = Grammar.new(input)
       expect(grammar.classname).to eq "Foobar"
       expect(grammar.modulename).to eq "a.b"
+      expect(grammar.result_type).to eq "XYZ  *"
 
       o = grammar.tokens.find {|token| token.name == "while"}
       expect(o).to_not be_nil
-      expect(o.line_number).to eq 6
+      expect(o.line_number).to eq 7
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
       expect(o).to_not be_nil
       expect(o.pattern).to eq "while"
-      expect(o.line_number).to eq 6
+      expect(o.line_number).to eq 7
       expect(o.code).to be_nil
 
       o = grammar.tokens.find {|token| token.name == "id"}
       expect(o).to_not be_nil
-      expect(o.line_number).to eq 9
+      expect(o.line_number).to eq 10
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
       expect(o).to_not be_nil
       expect(o.pattern).to eq "[a-zA-Z_][a-zA-Z_0-9]*"
-      expect(o.line_number).to eq 9
+      expect(o.line_number).to eq 10
       expect(o.code).to be_nil
 
       o = grammar.tokens.find {|token| token.name == "token_with_code"}
       expect(o).to_not be_nil
-      expect(o.line_number).to eq 11
+      expect(o.line_number).to eq 12
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
       expect(o).to_not be_nil
       expect(o.pattern).to eq "token_with_code"
-      expect(o.line_number).to eq 11
+      expect(o.line_number).to eq 12
       expect(o.code).to eq "Code for the token\n"
 
       o = grammar.tokens.find {|token| token.name == "token_with_no_pattern"}
       expect(o).to_not be_nil
-      expect(o.line_number).to eq 15
+      expect(o.line_number).to eq 16
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
       expect(o).to be_nil
 
       o = grammar.patterns.find {|pattern| pattern.pattern == "\\s+"}
       expect(o).to_not be_nil
-      expect(o.line_number).to eq 17
+      expect(o.line_number).to eq 18
       expect(o.token).to be_nil
       expect(o.code).to be_nil
 
@@ -80,19 +82,19 @@ EOF
       o = grammar.rules[0]
       expect(o.name).to eq "A"
       expect(o.components).to eq %w[B]
-      expect(o.line_number).to eq 19
+      expect(o.line_number).to eq 20
       expect(o.code).to eq "  a = 42;\n"
 
       o = grammar.rules[1]
       expect(o.name).to eq "B"
       expect(o.components).to eq %w[C while id]
-      expect(o.line_number).to eq 22
+      expect(o.line_number).to eq 23
       expect(o.code).to be_nil
 
       o = grammar.rules[2]
       expect(o.name).to eq "B"
       expect(o.components).to eq []
-      expect(o.line_number).to eq 23
+      expect(o.line_number).to eq 24
       expect(o.code).to eq "  b = 0;\n"
     end
 
