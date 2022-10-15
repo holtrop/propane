@@ -9,6 +9,6 @@ int main()
 unittest
 {
     string input = "defghidef";
-    auto parser = new Testparser.Parser(cast(const(ubyte) *)input.ptr, input.length);
+    auto parser = new Testparser.Parser(input);
     assert(parser.parse() == true);
 }

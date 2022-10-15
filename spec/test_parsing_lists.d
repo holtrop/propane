@@ -9,17 +9,17 @@ int main()
 unittest
 {
     string input = "a";
-    auto parser = new Testparser.Parser(cast(const(ubyte) *)input.ptr, input.length);
+    auto parser = new Testparser.Parser(input);
     assert(parser.parse() == true);
     assert(parser.result == 1u);
 
     input = "";
-    parser = new Testparser.Parser(cast(const(ubyte) *)input.ptr, input.length);
+    parser = new Testparser.Parser(input);
     assert(parser.parse() == true);
     assert(parser.result == 0u);
 
     input = "aaaaaaaaaaaaaaaa";
-    parser = new Testparser.Parser(cast(const(ubyte) *)input.ptr, input.length);
+    parser = new Testparser.Parser(input);
     assert(parser.parse() == true);
     assert(parser.result == 16u);
 }

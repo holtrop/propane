@@ -9,10 +9,10 @@ int main()
 unittest
 {
     string input = "aba";
-    auto parser = new Testparser.Parser(cast(const(ubyte) *)input.ptr, input.length);
+    auto parser = new Testparser.Parser(input);
     assert(parser.parse() == true);
 
     input = "abb";
-    parser = new Testparser.Parser(cast(const(ubyte) *)input.ptr, input.length);
+    parser = new Testparser.Parser(input);
     assert(parser.parse() == true);
 }

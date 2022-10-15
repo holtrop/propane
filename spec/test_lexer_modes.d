@@ -9,12 +9,12 @@ int main()
 unittest
 {
     string input = `abc "a string" def`;
-    auto parser = new Testparser.Parser(cast(const(ubyte) *)input.ptr, input.length);
+    auto parser = new Testparser.Parser(input);
     assert(parser.parse() == true);
     writeln("pass1");
 
     input = `abc "abc def" def`;
-    parser = new Testparser.Parser(cast(const(ubyte) *)input.ptr, input.length);
+    parser = new Testparser.Parser(input);
     assert(parser.parse() == true);
     writeln("pass2");
 }

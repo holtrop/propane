@@ -76,6 +76,7 @@ EOF
     build_parser
     compile("spec/test_d_lexer.d")
     results = run
+    expect(results.stderr).to eq ""
     expect(results.status).to eq 0
   end
 

@@ -41,13 +41,13 @@ class <%= @classname %>
             uint code_point_length;
         }
 
-        static DecodedCodePoint decode_code_point(const(ubyte) * input, size_t input_length)
+        static DecodedCodePoint decode_code_point(string input)
         {
-            if (input_length == 0u)
+            if (input.length == 0u)
             {
                 return DecodedCodePoint(CODE_POINT_EOF, 0u);
             }
-            ubyte c = *input;
+            char c = input[0];
             uint code_point;
             uint code_point_length;
             if ((c & 0x80u) == 0u)
@@ -87,20 +87,19 @@ class <%= @classname %>
                 {
                     return DecodedCodePoint(CODE_POINT_INVALID, 0u);
                 }
-                if (input_length <= following_bytes)
+                if (input.length <= following_bytes)
                 {
                     return DecodedCodePoint(CODE_POINT_INVALID, 0u);
                 }
                 code_point_length = following_bytes + 1u;
-                while (following_bytes-- > 0u)
+                for (size_t i = 0u; i < following_bytes; i++)
                 {
-                    input++;
-                    ubyte b = *input;
-                    if ((b & 0xC0u) != 0u)
+                    char b = input[i + 1u];
+                    if ((b & 0xC0u) != 0x80u)
                     {
                         return DecodedCodePoint(CODE_POINT_INVALID, 0u);
                     }
-                    code_point = (code_point << 6u) | b;
+                    code_point = (code_point << 6u) | (b & 0x3Fu);
                 }
             }
             return DecodedCodePoint(code_point, code_point_length);
@@ -159,17 +158,15 @@ class <%= @classname %>
             uint token;
         }
 
-        private const(ubyte) * m_input;
-        private size_t m_input_length;
+        private string m_input;
         private size_t m_input_position;
         private size_t m_input_row;
         private size_t m_input_col;
         private size_t m_mode;
 
-        this(const(ubyte) * input, size_t input_length)
+        this(string input)
         {
             m_input = input;
-            m_input_length = input_length;
             m_mode = <%= @lexer.mode_id("default") %>;
         }
 
@@ -227,7 +224,7 @@ class <%= @classname %>
             uint current_state = modes[m_mode].state_table_offset;
             for (;;)
             {
-                auto decoded = Decoder.decode_code_point(&m_input[m_input_position + attempt_match_info.length], m_input_length - m_input_position - attempt_match_info.length);
+                auto decoded = Decoder.decode_code_point(m_input[(m_input_position + attempt_match_info.length)..(m_input.length)]);
                 if (decoded.code_point == Decoder.CODE_POINT_INVALID)
                 {
                     lt.token = _TOKEN_DECODE_ERROR;
@@ -377,9 +374,9 @@ class <%= @classname %>
 
         private <%= @grammar.result_type %> parse_result;
 
-        this(const(ubyte) * input, size_t input_length)
+        this(string input)
         {
-            m_lexer = new Lexer(input, input_length);
+            m_lexer = new Lexer(input);
         }
 
         bool parse()
