@@ -186,11 +186,12 @@ class <%= @classname %>
          * Execute user code associated with a lexer pattern.
          *
          * @param code_id The ID of the user code block to execute.
+         * @param match Matched text for this pattern.
          *
          * @return Token ID to accept, or _TOKEN_COUNT if the user code does
          *   not explicitly return a token.
          */
-        private uint user_code(uint code_id)
+        private uint user_code(uint code_id, string match)
         {
             switch (code_id)
             {
@@ -268,7 +269,7 @@ class <%= @classname %>
                     uint token_to_accept = longest_match_info.token;
                     if (longest_match_info.code_id != 0xFFFF_FFFFu)
                     {
-                        uint user_code_token = user_code(longest_match_info.code_id);
+                        uint user_code_token = user_code(longest_match_info.code_id, m_input[m_input_position..(m_input_position + longest_match_info.length)]);
                         /* A return of _TOKEN_COUNT from user_code() means
                          * that the user code did not explicitly return a
                          * token. So only override the token to return if the

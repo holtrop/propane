@@ -300,4 +300,21 @@ EOF
     expect(results.status).to_not eq 0
     expect(results.stderr).to match %r{reduce/reduce conflict.*\(E\).*\(F\)}
   end
+
+  it "provides matched text to user code blocks" do
+    write_grammar <<EOF
+token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
+  writeln("Matched token is ", match);
+>>
+Start -> id;
+EOF
+    build_parser
+    compile("spec/test_lexer_match_text.d")
+    results = run
+    expect(results.status).to eq 0
+    verify_lines(results.stdout, [
+      "Matched token is identifier_123",
+      "pass1",
+    ])
+  end
 end
