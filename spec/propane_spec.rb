@@ -317,4 +317,21 @@ EOF
       "pass1",
     ])
   end
+
+  it "allows storing a result value for the lexer" do
+    write_grammar <<EOF
+result_type ulong;
+token word /[a-z]+/ <<
+  $$ = match.length;
+>>
+Start -> word <<
+  $$ = $1;
+>>
+EOF
+    build_parser
+    compile("spec/test_lexer_result_value.d")
+    results = run
+    expect(results.stderr).to eq ""
+    expect(results.status).to eq 0
+  end
 end

@@ -157,25 +157,37 @@ class Propane
     #
     # @param code [String]
     #   User code block.
+    # @param parser [Boolean]
+    #   Whether the user code is for the parser or lexer.
     #
     # @return [String]
     #   Expanded user code block.
-    def expand_code(code)
-      code.gsub(/\$token\(([$\w]+)\)/) do |match|
+    def expand_code(code, parser)
+      code = code.gsub(/\$token\(([$\w]+)\)/) do |match|
         "TOKEN_#{Token.code_name($1)}"
-      end.gsub(/\$mode\(([a-zA-Z_][a-zA-Z_0-9]*)\)/) do |match|
-        mode_name = $1
-        mode_id = @lexer.mode_id(mode_name)
-        unless mode_id
-          raise Error.new("Lexer mode '#{mode_name}' not found")
-        end
-        "m_mode = #{mode_id}u"
-      end.gsub(/\$\$/) do |match|
-        "_result"
-      end.gsub(/\$(\d+)/) do |match|
-        index = $1.to_i
-        "stateresults[$-1-n_states+#{index}].result"
       end
+      if parser
+        code = code.gsub(/\$\$/) do |match|
+          "_result"
+        end
+        code = code.gsub(/\$(\d+)/) do |match|
+          index = $1.to_i
+          "stateresults[$-1-n_states+#{index}].result"
+        end
+      else
+        code = code.gsub(/\$\$/) do |match|
+          "lt.result"
+        end
+        code = code.gsub(/\$mode\(([a-zA-Z_][a-zA-Z_0-9]*)\)/) do |match|
+          mode_name = $1
+          mode_id = @lexer.mode_id(mode_name)
+          unless mode_id
+            raise Error.new("Lexer mode '#{mode_name}' not found")
+          end
+          "m_mode = #{mode_id}u"
+        end
+      end
+      code
     end
 
   end

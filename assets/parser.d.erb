@@ -156,6 +156,7 @@ class <%= @classname %>
             size_t col;
             size_t length;
             uint token;
+            <%= @grammar.result_type %> result;
         }
 
         private string m_input;
@@ -187,18 +188,19 @@ class <%= @classname %>
          *
          * @param code_id The ID of the user code block to execute.
          * @param match Matched text for this pattern.
+         * @param lt LexedToken lexer result in progress.
          *
          * @return Token ID to accept, or _TOKEN_COUNT if the user code does
          *   not explicitly return a token.
          */
-        private uint user_code(uint code_id, string match)
+        private uint user_code(uint code_id, string match, LexedToken * lt)
         {
             switch (code_id)
             {
 <% @grammar.patterns.each do |pattern| %>
 <%   if pattern.code_id %>
             case <%= pattern.code_id %>u: {
-<%= expand_code(pattern.code) %>
+<%= expand_code(pattern.code, false) %>
             } break;
 <%   end %>
 <% end %>
@@ -210,7 +212,10 @@ class <%= @classname %>
 
         private LexedToken attempt_lex_token()
         {
-            LexedToken lt = LexedToken(m_input_row, m_input_col, 0, _TOKEN_COUNT);
+            LexedToken lt;
+            lt.row = m_input_row;
+            lt.col = m_input_col;
+            lt.token = _TOKEN_COUNT;
             struct MatchInfo
             {
                 size_t length;
@@ -269,7 +274,7 @@ class <%= @classname %>
                     uint token_to_accept = longest_match_info.token;
                     if (longest_match_info.code_id != 0xFFFF_FFFFu)
                     {
-                        uint user_code_token = user_code(longest_match_info.code_id, m_input[m_input_position..(m_input_position + longest_match_info.length)]);
+                        uint user_code_token = user_code(longest_match_info.code_id, m_input[m_input_position..(m_input_position + longest_match_info.length)], &lt);
                         /* A return of _TOKEN_COUNT from user_code() means
                          * that the user code did not explicitly return a
                          * token. So only override the token to return if the
@@ -417,6 +422,7 @@ class <%= @classname %>
                     {
                         /* We shifted a token, mark it consumed. */
                         token = _TOKEN_COUNT;
+                        stateresults[$-1].result = lexed_token.result;
                     }
                     else
                     {
@@ -520,7 +526,7 @@ class <%= @classname %>
 <% @grammar.rules.each do |rule| %>
 <%   if rule.code %>
             case <%= rule.id %>u: {
-<%= expand_code(rule.code) %>
+<%= expand_code(rule.code, true) %>
             } break;
 <%   end %>
 <% end %>
