@@ -8,7 +8,7 @@ class Propane
     attr_reader :rules
     attr_reader :tokens
     attr_reader :code_blocks
-    attr_reader :result_type
+    attr_reader :ptype
 
     def initialize(input)
       @patterns = []
@@ -19,7 +19,7 @@ class Propane
       @next_line_number = @line_number
       @mode = nil
       @input = input.gsub("\r\n", "\n")
-      @result_type = "void *"
+      @ptype = "void *"
       parse_grammar!
     end
 
@@ -37,7 +37,7 @@ class Propane
       elsif @mode.nil? && parse_mode_label!
       elsif parse_module_statement!
       elsif parse_class_statement!
-      elsif parse_result_type_statement!
+      elsif parse_ptype_statement!
       elsif parse_pattern_statement!
       elsif parse_token_statement!
       elsif parse_tokenid_statement!
@@ -86,10 +86,10 @@ class Propane
       end
     end
 
-    def parse_result_type_statement!
-      if consume!(/result_type\s+/)
+    def parse_ptype_statement!
+      if consume!(/ptype\s+/)
         md = consume!(/([^;]+);/, "expected result type expression")
-        @result_type = md[1].strip
+        @ptype = md[1].strip
       end
     end
 

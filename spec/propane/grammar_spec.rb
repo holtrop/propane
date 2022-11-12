@@ -6,7 +6,7 @@ class Propane
 
 module a.b;
 class Foobar;
-result_type   XYZ  *  ;
+ptype   XYZ  *  ;
 
 token while;
 
@@ -32,7 +32,7 @@ EOF
       grammar = Grammar.new(input)
       expect(grammar.classname).to eq "Foobar"
       expect(grammar.modulename).to eq "a.b"
-      expect(grammar.result_type).to eq "XYZ  *"
+      expect(grammar.ptype).to eq "XYZ  *"
 
       o = grammar.tokens.find {|token| token.name == "while"}
       expect(o).to_not be_nil

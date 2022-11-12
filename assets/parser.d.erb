@@ -156,7 +156,7 @@ class <%= @classname %>
             size_t col;
             size_t length;
             uint token;
-            <%= @grammar.result_type %> result;
+            <%= @grammar.ptype %> pvalue;
         }
 
         private string m_input;
@@ -346,10 +346,10 @@ class <%= @classname %>
             uint n_reduce_entries;
         }
 
-        private struct StateResult
+        private struct StateValue
         {
             uint state;
-            <%= @grammar.result_type %> result;
+            <%= @grammar.ptype %> pvalue;
 
             this(uint state)
             {
@@ -378,7 +378,7 @@ class <%= @classname %>
 
         private Lexer m_lexer;
 
-        private <%= @grammar.result_type %> parse_result;
+        private <%= @grammar.ptype %> parse_result;
 
         this(string input)
         {
@@ -389,9 +389,9 @@ class <%= @classname %>
         {
             Lexer.LexedToken lexed_token;
             uint token = _TOKEN_COUNT;
-            StateResult[] stateresults = new StateResult[](1);
+            StateValue[] statevalues = new StateValue[](1);
             uint reduced_rule_set = 0xFFFFFFFFu;
-            <%= @grammar.result_type %> reduced_parse_result;
+            <%= @grammar.ptype %> reduced_parse_result;
             for (;;)
             {
                 if (token == _TOKEN_COUNT)
@@ -402,46 +402,46 @@ class <%= @classname %>
                 uint shift_state = 0xFFFFFFFFu;
                 if (reduced_rule_set != 0xFFFFFFFFu)
                 {
-                    shift_state = check_shift(stateresults[$-1].state, reduced_rule_set);
+                    shift_state = check_shift(statevalues[$-1].state, reduced_rule_set);
                 }
                 if (shift_state == 0xFFFFFFFFu)
                 {
-                    shift_state = check_shift(stateresults[$-1].state, token);
+                    shift_state = check_shift(statevalues[$-1].state, token);
                     if ((shift_state != 0xFFFFFFFFu) && (token == TOKEN_0EOF))
                     {
                         /* Successful parse. */
-                        parse_result = stateresults[$-1].result;
+                        parse_result = statevalues[$-1].pvalue;
                         return true;
                     }
                 }
                 if (shift_state != 0xFFFFFFFFu)
                 {
                     /* We have something to shift. */
-                    stateresults ~= StateResult(shift_state);
+                    statevalues ~= StateValue(shift_state);
                     if (reduced_rule_set == 0xFFFFFFFFu)
                     {
                         /* We shifted a token, mark it consumed. */
                         token = _TOKEN_COUNT;
-                        stateresults[$-1].result = lexed_token.result;
+                        statevalues[$-1].pvalue = lexed_token.pvalue;
                     }
                     else
                     {
                         /* We shifted a RuleSet. */
-                        stateresults[$-1].result = reduced_parse_result;
-                        <%= @grammar.result_type %> new_parse_result;
+                        statevalues[$-1].pvalue = reduced_parse_result;
+                        <%= @grammar.ptype %> new_parse_result;
                         reduced_parse_result = new_parse_result;
                         reduced_rule_set = 0xFFFFFFFFu;
                     }
                     continue;
                 }
 
-                uint reduce_index = check_reduce(stateresults[$-1].state, token);
+                uint reduce_index = check_reduce(statevalues[$-1].state, token);
                 if (reduce_index != 0xFFFFFFFFu)
                 {
                     /* We have something to reduce. */
-                    reduced_parse_result = user_code(reduces[reduce_index].rule, stateresults, reduces[reduce_index].n_states);
+                    reduced_parse_result = user_code(reduces[reduce_index].rule, statevalues, reduces[reduce_index].n_states);
                     reduced_rule_set = reduces[reduce_index].rule_set;
-                    stateresults.length -= reduces[reduce_index].n_states;
+                    statevalues.length -= reduces[reduce_index].n_states;
                     continue;
                 }
 
@@ -459,7 +459,7 @@ class <%= @classname %>
             }
         }
 
-        @property <%= @grammar.result_type %> result()
+        @property <%= @grammar.ptype %> result()
         {
             return parse_result;
         }
@@ -515,11 +515,11 @@ class <%= @classname %>
          *
          * @param rule The ID of the rule.
          *
-         * @return Parse result.
+         * @return Parse value.
          */
-        private <%= @grammar.result_type %> user_code(uint rule, StateResult[] stateresults, uint n_states)
+        private <%= @grammar.ptype %> user_code(uint rule, StateValue[] statevalues, uint n_states)
         {
-            <%= @grammar.result_type %> _result;
+            <%= @grammar.ptype %> _pvalue;
 
             switch (rule)
             {
@@ -533,7 +533,7 @@ class <%= @classname %>
             default: break;
             }
 
-            return _result;
+            return _pvalue;
         }
     }
 }

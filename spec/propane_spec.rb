@@ -263,7 +263,7 @@ EOF
 
   it "parses lists" do
     write_grammar <<EOF
-result_type uint;
+ptype uint;
 token a;
 Start -> As <<
   $$ = $1;
@@ -320,7 +320,7 @@ EOF
 
   it "allows storing a result value for the lexer" do
     write_grammar <<EOF
-result_type ulong;
+ptype ulong;
 token word /[a-z]+/ <<
   $$ = match.length;
 >>

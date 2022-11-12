@@ -168,15 +168,15 @@ class Propane
       end
       if parser
         code = code.gsub(/\$\$/) do |match|
-          "_result"
+          "_pvalue"
         end
         code = code.gsub(/\$(\d+)/) do |match|
           index = $1.to_i
-          "stateresults[$-1-n_states+#{index}].result"
+          "statevalues[$-1-n_states+#{index}].pvalue"
         end
       else
         code = code.gsub(/\$\$/) do |match|
-          "lt.result"
+          "lt.pvalue"
         end
         code = code.gsub(/\$mode\(([a-zA-Z_][a-zA-Z_0-9]*)\)/) do |match|
           mode_name = $1
