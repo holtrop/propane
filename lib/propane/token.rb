@@ -18,6 +18,10 @@ class Propane
     #   Token name.
     attr_reader :name
 
+    # @return [String, nil]
+    #   Parser value type name.
+    attr_reader :ptypename
+
     # @return [Integer, nil]
     #   Token ID.
     attr_accessor :id
@@ -28,14 +32,15 @@ class Propane
 
     # Construct a Token.
     #
-    # @param options [Hash]
-    #   Optional parameters.
-    # @option options [String, nil] :name
+    # @param name [String, nil]
     #   Token name.
-    # @option options [Integer, nil] :line_number
+    # @param ptypename [String, nil]
+    #   Parser value type for this token.
+    # @param line_number [Integer, nil]
     #   Line number where the token was defined in the input grammar.
-    def initialize(name, line_number)
+    def initialize(name, ptypename, line_number)
       @name = name
+      @ptypename = ptypename
       @line_number = line_number
     end
 

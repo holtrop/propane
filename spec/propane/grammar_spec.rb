@@ -33,6 +33,7 @@ EOF
       expect(grammar.classname).to eq "Foobar"
       expect(grammar.modulename).to eq "a.b"
       expect(grammar.ptype).to eq "XYZ  *"
+      expect(grammar.ptypes).to eq("default" => "XYZ  *")
 
       o = grammar.tokens.find {|token| token.name == "while"}
       expect(o).to_not be_nil
@@ -172,6 +173,43 @@ EOF
       o = grammar.patterns.find {|pattern| pattern.pattern == "r"}
       expect(o).to_not be_nil
       expect(o.mode).to eq "m3"
+    end
+
+    it "allows assigning ptypes to tokens and rules" do
+      input = <<EOF
+ptype Subnode *;
+ptype string = char *;
+ptype integer = int;
+ptype node = Node *;
+
+token abc(string);
+token bar;
+tokenid int(integer);
+
+Start (node) -> R;
+R -> abc int;
+EOF
+      grammar = Grammar.new(input)
+
+      o = grammar.tokens.find {|token| token.name == "abc"}
+      expect(o).to_not be_nil
+      expect(o.ptypename).to eq "string"
+
+      o = grammar.tokens.find {|token| token.name == "bar"}
+      expect(o).to_not be_nil
+      expect(o.ptypename).to be_nil
+
+      o = grammar.tokens.find {|token| token.name == "int"}
+      expect(o).to_not be_nil
+      expect(o.ptypename).to eq "integer"
+
+      o = grammar.rules.find {|rule| rule.name == "Start"}
+      expect(o).to_not be_nil
+      expect(o.ptypename).to eq "node"
+
+      o = grammar.rules.find {|rule| rule.name == "R"}
+      expect(o).to_not be_nil
+      expect(o.ptypename).to be_nil
     end
   end
 end

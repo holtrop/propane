@@ -38,7 +38,7 @@ class Propane
         raise Error.new("No patterns found for default mode")
       end
       # Add EOF token.
-      @grammar.tokens << Token.new("$EOF", nil)
+      @grammar.tokens << Token.new("$EOF", nil, nil)
       tokens_by_name = {}
       @grammar.tokens.each_with_index do |token, token_id|
         # Assign token ID.
@@ -54,7 +54,7 @@ class Propane
         raise Error.new("Start rule not found")
       end
       # Add "real" start rule.
-      @grammar.rules.unshift(Rule.new("$Start", ["Start", "$EOF"], nil, nil))
+      @grammar.rules.unshift(Rule.new("$Start", ["Start", "$EOF"], nil, nil, nil))
       rule_sets = {}
       rule_set_id = @grammar.tokens.size
       @grammar.rules.each_with_index do |rule, rule_id|

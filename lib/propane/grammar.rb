@@ -2,13 +2,15 @@ class Propane
 
   class Grammar
 
+    IDENTIFIER_REGEX = /[a-zA-Z_][a-zA-Z_0-9]*/
+
     attr_reader :classname
     attr_reader :modulename
     attr_reader :patterns
     attr_reader :rules
     attr_reader :tokens
     attr_reader :code_blocks
-    attr_reader :ptype
+    attr_reader :ptypes
 
     def initialize(input)
       @patterns = []
@@ -19,8 +21,12 @@ class Propane
       @next_line_number = @line_number
       @mode = nil
       @input = input.gsub("\r\n", "\n")
-      @ptype = "void *"
+      @ptypes = {"default" => "void *"}
       parse_grammar!
+    end
+
+    def ptype
+      @ptypes["default"]
     end
 
     private
@@ -53,7 +59,7 @@ class Propane
     end
 
     def parse_mode_label!
-      if md = consume!(/([a-zA-Z_][a-zA-Z_0-9]*)\s*:/)
+      if md = consume!(/(#{IDENTIFIER_REGEX})\s*:/)
         @mode = md[1]
       end
     end
@@ -88,24 +94,28 @@ class Propane
 
     def parse_ptype_statement!
       if consume!(/ptype\s+/)
-        md = consume!(/([^;]+);/, "expected result type expression")
-        @ptype = md[1].strip
+        name = "default"
+        if md = consume!(/(#{IDENTIFIER_REGEX})\s*=\s*/)
+          name = md[1]
+        end
+        md = consume!(/([^;]+);/, "expected parser result type expression")
+        @ptypes[name] = md[1].strip
       end
     end
 
     def parse_token_statement!
       if consume!(/token\s+/)
-        md = consume!(/([a-zA-Z_][a-zA-Z_0-9]*)/, "expected token name")
+        md = consume!(/(#{IDENTIFIER_REGEX})\s*/, "expected token name")
         name = md[1]
-        if consume!(/\s+/)
-          pattern = parse_pattern!
+        if md = consume!(/\((#{IDENTIFIER_REGEX})\)\s*/)
+          ptypename = md[1]
         end
-        pattern ||= name
+        pattern = parse_pattern! || name
         consume!(/\s+/)
         unless code = parse_code_block!
           consume!(/;/, "expected pattern or `;' or code block")
         end
-        token = Token.new(name, @line_number)
+        token = Token.new(name, ptypename, @line_number)
         @tokens << token
         pattern = Pattern.new(pattern: pattern, token: token, line_number: @line_number, code: code, mode: @mode)
         @patterns << pattern
@@ -115,12 +125,14 @@ class Propane
     end
 
     def parse_tokenid_statement!
-      if md = consume!(/tokenid\s+(\S+?)\s*;/m)
+      if md = consume!(/tokenid\s+/)
+        md = consume!(/(#{IDENTIFIER_REGEX})\s*/, "expected token name")
         name = md[1]
-        unless name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
-          raise Error.new("Invalid token name #{name.inspect}")
+        if md = consume!(/\((#{IDENTIFIER_REGEX})\)\s*/)
+          ptypename = md[1]
         end
-        token = Token.new(name, @line_number)
+        consume!(/;/, "expected `;'");
+        token = Token.new(name, ptypename, @line_number)
         @tokens << token
         @mode = nil
         true
@@ -142,13 +154,14 @@ class Propane
     end
 
     def parse_rule_statement!
-      if md = consume!(/(\S+)\s*->\s*([^\n]*?)(?:;|<<\n(.*?)^>>\n)/m)
-        rule_name, components, code = *md[1, 3]
-        unless rule_name =~ /^[a-zA-Z_][a-zA-Z_0-9]*$/
-          raise Error.new("Invalid rule name #{name.inspect}")
+      if md = consume!(/(#{IDENTIFIER_REGEX})\s*(?:\((#{IDENTIFIER_REGEX})\))?\s*->\s*/)
+        rule_name, ptypename = *md[1, 2]
+        md = consume!(/((?:#{IDENTIFIER_REGEX}\s*)*)\s*/, "expected rule component list")
+        components = md[1].strip.split(/\s+/)
+        unless code = parse_code_block!
+          consume!(/;/, "expected pattern or `;' or code block")
         end
-        components = components.strip.split(/\s+/)
-        @rules << Rule.new(rule_name, components, code, @line_number)
+        @rules << Rule.new(rule_name, components, code, ptypename, @line_number)
         @mode = nil
         true
       end
