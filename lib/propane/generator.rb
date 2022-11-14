@@ -33,6 +33,7 @@ class Propane
           pattern.mode = "default"
           found_default = true
         end
+        pattern.ptypename ||= "default"
       end
       unless found_default
         raise Error.new("No patterns found for default mode")
@@ -43,6 +44,8 @@ class Propane
       @grammar.tokens.each_with_index do |token, token_id|
         # Assign token ID.
         token.id = token_id
+        # Set default ptypename if none given.
+        token.ptypename ||= "default"
         # Check for token name conflicts.
         if tokens_by_name.include?(token.name)
           raise Error.new("Duplicate token name #{token.name.inspect}")
@@ -69,8 +72,20 @@ class Propane
           rule_sets[rule.name] = RuleSet.new(rule.name, rule_set_id)
           rule_set_id += 1
         end
-        rule.rule_set = rule_sets[rule.name]
-        rule_sets[rule.name] << rule
+        rule_set = rule_sets[rule.name]
+        if rule_set.ptypename && rule.ptypename && rule_set.ptypename != rule.ptypename
+          raise Error.new("Conflicting ptypes for rule #{rule.name}")
+        end
+        rule_set.ptypename ||= rule.ptypename
+        rule.rule_set = rule_set
+        rule_set << rule
+      end
+      rule_sets.each do |name, rule_set|
+        rule_set.ptypename ||= "default"
+        # Assign rule set ptypenames back to rules.
+        rule_set.rules.each do |rule|
+          rule.ptypename = rule_set.ptypename
+        end
       end
       # Generate lexer user code IDs for lexer patterns with user code blocks.
       @grammar.patterns.select do |pattern|
@@ -159,24 +174,28 @@ class Propane
     #   User code block.
     # @param parser [Boolean]
     #   Whether the user code is for the parser or lexer.
+    # @param rule [Rule, nil]
+    #   The Rule associated with the user code if user code is for the parser.
+    # @param pattern [Pattern, nil]
+    #   The Pattern associated with the user code if user code is for the lexer.
     #
     # @return [String]
     #   Expanded user code block.
-    def expand_code(code, parser)
+    def expand_code(code, parser, rule, pattern)
       code = code.gsub(/\$token\(([$\w]+)\)/) do |match|
         "TOKEN_#{Token.code_name($1)}"
       end
       if parser
         code = code.gsub(/\$\$/) do |match|
-          "_pvalue"
+          "_pvalue.v_#{rule.ptypename}"
         end
         code = code.gsub(/\$(\d+)/) do |match|
           index = $1.to_i
-          "statevalues[$-1-n_states+#{index}].pvalue"
+          "statevalues[$-1-n_states+#{index}].pvalue.v_#{rule.ptypename}"
         end
       else
         code = code.gsub(/\$\$/) do |match|
-          "lt.pvalue"
+          "lt.pvalue.v_#{pattern.ptypename}"
         end
         code = code.gsub(/\$mode\(([a-zA-Z_][a-zA-Z_0-9]*)\)/) do |match|
           mode_name = $1
@@ -188,6 +207,17 @@ class Propane
         end
       end
       code
+    end
+
+    # Get the parser value type for the start rule.
+    #
+    # @return [Array<String>]
+    #   Start rule parser value type name and type string.
+    def start_rule_type
+      start_rule = @grammar.rules.find do |rule|
+        rule.name == "Start"
+      end
+      [start_rule.ptypename, @grammar.ptypes[start_rule.ptypename]]
     end
 
   end

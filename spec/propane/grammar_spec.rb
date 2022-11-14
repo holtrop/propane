@@ -186,6 +186,12 @@ token abc(string);
 token bar;
 tokenid int(integer);
 
+/xyz/ (string) <<
+>>
+
+/z28/ <<
+>>
+
 Start (node) -> R;
 R -> abc int;
 EOF
@@ -208,6 +214,14 @@ EOF
       expect(o.ptypename).to eq "node"
 
       o = grammar.rules.find {|rule| rule.name == "R"}
+      expect(o).to_not be_nil
+      expect(o.ptypename).to be_nil
+
+      o = grammar.patterns.find {|pattern| pattern.pattern == "xyz"}
+      expect(o).to_not be_nil
+      expect(o.ptypename).to eq "string"
+
+      o = grammar.patterns.find {|pattern| pattern.pattern == "z28"}
       expect(o).to_not be_nil
       expect(o.ptypename).to be_nil
     end

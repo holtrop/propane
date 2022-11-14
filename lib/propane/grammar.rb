@@ -117,7 +117,7 @@ class Propane
         end
         token = Token.new(name, ptypename, @line_number)
         @tokens << token
-        pattern = Pattern.new(pattern: pattern, token: token, line_number: @line_number, code: code, mode: @mode)
+        pattern = Pattern.new(pattern: pattern, token: token, line_number: @line_number, code: code, mode: @mode, ptypename: ptypename)
         @patterns << pattern
         @mode = nil
         true
@@ -170,10 +170,13 @@ class Propane
     def parse_pattern_statement!
       if pattern = parse_pattern!
         consume!(/\s+/)
+        if md = consume!(/\((#{IDENTIFIER_REGEX})\)\s*/)
+          ptypename = md[1]
+        end
         unless code = parse_code_block!
           raise Error.new("Line #{@line_number}: expected code block to follow pattern")
         end
-        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, code: code, mode: @mode)
+        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, code: code, mode: @mode, ptypename: ptypename)
         @mode = nil
         true
       end

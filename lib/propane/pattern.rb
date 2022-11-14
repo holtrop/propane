@@ -30,6 +30,10 @@ class Propane
     #   Lexer mode for this pattern.
     attr_accessor :mode
 
+    # @return [String, nil]
+    #   Parser value type name.
+    attr_accessor :ptypename
+
     # Construct a Pattern.
     #
     # @param options [Hash]
@@ -53,6 +57,7 @@ class Propane
       @token = options[:token]
       @line_number = options[:line_number]
       @mode = options[:mode]
+      @ptypename = options[:ptypename]
       regex = Regex.new(@pattern)
       regex.nfa.end_state.accepts = self
       @nfa = regex.nfa

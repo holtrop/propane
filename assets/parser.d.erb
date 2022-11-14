@@ -27,6 +27,13 @@ class <%= @classname %>
 <% end %>
     ];
 
+    static union ParserValue
+    {
+<% @grammar.ptypes.each do |name, typestring| %>
+        <%= typestring %> v_<%= name %>;
+<% end %>
+    }
+
     static class Decoder
     {
         enum
@@ -156,7 +163,7 @@ class <%= @classname %>
             size_t col;
             size_t length;
             uint token;
-            <%= @grammar.ptype %> pvalue;
+            ParserValue pvalue;
         }
 
         private string m_input;
@@ -200,7 +207,7 @@ class <%= @classname %>
 <% @grammar.patterns.each do |pattern| %>
 <%   if pattern.code_id %>
             case <%= pattern.code_id %>u: {
-<%= expand_code(pattern.code, false) %>
+<%= expand_code(pattern.code, false, nil, pattern) %>
             } break;
 <%   end %>
 <% end %>
@@ -349,7 +356,7 @@ class <%= @classname %>
         private struct StateValue
         {
             uint state;
-            <%= @grammar.ptype %> pvalue;
+            ParserValue pvalue;
 
             this(uint state)
             {
@@ -378,7 +385,7 @@ class <%= @classname %>
 
         private Lexer m_lexer;
 
-        private <%= @grammar.ptype %> parse_result;
+        private ParserValue parse_result;
 
         this(string input)
         {
@@ -391,7 +398,7 @@ class <%= @classname %>
             uint token = _TOKEN_COUNT;
             StateValue[] statevalues = new StateValue[](1);
             uint reduced_rule_set = 0xFFFFFFFFu;
-            <%= @grammar.ptype %> reduced_parse_result;
+            ParserValue reduced_parser_value;
             for (;;)
             {
                 if (token == _TOKEN_COUNT)
@@ -427,9 +434,9 @@ class <%= @classname %>
                     else
                     {
                         /* We shifted a RuleSet. */
-                        statevalues[$-1].pvalue = reduced_parse_result;
-                        <%= @grammar.ptype %> new_parse_result;
-                        reduced_parse_result = new_parse_result;
+                        statevalues[$-1].pvalue = reduced_parser_value;
+                        ParserValue new_parse_result;
+                        reduced_parser_value = new_parse_result;
                         reduced_rule_set = 0xFFFFFFFFu;
                     }
                     continue;
@@ -439,7 +446,7 @@ class <%= @classname %>
                 if (reduce_index != 0xFFFFFFFFu)
                 {
                     /* We have something to reduce. */
-                    reduced_parse_result = user_code(reduces[reduce_index].rule, statevalues, reduces[reduce_index].n_states);
+                    reduced_parser_value = user_code(reduces[reduce_index].rule, statevalues, reduces[reduce_index].n_states);
                     reduced_rule_set = reduces[reduce_index].rule_set;
                     statevalues.length -= reduces[reduce_index].n_states;
                     continue;
@@ -459,9 +466,9 @@ class <%= @classname %>
             }
         }
 
-        @property <%= @grammar.ptype %> result()
+        @property <%= start_rule_type[1] %> result()
         {
-            return parse_result;
+            return parse_result.v_<%= start_rule_type[0] %>;
         }
 
         private uint check_shift(uint state, uint symbol)
@@ -517,16 +524,16 @@ class <%= @classname %>
          *
          * @return Parse value.
          */
-        private <%= @grammar.ptype %> user_code(uint rule, StateValue[] statevalues, uint n_states)
+        private ParserValue user_code(uint rule, StateValue[] statevalues, uint n_states)
         {
-            <%= @grammar.ptype %> _pvalue;
+            ParserValue _pvalue;
 
             switch (rule)
             {
 <% @grammar.rules.each do |rule| %>
 <%   if rule.code %>
             case <%= rule.id %>u: {
-<%= expand_code(rule.code, true) %>
+<%= expand_code(rule.code, true, rule, nil) %>
             } break;
 <%   end %>
 <% end %>

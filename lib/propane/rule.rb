@@ -16,7 +16,7 @@ class Propane
 
     # @return [String, nil]
     #   Parser type name.
-    attr_reader :ptypename
+    attr_accessor :ptypename
 
     # @return [Integer]
     #   Line number where the rule was defined in the input grammar.

@@ -20,7 +20,7 @@ class Propane
 
     # @return [String, nil]
     #   Parser value type name.
-    attr_reader :ptypename
+    attr_accessor :ptypename
 
     # @return [Integer, nil]
     #   Token ID.

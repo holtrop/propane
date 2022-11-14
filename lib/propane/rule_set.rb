@@ -10,6 +10,10 @@ class Propane
     #   Name of the RuleSet.
     attr_reader :name
 
+    # @return [String, nil]
+    #   Parser type name.
+    attr_accessor :ptypename
+
     # @return [Array<Rule>]
     #   Rules in the RuleSet.
     attr_reader :rules
