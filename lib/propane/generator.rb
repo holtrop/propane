@@ -191,7 +191,7 @@ class Propane
         end
         code = code.gsub(/\$(\d+)/) do |match|
           index = $1.to_i
-          "statevalues[$-1-n_states+#{index}].pvalue.v_#{rule.ptypename}"
+          "statevalues[$-1-n_states+#{index}].pvalue.v_#{rule.components[index - 1].ptypename}"
         end
       else
         code = code.gsub(/\$\$/) do |match|
