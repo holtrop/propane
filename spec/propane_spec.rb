@@ -19,8 +19,8 @@ describe Propane do
     end
   end
 
-  def compile(test_file)
-    result = system(*%w[gdc -funittest -o spec/run/testparser spec/run/testparser.d], test_file)
+  def compile(*test_files)
+    result = system(*%w[gdc -funittest -o spec/run/testparser spec/run/testparser.d -Ispec], *test_files)
     expect(result).to be_truthy
   end
 
