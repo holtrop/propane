@@ -7,3 +7,8 @@ RSpec::Core::RakeTask.new(:spec, :example_pattern) do |task, args|
 end
 
 task :default => :spec
+
+desc "Build user guide"
+task :user_guide do
+  system("ruby", "-Ilib", "rb/gen_user_guide.rb")
+end

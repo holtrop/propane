@@ -2,7 +2,12 @@ GEM
   remote: https://rubygems.org/
   specs:
     diff-lcs (1.5.0)
+    psych (5.0.1)
+      stringio
     rake (13.0.6)
+    rdoc (6.5.0)
+      psych (>= 4.0.0)
+    redcarpet (3.5.1)
     rspec (3.11.0)
       rspec-core (~> 3.11.0)
       rspec-expectations (~> 3.11.0)
@@ -16,13 +21,18 @@ GEM
       diff-lcs (>= 1.2.0, < 2.0)
       rspec-support (~> 3.11.0)
     rspec-support (3.11.0)
+    stringio (3.0.4)
+    syntax (1.2.2)
 
 PLATFORMS
   ruby
 
 DEPENDENCIES
   rake
+  rdoc
+  redcarpet
   rspec
+  syntax
 
 BUNDLED WITH
-   2.4.0.dev
+   2.3.7
