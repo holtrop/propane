@@ -8,29 +8,29 @@ int main()
 
 unittest
 {
-    alias DCP = Testparser.Decoder.DecodedCodePoint;
-    DCP dcp;
+    alias Result = Testparser.Decoder.Result;
+    Result result;
 
-    dcp = Testparser.Decoder.decode_code_point("5");
-    assert(dcp == DCP('5', 1u));
+    result = Testparser.Decoder.decode_code_point("5");
+    assert(result == Result.success('5', 1u));
 
-    dcp = Testparser.Decoder.decode_code_point("");
-    assert(dcp == DCP(Testparser.Decoder.CODE_POINT_EOF, 0u));
+    result = Testparser.Decoder.decode_code_point("");
+    assert(result == Result.eof());
 
-    dcp = Testparser.Decoder.decode_code_point("\xC2\xA9");
-    assert(dcp == DCP(0xA9u, 2u));
+    result = Testparser.Decoder.decode_code_point("\xC2\xA9");
+    assert(result == Result.success(0xA9u, 2u));
 
-    dcp = Testparser.Decoder.decode_code_point("\xf0\x9f\xa7\xa1");
-    assert(dcp == DCP(0x1F9E1, 4u));
+    result = Testparser.Decoder.decode_code_point("\xf0\x9f\xa7\xa1");
+    assert(result == Result.success(0x1F9E1, 4u));
 
-    dcp = Testparser.Decoder.decode_code_point("\xf0\x9f\x27");
-    assert(dcp == DCP(Testparser.Decoder.CODE_POINT_INVALID, 0u));
+    result = Testparser.Decoder.decode_code_point("\xf0\x9f\x27");
+    assert(result == Result.decode_error());
 
-    dcp = Testparser.Decoder.decode_code_point("\xf0\x9f\xa7\xFF");
-    assert(dcp == DCP(Testparser.Decoder.CODE_POINT_INVALID, 0u));
+    result = Testparser.Decoder.decode_code_point("\xf0\x9f\xa7\xFF");
+    assert(result == Result.decode_error());
 
-    dcp = Testparser.Decoder.decode_code_point("\xfe");
-    assert(dcp == DCP(Testparser.Decoder.CODE_POINT_INVALID, 0u));
+    result = Testparser.Decoder.decode_code_point("\xfe");
+    assert(result == Result.decode_error());
 }
 
 unittest
