@@ -11,7 +11,7 @@ import std.stdio;
 
 class <%= @classname %>
 {
-    enum
+    enum : uint
     {
 <% @grammar.tokens.each_with_index do |token, index| %>
         TOKEN_<%= token.code_name %> = <%= index %>,
@@ -36,10 +36,10 @@ class <%= @classname %>
 
     static class Decoder
     {
-        enum
+        enum : uint
         {
-            CODE_POINT_INVALID = 0xFFFFFFFE,
-            CODE_POINT_EOF = 0xFFFFFFFF,
+            CODE_POINT_INVALID = 0xFFFF_FFFE,
+            CODE_POINT_EOF = 0xFFFF_FFFF,
         }
 
         struct DecodedCodePoint
