@@ -38,30 +38,44 @@ class <%= @classname %>
     {
         struct Result
         {
-            enum : ubyte
+            enum Type
             {
                 SUCCESS,
                 EOF,
                 DECODE_ERROR,
             }
-            ubyte result;
-            alias result this;
+            private Type type;
             uint code_point;
             uint code_point_length;
 
             static Result success(uint code_point, uint code_point_length)
             {
-                return Result(SUCCESS, code_point, code_point_length);
+                return Result(Type.SUCCESS, code_point, code_point_length);
+            }
+
+            bool is_success()
+            {
+                return type == Type.SUCCESS;
             }
 
             static Result eof()
             {
-                return Result(EOF);
+                return Result(Type.EOF);
+            }
+
+            bool is_eof()
+            {
+                return type == Type.EOF;
             }
 
             static Result decode_error()
             {
-                return Result(DECODE_ERROR);
+                return Result(Type.DECODE_ERROR);
+            }
+
+            bool is_decode_error()
+            {
+                return type == Type.DECODE_ERROR;
             }
         }
 
@@ -255,13 +269,13 @@ class <%= @classname %>
             for (;;)
             {
                 auto decoded = Decoder.decode_code_point(m_input[(m_input_position + attempt_match_info.length)..(m_input.length)]);
-                if (decoded == Decoder.Result.DECODE_ERROR)
+                if (decoded.is_decode_error())
                 {
                     lt.token = _TOKEN_DECODE_ERROR;
                     return lt;
                 }
                 bool lex_continue = false;
-                if (decoded != Decoder.Result.EOF)
+                if (!decoded.is_eof())
                 {
                     uint dest = transition(current_state, decoded.code_point);
                     if (dest != cast(uint)-1)
