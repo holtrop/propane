@@ -261,11 +261,9 @@ class <%= @classname %>
                 size_t length;
                 size_t delta_row;
                 size_t delta_col;
-                uint token;
-                uint code_id;
+                const(State) * accepting_state;
             }
             MatchInfo longest_match_info;
-            longest_match_info.token = _TOKEN_COUNT;
             MatchInfo attempt_match_info;
             uint current_state = modes[m_mode].state_table_offset;
             for (;;)
@@ -297,8 +295,7 @@ class <%= @classname %>
                         if ((states[current_state].token != _TOKEN_COUNT) ||
                             (states[current_state].code_id != 0xFFFF_FFFFu))
                         {
-                            attempt_match_info.token = states[current_state].token;
-                            attempt_match_info.code_id = states[current_state].code_id;
+                            attempt_match_info.accepting_state = &states[current_state];
                             longest_match_info = attempt_match_info;
                         }
                     }
@@ -308,13 +305,12 @@ class <%= @classname %>
                     lt.token = TOKEN_0EOF;
                     break;
                 }
-                if (!lex_continue)
+                if (!lex_continue && (longest_match_info.accepting_state != null))
                 {
-                    bool pattern_accepted = false;
-                    uint token_to_accept = longest_match_info.token;
-                    if (longest_match_info.code_id != 0xFFFF_FFFFu)
+                    uint token_to_accept = longest_match_info.accepting_state.token;
+                    if (longest_match_info.accepting_state.code_id != 0xFFFF_FFFFu)
                     {
-                        uint user_code_token = user_code(longest_match_info.code_id, m_input[m_input_position..(m_input_position + longest_match_info.length)], &lt);
+                        uint user_code_token = user_code(longest_match_info.accepting_state.code_id, m_input[m_input_position..(m_input_position + longest_match_info.length)], &lt);
                         /* A return of _TOKEN_COUNT from user_code() means
                          * that the user code did not explicitly return a
                          * token. So only override the token to return if the
@@ -323,25 +319,22 @@ class <%= @classname %>
                         {
                             token_to_accept = user_code_token;
                         }
-                        pattern_accepted = true;
                     }
-                    if (pattern_accepted || (token_to_accept != _TOKEN_COUNT))
+
+                    /* Update the input position tracking. */
+                    m_input_position += longest_match_info.length;
+                    m_input_row += longest_match_info.delta_row;
+                    if (longest_match_info.delta_row != 0u)
                     {
-                        /* Update the input position tracking. */
-                        m_input_position += longest_match_info.length;
-                        m_input_row += longest_match_info.delta_row;
-                        if (longest_match_info.delta_row != 0u)
-                        {
-                            m_input_col = longest_match_info.delta_col;
-                        }
-                        else
-                        {
-                            m_input_col += longest_match_info.delta_col;
-                        }
-                        lt.token = token_to_accept;
-                        lt.length = longest_match_info.length;
-                        break;
+                        m_input_col = longest_match_info.delta_col;
                     }
+                    else
+                    {
+                        m_input_col += longest_match_info.delta_col;
+                    }
+                    lt.token = token_to_accept;
+                    lt.length = longest_match_info.length;
+                    break;
                 }
             }
             return lt;
