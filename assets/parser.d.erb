@@ -21,6 +21,8 @@ class <%= @classname %>
         _TOKEN_DROP = <%= TOKEN_DROP %>,
     }
 
+    alias CodePoint = uint;
+
     static immutable string token_names[] = [
 <% @grammar.tokens.each_with_index do |token, index| %>
         "<%= token.name %>",
@@ -45,10 +47,10 @@ class <%= @classname %>
                 DECODE_ERROR,
             }
             private Type type;
-            uint code_point;
+            CodePoint code_point;
             uint code_point_length;
 
-            static Result success(uint code_point, uint code_point_length)
+            static Result success(CodePoint code_point, uint code_point_length)
             {
                 return Result(Type.SUCCESS, code_point, code_point_length);
             }
@@ -86,7 +88,7 @@ class <%= @classname %>
                 return Result.eof();
             }
             char c = input[0];
-            uint code_point;
+            CodePoint code_point;
             uint code_point_length;
             if ((c & 0x80u) == 0u)
             {
@@ -148,8 +150,8 @@ class <%= @classname %>
     {
         private struct Transition
         {
-            uint first;
-            uint last;
+            CodePoint first;
+            CodePoint last;
             uint destination;
         }
 
