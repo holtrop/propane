@@ -35,18 +35,18 @@ unittest
 
 unittest
 {
-    alias LT = Testparser.Lexer.LexedToken;
+    alias Result = Testparser.Lexer.Result;
     string input = "5 + 4 * \n677 + 567";
     Testparser.Lexer lexer = new Testparser.Lexer(input);
-    assert(lexer.lex_token() == LT(0, 0, 1, Testparser.TOKEN_int));
-    assert(lexer.lex_token() == LT(0, 2, 1, Testparser.TOKEN_plus));
-    assert(lexer.lex_token() == LT(0, 4, 1, Testparser.TOKEN_int));
-    assert(lexer.lex_token() == LT(0, 6, 1, Testparser.TOKEN_times));
-    assert(lexer.lex_token() == LT(1, 0, 3, Testparser.TOKEN_int));
-    assert(lexer.lex_token() == LT(1, 4, 1, Testparser.TOKEN_plus));
-    assert(lexer.lex_token() == LT(1, 6, 3, Testparser.TOKEN_int));
-    assert(lexer.lex_token() == LT(1, 9, 0, Testparser.TOKEN_0EOF));
+    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 0, 0, 1, Testparser.TOKEN_int));
+    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 0, 2, 1, Testparser.TOKEN_plus));
+    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 0, 4, 1, Testparser.TOKEN_int));
+    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 0, 6, 1, Testparser.TOKEN_times));
+    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 1, 0, 3, Testparser.TOKEN_int));
+    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 1, 4, 1, Testparser.TOKEN_plus));
+    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 1, 6, 3, Testparser.TOKEN_int));
+    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 1, 9, 0, Testparser.TOKEN_0EOF));
 
     lexer = new Testparser.Lexer("");
-    assert(lexer.lex_token() == LT(0, 0, 0, Testparser.TOKEN_0EOF));
+    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 0, 0, 0, Testparser.TOKEN_0EOF));
 }
