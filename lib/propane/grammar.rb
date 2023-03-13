@@ -2,7 +2,8 @@ class Propane
 
   class Grammar
 
-    IDENTIFIER_REGEX = /[a-zA-Z_][a-zA-Z_0-9]*/
+    # Reserve identifiers beginning with a double-underscore for internal use.
+    IDENTIFIER_REGEX = /(?:[a-zA-Z]|_[a-zA-Z0-9])[a-zA-Z_0-9]*/
 
     attr_reader :classname
     attr_reader :modulename
