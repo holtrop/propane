@@ -190,6 +190,14 @@ class <%= @classname %>
 <% end %>
         ];
 
+        struct MatchInfo
+        {
+            size_t length;
+            size_t delta_row;
+            size_t delta_col;
+            const(State) * accepting_state;
+        }
+
         struct Result
         {
             enum Type
@@ -264,14 +272,55 @@ class <%= @classname %>
             result.row = m_input_row;
             result.col = m_input_col;
             result.token = _TOKEN_COUNT;
-            struct MatchInfo
+            MatchInfo match_info;
+            find_longest_match(&result, &match_info);
+            if (result.token != _TOKEN_COUNT)
             {
-                size_t length;
-                size_t delta_row;
-                size_t delta_col;
-                const(State) * accepting_state;
+                return result;
             }
-            MatchInfo longest_match_info;
+            if (match_info.accepting_state != null)
+            {
+                uint token_to_accept = match_info.accepting_state.token;
+                if (match_info.accepting_state.code_id != 0xFFFF_FFFFu)
+                {
+                    uint user_code_token = user_code(match_info.accepting_state.code_id, m_input[m_input_position..(m_input_position + match_info.length)], &result);
+                    /* A return of _TOKEN_COUNT from user_code() means
+                     * that the user code did not explicitly return a
+                     * token. So only override the token to return if the
+                     * user code does explicitly return a token. */
+                    if (user_code_token != _TOKEN_COUNT)
+                    {
+                        token_to_accept = user_code_token;
+                    }
+                }
+
+                /* Update the input position tracking. */
+                m_input_position += match_info.length;
+                m_input_row += match_info.delta_row;
+                if (match_info.delta_row != 0u)
+                {
+                    m_input_col = match_info.delta_col;
+                }
+                else
+                {
+                    m_input_col += match_info.delta_col;
+                }
+                result.token = token_to_accept;
+                result.length = match_info.length;
+                if (result.token == _TOKEN_DROP)
+                {
+                    result.type = Result.Type.DROP;
+                }
+                else
+                {
+                    result.type = Result.Type.TOKEN;
+                }
+            }
+            return result;
+        }
+
+        private void find_longest_match(Result * result, MatchInfo * match_info)
+        {
             MatchInfo attempt_match_info;
             uint current_state = modes[m_mode].state_table_offset;
             for (;;)
@@ -281,7 +330,7 @@ class <%= @classname %>
                 {
                     result.type = Result.Type.DECODE_ERROR;
                     result.token = _TOKEN_DECODE_ERROR;
-                    return result;
+                    return;
                 }
                 bool lex_continue = false;
                 if (!decoded.is_eof())
@@ -305,56 +354,21 @@ class <%= @classname %>
                             (states[current_state].code_id != 0xFFFF_FFFFu))
                         {
                             attempt_match_info.accepting_state = &states[current_state];
-                            longest_match_info = attempt_match_info;
+                            *match_info = attempt_match_info;
                         }
                     }
                 }
                 else if (attempt_match_info.length == 0u)
                 {
                     result.token = TOKEN_0EOF;
-                    break;
+                    result.type = Result.Type.TOKEN;
+                    return;
                 }
-                if (!lex_continue && (longest_match_info.accepting_state != null))
+                if (!lex_continue)
                 {
-                    uint token_to_accept = longest_match_info.accepting_state.token;
-                    if (longest_match_info.accepting_state.code_id != 0xFFFF_FFFFu)
-                    {
-                        uint user_code_token = user_code(longest_match_info.accepting_state.code_id, m_input[m_input_position..(m_input_position + longest_match_info.length)], &result);
-                        /* A return of _TOKEN_COUNT from user_code() means
-                         * that the user code did not explicitly return a
-                         * token. So only override the token to return if the
-                         * user code does explicitly return a token. */
-                        if (user_code_token != _TOKEN_COUNT)
-                        {
-                            token_to_accept = user_code_token;
-                        }
-                    }
-
-                    /* Update the input position tracking. */
-                    m_input_position += longest_match_info.length;
-                    m_input_row += longest_match_info.delta_row;
-                    if (longest_match_info.delta_row != 0u)
-                    {
-                        m_input_col = longest_match_info.delta_col;
-                    }
-                    else
-                    {
-                        m_input_col += longest_match_info.delta_col;
-                    }
-                    result.token = token_to_accept;
-                    result.length = longest_match_info.length;
-                    break;
+                    return;
                 }
             }
-            if (result.token == _TOKEN_DROP)
-            {
-                result.type = Result.Type.DROP;
-            }
-            else
-            {
-                result.type = Result.Type.TOKEN;
-            }
-            return result;
         }
 
         private uint transition(uint current_state, uint code_point)
