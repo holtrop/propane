@@ -11,14 +11,49 @@ import std.stdio;
 
 class <%= @classname %>
 {
-    enum : uint
+    alias TokenID = uint;
+
+    enum : TokenID
     {
 <% @grammar.tokens.each_with_index do |token, index| %>
         TOKEN_<%= token.code_name %> = <%= index %>,
+<%   unless token.id == index %>
+<%     raise "Token ID (#{token.id}) does not match index (#{index}) for token #{token.name}!" %>
+<%   end %>
 <% end %>
         _TOKEN_COUNT = <%= @grammar.tokens.size %>,
         _TOKEN_DECODE_ERROR = <%= TOKEN_DECODE_ERROR %>,
         _TOKEN_DROP = <%= TOKEN_DROP %>,
+    }
+
+    struct Token
+    {
+        /* Number of tokens in this parser. */
+        enum count = <%= @grammar.tokens.size %>;
+        TokenID token;
+        alias token this;
+
+        @disable this();
+
+        this(TokenID token)
+        {
+            this.token = token;
+        }
+
+        static Token invalid()
+        {
+            return Token(count);
+        }
+
+        bool is_valid()
+        {
+            return token < count;
+        }
+
+        bool is_invalid()
+        {
+            return !is_valid();
+        }
     }
 
     alias CodePoint = uint;
