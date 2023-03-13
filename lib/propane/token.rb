@@ -9,7 +9,7 @@ class Propane
       # @return [String]
       #   Name of the token to use in code (special characters replaced).
       def code_name(name)
-        name.sub(/^\$/, "0")
+        name.sub(/^\$/, "__")
       end
 
     end

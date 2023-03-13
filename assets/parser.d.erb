@@ -360,7 +360,7 @@ class <%= @classname %>
                 }
                 else if (attempt_match_info.length == 0u)
                 {
-                    result.token = TOKEN_0EOF;
+                    result.token = TOKEN___EOF;
                     result.type = Result.Type.TOKEN;
                     return;
                 }
@@ -471,7 +471,7 @@ class <%= @classname %>
                 if (shift_state == 0xFFFFFFFFu)
                 {
                     shift_state = check_shift(statevalues[$-1].state, token);
-                    if ((shift_state != 0xFFFFFFFFu) && (token == TOKEN_0EOF))
+                    if ((shift_state != 0xFFFFFFFFu) && (token == TOKEN___EOF))
                     {
                         /* Successful parse. */
                         parse_result = statevalues[$-1].pvalue;
