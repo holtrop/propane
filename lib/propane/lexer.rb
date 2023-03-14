@@ -37,8 +37,6 @@ class Propane
           code_id =
             if state.accepts && state.accepts.code_id
               state.accepts.code_id
-            else
-              0xFFFF_FFFF
             end
           state_table << {
             transition_table_index: transition_table.size,
