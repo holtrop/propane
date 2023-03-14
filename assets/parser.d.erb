@@ -223,8 +223,14 @@ class <%= @classname %>
         {
             uint transition_table_index;
             uint n_transitions;
-            uint token;
+            Token token;
             UserCodeID code_id;
+            bool drop;
+
+            bool accepts() const
+            {
+                return drop || token.is_valid() || code_id.is_valid();
+            }
         }
 
         private struct Mode
@@ -243,12 +249,17 @@ class <%= @classname %>
 <% state_table.each do |state_table_entry| %>
             State(<%= state_table_entry[:transition_table_index] %>u,
                   <%= state_table_entry[:n_transitions] %>u,
-                  <%= state_table_entry[:token] %>u,
-<%   if state_table_entry[:code_id] %>
-                  UserCodeID(<%= state_table_entry[:code_id] %>u)),
+<%   if state_table_entry[:token] %>
+                  Token(<%= state_table_entry[:token] %>u),
 <%   else %>
-                  UserCodeID.invalid()),
+                  Token.invalid(),
 <%   end %>
+<%   if state_table_entry[:code_id] %>
+                  UserCodeID(<%= state_table_entry[:code_id] %>u),
+<%   else %>
+                  UserCodeID.invalid(),
+<%   end %>
+                  <%= state_table_entry[:drop] %>),
 <% end %>
         ];
 
@@ -375,7 +386,7 @@ class <%= @classname %>
                 }
                 result.token = token_to_accept;
                 result.length = match_info.length;
-                if (result.token == _TOKEN_DROP)
+                if (match_info.accepting_state.drop)
                 {
                     result.type = Result.Type.DROP;
                 }
@@ -418,8 +429,7 @@ class <%= @classname %>
                             attempt_match_info.delta_col++;
                         }
                         current_state = dest;
-                        if ((states[current_state].token != _TOKEN_COUNT) ||
-                            (states[current_state].code_id.is_valid()))
+                        if (states[current_state].accepts())
                         {
                             attempt_match_info.accepting_state = &states[current_state];
                             *match_info = attempt_match_info;
