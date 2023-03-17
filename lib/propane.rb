@@ -28,9 +28,6 @@ class Propane
   # Decoding error.
   TOKEN_DECODE_ERROR = 0xFFFFFFFD
 
-  # Token ID for a "dropped" token.
-  TOKEN_DROP = 0xFFFFFFFE
-
   class Error < RuntimeError
   end
 
