@@ -25,9 +25,6 @@ require_relative "propane/version"
 
 class Propane
 
-  # Decoding error.
-  TOKEN_DECODE_ERROR = 0xFFFFFFFD
-
   class Error < RuntimeError
   end
 

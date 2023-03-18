@@ -22,7 +22,6 @@ class <%= @classname %>
 <%   end %>
 <% end %>
         _TOKEN_COUNT = <%= @grammar.tokens.size %>,
-        _TOKEN_DECODE_ERROR = <%= TOKEN_DECODE_ERROR %>,
     }
 
     struct Token
@@ -407,7 +406,6 @@ class <%= @classname %>
                 if (decoded.is_decode_error())
                 {
                     result.type = Result.Type.DECODE_ERROR;
-                    result.token = _TOKEN_DECODE_ERROR;
                     return;
                 }
                 bool lex_continue = false;
