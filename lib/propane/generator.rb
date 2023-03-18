@@ -183,7 +183,7 @@ class Propane
     #   Expanded user code block.
     def expand_code(code, parser, rule, pattern)
       code = code.gsub(/\$token\(([$\w]+)\)/) do |match|
-        "TOKEN_#{Token.code_name($1)}"
+        "Token(TOKEN_#{Token.code_name($1)})"
       end
       if parser
         code = code.gsub(/\$\$/) do |match|

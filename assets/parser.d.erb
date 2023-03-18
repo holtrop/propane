@@ -323,10 +323,10 @@ class <%= @classname %>
          * @param match Matched text for this pattern.
          * @param result Result lexer result in progress.
          *
-         * @return Token ID to accept, or _TOKEN_COUNT if the user code does
+         * @return Token to accept, or invalid token if the user code does
          *   not explicitly return a token.
          */
-        private uint user_code(UserCodeID code_id, string match, Result * result)
+        private Token user_code(UserCodeID code_id, string match, Result * result)
         {
             switch (code_id)
             {
@@ -340,7 +340,7 @@ class <%= @classname %>
             default: break;
             }
 
-            return _TOKEN_COUNT;
+            return Token.invalid();
         }
 
         private Result attempt_lex_token()
@@ -360,14 +360,14 @@ class <%= @classname %>
                 uint token_to_accept = match_info.accepting_state.token;
                 if (match_info.accepting_state.code_id.is_valid())
                 {
-                    uint user_code_token = user_code(match_info.accepting_state.code_id, m_input[m_input_position..(m_input_position + match_info.length)], &result);
-                    /* A return of _TOKEN_COUNT from user_code() means
-                     * that the user code did not explicitly return a
-                     * token. So only override the token to return if the
-                     * user code does explicitly return a token. */
-                    if (user_code_token != _TOKEN_COUNT)
+                    Token user_code_token = user_code(match_info.accepting_state.code_id, m_input[m_input_position..(m_input_position + match_info.length)], &result);
+                    /* An invalid Token from user_code() means that the user
+                     * code did not explicitly return a token. So only override
+                     * the token to return if the user code does explicitly
+                     * return a token. */
+                    if (user_code_token.is_valid())
                     {
-                        token_to_accept = user_code_token;
+                        token_to_accept = user_code_token.token;
                     }
                 }
 
