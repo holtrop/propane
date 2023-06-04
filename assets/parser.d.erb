@@ -411,8 +411,8 @@ class <%= @classname %>
                 bool lex_continue = false;
                 if (!decoded.is_eof())
                 {
-                    uint dest = transition(current_state, decoded.code_point);
-                    if (dest != cast(uint)-1)
+                    auto transition_result = transition(current_state, decoded.code_point);
+                    if (transition_result.found())
                     {
                         lex_continue = true;
                         attempt_match_info.length += decoded.code_point_length;
@@ -425,7 +425,7 @@ class <%= @classname %>
                         {
                             attempt_match_info.delta_col++;
                         }
-                        current_state = dest;
+                        current_state = transition_result.destination();
                         if (states[current_state].accepts())
                         {
                             attempt_match_info.accepting_state = &states[current_state];
@@ -446,7 +446,39 @@ class <%= @classname %>
             }
         }
 
-        private uint transition(uint current_state, uint code_point)
+        /**
+         * Result type for transition().
+         *
+         * Alternatives:
+         * - found(destination)
+         * - not_found
+         */
+        struct TransitionResult
+        {
+            private uint m_destination;
+
+            static TransitionResult found(uint destination)
+            {
+                return TransitionResult(destination);
+            }
+
+            static TransitionResult not_found()
+            {
+                return TransitionResult(cast(uint)-1);
+            }
+
+            bool found()
+            {
+                return m_destination != cast(uint)-1;
+            }
+
+            @property uint destination()
+            {
+                return m_destination;
+            }
+        }
+
+        private TransitionResult transition(uint current_state, uint code_point)
         {
             uint transition_table_index = states[current_state].transition_table_index;
             for (uint i = 0u; i < states[current_state].n_transitions; i++)
@@ -454,10 +486,11 @@ class <%= @classname %>
                 if ((transitions[transition_table_index + i].first <= code_point) &&
                     (code_point <= transitions[transition_table_index + i].last))
                 {
-                    return transitions[transition_table_index + i].destination;
+                    uint destination = transitions[transition_table_index + i].destination;
+                    return TransitionResult.found(destination);
                 }
             }
-            return cast(uint)-1;
+            return TransitionResult.not_found();
         }
     }
 
