@@ -20,7 +20,7 @@ describe Propane do
   end
 
   def compile(*test_files)
-    result = system(*%w[gdc -funittest -o spec/run/testparser spec/run/testparser.d -Ispec], *test_files)
+    result = system(*%w[ldc2 --unittest -of spec/run/testparser spec/run/testparser.d -Ispec], *test_files)
     expect(result).to be_truthy
   end
 
@@ -28,6 +28,7 @@ describe Propane do
     stdout, stderr, status = Open3.capture3("spec/run/testparser")
     File.binwrite("spec/run/.stderr", stderr)
     File.binwrite("spec/run/.stdout", stdout)
+    stderr.sub!(/^.*modules passed unittests\n/, "")
     Results.new(stdout, stderr, status)
   end
 
