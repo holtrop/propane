@@ -73,44 +73,30 @@ class <%= @classname %>
     {
         struct Result
         {
-            enum Type
+            enum
             {
                 SUCCESS,
                 EOF,
                 DECODE_ERROR,
             }
-            private Type type;
+            private ubyte type;
+            alias type this;
             CodePoint code_point;
             uint code_point_length;
 
             static Result success(CodePoint code_point, uint code_point_length)
             {
-                return Result(Type.SUCCESS, code_point, code_point_length);
-            }
-
-            bool is_success()
-            {
-                return type == Type.SUCCESS;
+                return Result(SUCCESS, code_point, code_point_length);
             }
 
             static Result eof()
             {
-                return Result(Type.EOF);
-            }
-
-            bool is_eof()
-            {
-                return type == Type.EOF;
+                return Result(EOF);
             }
 
             static Result decode_error()
             {
-                return Result(Type.DECODE_ERROR);
-            }
-
-            bool is_decode_error()
-            {
-                return type == Type.DECODE_ERROR;
+                return Result(DECODE_ERROR);
             }
         }
 
@@ -499,36 +485,12 @@ class <%= @classname %>
             for (;;)
             {
                 auto decoded = Decoder.decode_code_point(m_input[(m_input_position + attempt_match.length)..(m_input.length)]);
-                if (decoded.is_decode_error())
+                switch (decoded)
                 {
-                    return FindLongestMatchResult.decode_error();
-                }
-                bool lex_continue = false;
-                if (decoded.is_eof())
-                {
-                    /* We hit EOF. */
-                    if (longest_match.length > 0)
-                    {
-                        /* We have a match, so use it. */
-                        return longest_match;
-                    }
-                    else if (attempt_match.length != 0)
-                    {
-                        /* There is a partial match - error! */
-                        return FindLongestMatchResult.unexpected_input(attempt_match.length);
-                    }
-                    else
-                    {
-                        /* Valid EOF return. */
-                        return FindLongestMatchResult.eof();
-                    }
-                }
-                else
-                {
+                case Decoder.Result.SUCCESS:
                     auto transition_result = transition(current_state, decoded.code_point);
                     if (transition_result.found())
                     {
-                        lex_continue = true;
                         attempt_match.length += decoded.code_point_length;
                         if (decoded.code_point == '\n')
                         {
@@ -554,6 +516,32 @@ class <%= @classname %>
                     {
                         return FindLongestMatchResult.unexpected_input(attempt_match.length + decoded.code_point_length);
                     }
+                    break;
+
+                case Decoder.Result.EOF:
+                    /* We hit EOF. */
+                    if (longest_match.length > 0)
+                    {
+                        /* We have a match, so use it. */
+                        return longest_match;
+                    }
+                    else if (attempt_match.length != 0)
+                    {
+                        /* There is a partial match - error! */
+                        return FindLongestMatchResult.unexpected_input(attempt_match.length);
+                    }
+                    else
+                    {
+                        /* Valid EOF return. */
+                        return FindLongestMatchResult.eof();
+                    }
+                    break;
+
+                case Decoder.Result.DECODE_ERROR:
+                    return FindLongestMatchResult.decode_error();
+
+                default:
+                    assert(false);
                 }
             }
         }
