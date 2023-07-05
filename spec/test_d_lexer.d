@@ -10,27 +10,35 @@ unittest
 {
     alias Result = Testparser.Decoder.Result;
     Result result;
+    Testparser.CodePoint code_point;
+    ubyte code_point_length;
 
-    result = Testparser.Decoder.decode_code_point("5");
-    assert(result == Result.success('5', 1u));
+    result = Testparser.Decoder.decode_code_point("5", code_point, code_point_length);
+    assert(result == Result.SUCCESS);
+    assert(code_point == '5');
+    assert(code_point_length == 1u);
 
-    result = Testparser.Decoder.decode_code_point("");
-    assert(result == Result.eof());
+    result = Testparser.Decoder.decode_code_point("", code_point, code_point_length);
+    assert(result == Result.EOF);
 
-    result = Testparser.Decoder.decode_code_point("\xC2\xA9");
-    assert(result == Result.success(0xA9u, 2u));
+    result = Testparser.Decoder.decode_code_point("\xC2\xA9", code_point, code_point_length);
+    assert(result == Result.SUCCESS);
+    assert(code_point == 0xA9u);
+    assert(code_point_length == 2u);
 
-    result = Testparser.Decoder.decode_code_point("\xf0\x9f\xa7\xa1");
-    assert(result == Result.success(0x1F9E1, 4u));
+    result = Testparser.Decoder.decode_code_point("\xf0\x9f\xa7\xa1", code_point, code_point_length);
+    assert(result == Result.SUCCESS);
+    assert(code_point == 0x1F9E1u);
+    assert(code_point_length == 4u);
 
-    result = Testparser.Decoder.decode_code_point("\xf0\x9f\x27");
-    assert(result == Result.decode_error());
+    result = Testparser.Decoder.decode_code_point("\xf0\x9f\x27", code_point, code_point_length);
+    assert(result == Result.DECODE_ERROR);
 
-    result = Testparser.Decoder.decode_code_point("\xf0\x9f\xa7\xFF");
-    assert(result == Result.decode_error());
+    result = Testparser.Decoder.decode_code_point("\xf0\x9f\xa7\xFF", code_point, code_point_length);
+    assert(result == Result.DECODE_ERROR);
 
-    result = Testparser.Decoder.decode_code_point("\xfe");
-    assert(result == Result.decode_error());
+    result = Testparser.Decoder.decode_code_point("\xfe", code_point, code_point_length);
+    assert(result == Result.DECODE_ERROR);
 }
 
 unittest

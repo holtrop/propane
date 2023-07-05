@@ -71,40 +71,20 @@ class <%= @classname %>
 
     static class Decoder
     {
-        struct Result
+        enum Result
         {
-            enum
-            {
-                SUCCESS,
-                EOF,
-                DECODE_ERROR,
-            }
-            private ubyte type;
-            alias type this;
-            ubyte code_point_length;
-            CodePoint code_point;
-
-            static Result success(CodePoint code_point, ubyte code_point_length)
-            {
-                return Result(SUCCESS, code_point_length, code_point);
-            }
-
-            static Result eof()
-            {
-                return Result(EOF);
-            }
-
-            static Result decode_error()
-            {
-                return Result(DECODE_ERROR);
-            }
+            SUCCESS,
+            EOF,
+            DECODE_ERROR,
         }
 
-        static Result decode_code_point(string input)
+        static Result decode_code_point(string input,
+            ref CodePoint out_code_point,
+            ref ubyte out_code_point_length)
         {
             if (input.length == 0u)
             {
-                return Result.eof();
+                return Result.EOF;
             }
             char c = input[0];
             CodePoint code_point;
@@ -144,11 +124,11 @@ class <%= @classname %>
                 }
                 else
                 {
-                    return Result.decode_error();
+                    return Result.DECODE_ERROR;
                 }
                 if (input.length <= following_bytes)
                 {
-                    return Result.decode_error();
+                    return Result.DECODE_ERROR;
                 }
                 code_point_length = cast(ubyte)(following_bytes + 1u);
                 for (size_t i = 0u; i < following_bytes; i++)
@@ -156,12 +136,14 @@ class <%= @classname %>
                     char b = input[i + 1u];
                     if ((b & 0xC0u) != 0x80u)
                     {
-                        return Result.decode_error();
+                        return Result.DECODE_ERROR;
                     }
                     code_point = (code_point << 6u) | (b & 0x3Fu);
                 }
             }
-            return Result.success(code_point, code_point_length);
+            out_code_point = code_point;
+            out_code_point_length = code_point_length;
+            return Result.SUCCESS;
         }
     }
 
@@ -484,15 +466,17 @@ class <%= @classname %>
             uint current_state = modes[m_mode].state_table_offset;
             for (;;)
             {
-                auto decoded = Decoder.decode_code_point(m_input[(m_input_position + attempt_match.length)..(m_input.length)]);
-                switch (decoded)
+                string input = m_input[(m_input_position + attempt_match.length)..(m_input.length)];
+                CodePoint code_point;
+                ubyte code_point_length;
+                switch (Decoder.decode_code_point(input, code_point, code_point_length))
                 {
                 case Decoder.Result.SUCCESS:
-                    auto transition_result = transition(current_state, decoded.code_point);
+                    auto transition_result = transition(current_state, code_point);
                     if (transition_result.found())
                     {
-                        attempt_match.length += decoded.code_point_length;
-                        if (decoded.code_point == '\n')
+                        attempt_match.length += code_point_length;
+                        if (code_point == '\n')
                         {
                             attempt_match.delta_row++;
                             attempt_match.delta_col = 0u;
@@ -514,7 +498,7 @@ class <%= @classname %>
                     }
                     else
                     {
-                        return FindLongestMatchResult.unexpected_input(attempt_match.length + decoded.code_point_length);
+                        return FindLongestMatchResult.unexpected_input(attempt_match.length + code_point_length);
                     }
                     break;
 
