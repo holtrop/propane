@@ -81,12 +81,12 @@ class <%= @classname %>
             }
             private ubyte type;
             alias type this;
+            ubyte code_point_length;
             CodePoint code_point;
-            uint code_point_length;
 
-            static Result success(CodePoint code_point, uint code_point_length)
+            static Result success(CodePoint code_point, ubyte code_point_length)
             {
-                return Result(SUCCESS, code_point, code_point_length);
+                return Result(SUCCESS, code_point_length, code_point);
             }
 
             static Result eof()
@@ -108,7 +108,7 @@ class <%= @classname %>
             }
             char c = input[0];
             CodePoint code_point;
-            uint code_point_length;
+            ubyte code_point_length;
             if ((c & 0x80u) == 0u)
             {
                 code_point = c;
@@ -150,7 +150,7 @@ class <%= @classname %>
                 {
                     return Result.decode_error();
                 }
-                code_point_length = following_bytes + 1u;
+                code_point_length = cast(ubyte)(following_bytes + 1u);
                 for (size_t i = 0u; i < following_bytes; i++)
                 {
                     char b = input[i + 1u];
