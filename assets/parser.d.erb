@@ -310,159 +310,88 @@ class <%= @classname %>
             result.row = m_input_row;
             result.col = m_input_col;
             result.token = _TOKEN_COUNT;
-            auto match_result = find_longest_match();
-            if (match_result.is_eof())
+            MatchInfo match_info;
+            size_t unexpected_input_length;
+            switch (find_longest_match(match_info, unexpected_input_length))
             {
+            case FindLongestMatchResult.FOUND_MATCH:
+                uint token_to_accept = match_info.accepting_state.token;
+                if (match_info.accepting_state.code_id.is_valid())
+                {
+                    Token user_code_token = user_code(match_info.accepting_state.code_id, m_input[m_input_position..(m_input_position + match_info.length)], &result);
+                    /* An invalid Token from user_code() means that the user
+                     * code did not explicitly return a token. So only override
+                     * the token to return if the user code does explicitly
+                     * return a token. */
+                    if (user_code_token.is_valid())
+                    {
+                        token_to_accept = user_code_token.token;
+                    }
+                }
+
+                /* Update the input position tracking. */
+                m_input_position += match_info.length;
+                m_input_row += match_info.delta_row;
+                if (match_info.delta_row != 0u)
+                {
+                    m_input_col = match_info.delta_col;
+                }
+                else
+                {
+                    m_input_col += match_info.delta_col;
+                }
+                result.token = token_to_accept;
+                result.length = match_info.length;
+                if (match_info.accepting_state.drop)
+                {
+                    result.type = Result.Type.DROP;
+                }
+                else
+                {
+                    result.type = Result.Type.TOKEN;
+                }
+                return result;
+
+            case FindLongestMatchResult.DECODE_ERROR:
+                result.type = Result.Type.DECODE_ERROR;
+                return result;
+
+            case FindLongestMatchResult.EOF:
                 result.type = Result.Type.TOKEN;
                 result.token = TOKEN___EOF;
                 return result;
-            }
-            else if (match_result.is_decode_error())
-            {
-                result.type = Result.Type.DECODE_ERROR;
-                return result;
-            }
-            else if (match_result.is_unexpected_input())
-            {
+
+            case FindLongestMatchResult.UNEXPECTED_INPUT:
                 result.type = Result.Type.UNEXPECTED_INPUT;
                 return result;
-            }
-            uint token_to_accept = match_result.accepting_state.token;
-            if (match_result.accepting_state.code_id.is_valid())
-            {
-                Token user_code_token = user_code(match_result.accepting_state.code_id, m_input[m_input_position..(m_input_position + match_result.length)], &result);
-                /* An invalid Token from user_code() means that the user
-                 * code did not explicitly return a token. So only override
-                 * the token to return if the user code does explicitly
-                 * return a token. */
-                if (user_code_token.is_valid())
-                {
-                    token_to_accept = user_code_token.token;
-                }
-            }
 
-            /* Update the input position tracking. */
-            m_input_position += match_result.length;
-            m_input_row += match_result.delta_row;
-            if (match_result.delta_row != 0u)
-            {
-                m_input_col = match_result.delta_col;
-            }
-            else
-            {
-                m_input_col += match_result.delta_col;
-            }
-            result.token = token_to_accept;
-            result.length = match_result.length;
-            if (match_result.accepting_state.drop)
-            {
-                result.type = Result.Type.DROP;
-            }
-            else
-            {
-                result.type = Result.Type.TOKEN;
-            }
-            return result;
-        }
-
-        /**
-         * Result type for find_longest_match().
-         *
-         * Alternatives:
-         * - decode_error
-         * - eof
-         * - found_match(length, delta_row, delta_col, accepting_state)
-         * - unexpected_input(unexpected_input_length)
-         */
-        struct FindLongestMatchResult
-        {
-            enum : ubyte
-            {
-                FOUND_MATCH,
-                DECODE_ERROR,
-                EOF,
-                UNEXPECTED_INPUT,
-            }
-
-            ubyte type;
-            alias type this;
-            union
-            {
-                struct
-                {
-                    size_t length;
-                    size_t delta_row;
-                    size_t delta_col;
-                    const(State) * accepting_state;
-                }
-                size_t unexpected_input_length;
-            }
-
-            this(ubyte type)
-            {
-                this.type = type;
-            }
-
-            this(ubyte type, size_t unexpected_input_length)
-            {
-                this.type = type;
-                this.unexpected_input_length = unexpected_input_length;
-            }
-
-            this(ubyte type, size_t length, size_t delta_row, size_t delta_col, const(State) * accepting_state)
-            {
-                this.type = type;
-                this.length = length;
-                this.delta_row = delta_row;
-                this.delta_col = delta_col;
-                this.accepting_state = accepting_state;
-            }
-
-            static FindLongestMatchResult found_match(size_t length, size_t delta_row, size_t delta_col, const(State) * accepting_state)
-            {
-                return FindLongestMatchResult(FOUND_MATCH, length, delta_row, delta_col, accepting_state);
-            }
-
-            static FindLongestMatchResult decode_error()
-            {
-                return FindLongestMatchResult(DECODE_ERROR);
-            }
-
-            static FindLongestMatchResult eof()
-            {
-                return FindLongestMatchResult(EOF);
-            }
-
-            static FindLongestMatchResult unexpected_input(size_t unexpected_input_length)
-            {
-                return FindLongestMatchResult(UNEXPECTED_INPUT, unexpected_input_length);
-            }
-
-            bool is_found_match()
-            {
-                return type == FOUND_MATCH;
-            }
-
-            bool is_decode_error()
-            {
-                return type == DECODE_ERROR;
-            }
-
-            bool is_eof()
-            {
-                return type == EOF;
-            }
-
-            bool is_unexpected_input()
-            {
-                return type == UNEXPECTED_INPUT;
+            default:
+                assert(false);
             }
         }
 
-        private FindLongestMatchResult find_longest_match()
+        enum FindLongestMatchResult
         {
-            FindLongestMatchResult longest_match = FindLongestMatchResult.found_match(0, 0, 0, null);
-            FindLongestMatchResult attempt_match = longest_match;
+            FOUND_MATCH,
+            DECODE_ERROR,
+            EOF,
+            UNEXPECTED_INPUT,
+        }
+
+        struct MatchInfo
+        {
+            size_t length;
+            size_t delta_row;
+            size_t delta_col;
+            const(State) * accepting_state;
+        }
+
+        private FindLongestMatchResult find_longest_match(
+            ref MatchInfo out_match_info,
+            ref size_t out_unexpected_input_length)
+        {
+            MatchInfo longest_match;
+            MatchInfo attempt_match;
             uint current_state = modes[m_mode].state_table_offset;
             for (;;)
             {
@@ -494,11 +423,13 @@ class <%= @classname %>
                     }
                     else if (longest_match.length > 0)
                     {
-                        return longest_match;
+                        out_match_info = longest_match;
+                        return FindLongestMatchResult.FOUND_MATCH;
                     }
                     else
                     {
-                        return FindLongestMatchResult.unexpected_input(attempt_match.length + code_point_length);
+                        out_unexpected_input_length = attempt_match.length + code_point_length;
+                        return FindLongestMatchResult.UNEXPECTED_INPUT;
                     }
                     break;
 
@@ -507,22 +438,24 @@ class <%= @classname %>
                     if (longest_match.length > 0)
                     {
                         /* We have a match, so use it. */
-                        return longest_match;
+                        out_match_info = longest_match;
+                        return FindLongestMatchResult.FOUND_MATCH;
                     }
                     else if (attempt_match.length != 0)
                     {
                         /* There is a partial match - error! */
-                        return FindLongestMatchResult.unexpected_input(attempt_match.length);
+                        out_unexpected_input_length = attempt_match.length;
+                        return FindLongestMatchResult.UNEXPECTED_INPUT;
                     }
                     else
                     {
                         /* Valid EOF return. */
-                        return FindLongestMatchResult.eof();
+                        return FindLongestMatchResult.EOF;
                     }
                     break;
 
                 case Decoder.Result.DECODE_ERROR:
-                    return FindLongestMatchResult.decode_error();
+                    return FindLongestMatchResult.DECODE_ERROR;
 
                 default:
                     assert(false);
