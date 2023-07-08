@@ -10,9 +10,9 @@ unittest
 {
     string input = "aba";
     auto parser = new Testparser.Parser(input);
-    assert(parser.parse() == Testparser.Parser.P_SUCCESS);
+    assert(parser.parse() == Testparser.P_SUCCESS);
 
     input = "abb";
     parser = new Testparser.Parser(input);
-    assert(parser.parse() == Testparser.Parser.P_SUCCESS);
+    assert(parser.parse() == Testparser.P_SUCCESS);
 }
