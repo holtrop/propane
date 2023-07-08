@@ -40,8 +40,6 @@ class Propane
     #   Optional parameters.
     # @option options [String, nil] :code
     #   Code block to execute when the pattern is matched.
-    # @option options [Boolean] :drop
-    #   Whether this is a drop pattern.
     # @option options [String, nil] :pattern
     #   Pattern.
     # @option options [Token, nil] :token
@@ -52,7 +50,6 @@ class Propane
     #   Lexer mode for this pattern.
     def initialize(options)
       @code = options[:code]
-      @drop = options[:drop]
       @pattern = options[:pattern]
       @token = options[:token]
       @line_number = options[:line_number]
@@ -61,14 +58,6 @@ class Propane
       regex = Regex.new(@pattern)
       regex.nfa.end_state.accepts = self
       @nfa = regex.nfa
-    end
-
-    # Whether the pattern is a drop pattern.
-    #
-    # @return [Boolean]
-    #   Whether the pattern is a drop pattern.
-    def drop?
-      @drop
     end
 
   end

@@ -191,12 +191,7 @@ class <%= @classname %>
             uint n_transitions;
             Token token;
             UserCodeID code_id;
-            bool drop;
-
-            bool accepts() const
-            {
-                return drop || token.is_valid() || code_id.is_valid();
-            }
+            bool accepts;
         }
 
         private struct Mode
@@ -225,7 +220,7 @@ class <%= @classname %>
 <%   else %>
                   UserCodeID.invalid(),
 <%   end %>
-                  <%= state_table_entry[:drop] %>),
+                  <%= state_table_entry[:accepts] %>),
 <% end %>
         ];
 
@@ -269,7 +264,7 @@ class <%= @classname %>
             for (;;)
             {
                 size_t result = attempt_lex_token(out_token_info);
-                if (out_token_info.token < _TOKEN_COUNT)
+                if (result != P_DROP)
                 {
                     return result;
                 }
@@ -340,7 +335,7 @@ class <%= @classname %>
                 {
                     m_input_col += match_info.delta_col;
                 }
-                if (match_info.accepting_state.drop)
+                if (token_to_accept == _TOKEN_COUNT)
                 {
                     return P_DROP;
                 }
@@ -410,7 +405,7 @@ class <%= @classname %>
                             attempt_match.delta_col++;
                         }
                         current_state = transition_result.destination();
-                        if (states[current_state].accepts())
+                        if (states[current_state].accepts)
                         {
                             attempt_match.accepting_state = &states[current_state];
                             longest_match = attempt_match;

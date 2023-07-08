@@ -24,7 +24,6 @@ class Propane
         }
         states = mode_info[:dfa].enumerate
         states.each do |state, id|
-          drop = state.accepts && state.accepts.drop?
           token =
             if state.accepts && state.accepts.token
               state.accepts.token.id
@@ -36,7 +35,7 @@ class Propane
           state_table << {
             transition_table_index: transition_table.size,
             n_transitions: state.transitions.size,
-            drop: drop,
+            accepts: !!state.accepts,
             token: token,
             code_id: code_id,
           }

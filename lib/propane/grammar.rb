@@ -148,7 +148,7 @@ class Propane
         end
         consume!(/\s+/)
         consume!(/;/, "expected `;'")
-        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, drop: true, mode: @mode)
+        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, mode: @mode)
         @mode = nil
         true
       end
