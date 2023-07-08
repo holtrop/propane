@@ -43,18 +43,28 @@ unittest
 
 unittest
 {
-    alias Result = Testparser.Lexer.Result;
+    alias TokenInfo = Testparser.Lexer.TokenInfo;
+    TokenInfo token_info;
     string input = "5 + 4 * \n677 + 567";
     Testparser.Lexer lexer = new Testparser.Lexer(input);
-    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 0, 0, 1, Testparser.TOKEN_int));
-    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 0, 2, 1, Testparser.TOKEN_plus));
-    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 0, 4, 1, Testparser.TOKEN_int));
-    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 0, 6, 1, Testparser.TOKEN_times));
-    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 1, 0, 3, Testparser.TOKEN_int));
-    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 1, 4, 1, Testparser.TOKEN_plus));
-    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 1, 6, 3, Testparser.TOKEN_int));
-    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 1, 9, 0, Testparser.TOKEN___EOF));
+    assert(lexer.lex_token(&token_info) == lexer.P_TOKEN);
+    assert(token_info == TokenInfo(0, 0, 1, Testparser.TOKEN_int));
+    assert(lexer.lex_token(&token_info) == lexer.P_TOKEN);
+    assert(token_info == TokenInfo(0, 2, 1, Testparser.TOKEN_plus));
+    assert(lexer.lex_token(&token_info) == lexer.P_TOKEN);
+    assert(token_info == TokenInfo(0, 4, 1, Testparser.TOKEN_int));
+    assert(lexer.lex_token(&token_info) == lexer.P_TOKEN);
+    assert(token_info == TokenInfo(0, 6, 1, Testparser.TOKEN_times));
+    assert(lexer.lex_token(&token_info) == lexer.P_TOKEN);
+    assert(token_info == TokenInfo(1, 0, 3, Testparser.TOKEN_int));
+    assert(lexer.lex_token(&token_info) == lexer.P_TOKEN);
+    assert(token_info == TokenInfo(1, 4, 1, Testparser.TOKEN_plus));
+    assert(lexer.lex_token(&token_info) == lexer.P_TOKEN);
+    assert(token_info == TokenInfo(1, 6, 3, Testparser.TOKEN_int));
+    assert(lexer.lex_token(&token_info) == lexer.P_TOKEN);
+    assert(token_info == TokenInfo(1, 9, 0, Testparser.TOKEN___EOF));
 
     lexer = new Testparser.Lexer("");
-    assert(lexer.lex_token() == Result(Result.Type.TOKEN, 0, 0, 0, Testparser.TOKEN___EOF));
+    assert(lexer.lex_token(&token_info) == lexer.P_TOKEN);
+    assert(token_info == TokenInfo(0, 0, 0, Testparser.TOKEN___EOF));
 }

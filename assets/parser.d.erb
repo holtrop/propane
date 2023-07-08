@@ -235,17 +235,16 @@ class <%= @classname %>
 <% end %>
         ];
 
-        struct Result
+        public enum : size_t
         {
-            enum Type
-            {
-                DECODE_ERROR,
-                DROP,
-                TOKEN,
-                UNEXPECTED_INPUT,
-            }
+            P_TOKEN,
+            P_UNEXPECTED_INPUT,
+            P_DECODE_ERROR,
+            P_DROP,
+        }
 
-            Type type;
+        public static struct TokenInfo
+        {
             size_t row;
             size_t col;
             size_t length;
@@ -265,12 +264,12 @@ class <%= @classname %>
             m_mode = <%= @lexer.mode_id("default") %>;
         }
 
-        Result lex_token()
+        size_t lex_token(TokenInfo * out_token_info)
         {
             for (;;)
             {
-                Result result = attempt_lex_token();
-                if (result.token < _TOKEN_COUNT)
+                size_t result = attempt_lex_token(out_token_info);
+                if (out_token_info.token < _TOKEN_COUNT)
                 {
                     return result;
                 }
@@ -282,12 +281,12 @@ class <%= @classname %>
          *
          * @param code_id The ID of the user code block to execute.
          * @param match Matched text for this pattern.
-         * @param result Result lexer result in progress.
+         * @param out_token_info Lexer token info in progress.
          *
          * @return Token to accept, or invalid token if the user code does
          *   not explicitly return a token.
          */
-        private Token user_code(UserCodeID code_id, string match, Result * result)
+        private Token user_code(UserCodeID code_id, string match, TokenInfo * out_token_info)
         {
             switch (code_id)
             {
@@ -304,12 +303,13 @@ class <%= @classname %>
             return Token.invalid();
         }
 
-        private Result attempt_lex_token()
+        private size_t attempt_lex_token(TokenInfo * out_token_info)
         {
-            Result result;
-            result.row = m_input_row;
-            result.col = m_input_col;
-            result.token = _TOKEN_COUNT;
+            TokenInfo token_info;
+            token_info.row = m_input_row;
+            token_info.col = m_input_col;
+            token_info.token = _TOKEN_COUNT;
+            *out_token_info = token_info; // TODO: remove
             MatchInfo match_info;
             size_t unexpected_input_length;
             switch (find_longest_match(match_info, unexpected_input_length))
@@ -318,7 +318,7 @@ class <%= @classname %>
                 uint token_to_accept = match_info.accepting_state.token;
                 if (match_info.accepting_state.code_id.is_valid())
                 {
-                    Token user_code_token = user_code(match_info.accepting_state.code_id, m_input[m_input_position..(m_input_position + match_info.length)], &result);
+                    Token user_code_token = user_code(match_info.accepting_state.code_id, m_input[m_input_position..(m_input_position + match_info.length)], &token_info);
                     /* An invalid Token from user_code() means that the user
                      * code did not explicitly return a token. So only override
                      * the token to return if the user code does explicitly
@@ -340,30 +340,25 @@ class <%= @classname %>
                 {
                     m_input_col += match_info.delta_col;
                 }
-                result.token = token_to_accept;
-                result.length = match_info.length;
                 if (match_info.accepting_state.drop)
                 {
-                    result.type = Result.Type.DROP;
+                    return P_DROP;
                 }
-                else
-                {
-                    result.type = Result.Type.TOKEN;
-                }
-                return result;
+                token_info.token = token_to_accept;
+                token_info.length = match_info.length;
+                *out_token_info = token_info;
+                return P_TOKEN;
 
             case FindLongestMatchResult.DECODE_ERROR:
-                result.type = Result.Type.DECODE_ERROR;
-                return result;
+                return P_DECODE_ERROR;
 
             case FindLongestMatchResult.EOF:
-                result.type = Result.Type.TOKEN;
-                result.token = TOKEN___EOF;
-                return result;
+                token_info.token = TOKEN___EOF;
+                *out_token_info = token_info;
+                return P_TOKEN;
 
             case FindLongestMatchResult.UNEXPECTED_INPUT:
-                result.type = Result.Type.UNEXPECTED_INPUT;
-                return result;
+                return P_UNEXPECTED_INPUT;
 
             default:
                 assert(false);
@@ -576,7 +571,7 @@ class <%= @classname %>
 
         bool parse()
         {
-            Lexer.Result lexed_token;
+            Lexer.TokenInfo token_info;
             uint token = _TOKEN_COUNT;
             StateValue[] statevalues = new StateValue[](1);
             uint reduced_rule_set = 0xFFFFFFFFu;
@@ -585,8 +580,8 @@ class <%= @classname %>
             {
                 if (token == _TOKEN_COUNT)
                 {
-                    lexed_token = m_lexer.lex_token();
-                    token = lexed_token.token;
+                    size_t lexer_result = m_lexer.lex_token(&token_info);
+                    token = token_info.token;
                 }
                 uint shift_state = 0xFFFFFFFFu;
                 if (reduced_rule_set != 0xFFFFFFFFu)
@@ -611,7 +606,7 @@ class <%= @classname %>
                     {
                         /* We shifted a token, mark it consumed. */
                         token = _TOKEN_COUNT;
-                        statevalues[$-1].pvalue = lexed_token.pvalue;
+                        statevalues[$-1].pvalue = token_info.pvalue;
                     }
                     else
                     {

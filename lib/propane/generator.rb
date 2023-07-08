@@ -195,7 +195,7 @@ class Propane
         end
       else
         code = code.gsub(/\$\$/) do |match|
-          "result.pvalue.v_#{pattern.ptypename}"
+          "out_token_info.pvalue.v_#{pattern.ptypename}"
         end
         code = code.gsub(/\$mode\(([a-zA-Z_][a-zA-Z_0-9]*)\)/) do |match|
           mode_name = $1
