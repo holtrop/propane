@@ -4,7 +4,7 @@ class Propane
 
     # @return [Integer]
     #   ID of the RuleSet.
-    attr_accessor :id
+    attr_reader :id
 
     # @return [String]
     #   Name of the RuleSet.
