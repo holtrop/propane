@@ -81,6 +81,29 @@ EOF
     expect(results.status).to eq 0
   end
 
+  it "detects a lexer error when an unknown character is seen" do
+    write_grammar <<EOF
+ptype int;
+token int /\\d+/ <<
+  int v;
+  foreach (c; match)
+  {
+    v *= 10;
+    v += (c - '0');
+  }
+  $$ = v;
+>>
+Start -> int <<
+  $$ = $1;
+>>
+EOF
+    build_parser
+    compile("spec/test_lexer_unknown_character.d")
+    results = run
+    expect(results.stderr).to eq ""
+    expect(results.status).to eq 0
+  end
+
   it "generates a parser" do
     write_grammar <<EOF
 token plus /\\+/;
