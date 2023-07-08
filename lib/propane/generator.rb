@@ -220,6 +220,23 @@ class Propane
       [start_rule.ptypename, @grammar.ptypes[start_rule.ptypename]]
     end
 
+    # Get an unsigned integer type that can hold the given maximum value.
+    #
+    # @param max [Integer]
+    #   Maximum value to store.
+    #
+    # @return [String]
+    #   Type.
+    def get_type_for(max)
+      if max <= 0xFF
+        "ubyte"
+      elsif max <= 0xFFFF
+        "ushort"
+      else
+        "uint"
+      end
+    end
+
   end
 
 end

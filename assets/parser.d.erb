@@ -165,11 +165,15 @@ class <%= @classname %>
 
     static class Lexer
     {
+<% transition_table, state_table, mode_table = @lexer.build_tables %>
+        alias StateID = <%= get_type_for(state_table.size) %>;
+        enum StateID INVALID_STATE_ID = <%= state_table.size %>u;
+
         private struct Transition
         {
             CodePoint first;
             CodePoint last;
-            uint destination;
+            StateID destination_state;
         }
 
         private struct UserCodeID
@@ -203,8 +207,8 @@ class <%= @classname %>
 
         private struct State
         {
-            uint transition_table_index;
-            uint n_transitions;
+            <%= get_type_for(transition_table.size - 1) %> transition_table_index;
+            <%= get_type_for(state_table.map {|ste| ste[:n_transitions]}.max) %> n_transitions;
             Token token;
             UserCodeID code_id;
             bool accepts;
@@ -215,10 +219,11 @@ class <%= @classname %>
             uint state_table_offset;
         }
 
-<% transition_table, state_table, mode_table = @lexer.build_tables %>
         private static immutable Transition[] transitions = [
 <% transition_table.each do |transition_table_entry| %>
-            Transition(<%= transition_table_entry[:first] %>u, <%= transition_table_entry[:last] %>u, <%= transition_table_entry[:destination] %>u),
+            Transition(<%= transition_table_entry[:first] %>u,
+                       <%= transition_table_entry[:last] %>u,
+                       <%= transition_table_entry[:destination] %>u),
 <% end %>
         ];
 
@@ -413,8 +418,8 @@ class <%= @classname %>
                 switch (result)
                 {
                 case P_SUCCESS:
-                    auto transition_result = transition(current_state, code_point);
-                    if (transition_result.found())
+                    StateID transition_state = transition(current_state, code_point);
+                    if (transition_state != INVALID_STATE_ID)
                     {
                         attempt_match.length += code_point_length;
                         if (code_point == '\n')
@@ -426,7 +431,7 @@ class <%= @classname %>
                         {
                             attempt_match.delta_col++;
                         }
-                        current_state = transition_result.destination();
+                        current_state = transition_state;
                         if (states[current_state].accepts)
                         {
                             attempt_match.accepting_state = &states[current_state];
@@ -472,39 +477,7 @@ class <%= @classname %>
             }
         }
 
-        /**
-         * Result type for transition().
-         *
-         * Alternatives:
-         * - found(destination)
-         * - not_found
-         */
-        struct TransitionResult
-        {
-            private uint m_destination;
-
-            static TransitionResult found(uint destination)
-            {
-                return TransitionResult(destination);
-            }
-
-            static TransitionResult not_found()
-            {
-                return TransitionResult(cast(uint)-1);
-            }
-
-            bool found()
-            {
-                return m_destination != cast(uint)-1;
-            }
-
-            @property uint destination()
-            {
-                return m_destination;
-            }
-        }
-
-        private TransitionResult transition(uint current_state, uint code_point)
+        private StateID transition(uint current_state, uint code_point)
         {
             uint transition_table_index = states[current_state].transition_table_index;
             for (uint i = 0u; i < states[current_state].n_transitions; i++)
@@ -512,11 +485,10 @@ class <%= @classname %>
                 if ((transitions[transition_table_index + i].first <= code_point) &&
                     (code_point <= transitions[transition_table_index + i].last))
                 {
-                    uint destination = transitions[transition_table_index + i].destination;
-                    return TransitionResult.found(destination);
+                    return transitions[transition_table_index + i].destination_state;
                 }
             }
-            return TransitionResult.not_found();
+            return INVALID_STATE_ID;
         }
     }
 
