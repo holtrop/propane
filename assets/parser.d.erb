@@ -167,41 +167,15 @@ class <%= @classname %>
     {
         alias StateID = <%= get_type_for(@lexer.state_table.size) %>;
         enum StateID INVALID_STATE_ID = <%= @lexer.state_table.size %>u;
+<% user_code_id_count = (@grammar.patterns.map(&:code_id).compact.max || 0) + 1 %>
+        alias UserCodeID = <%= get_type_for(user_code_id_count) %>;
+        enum UserCodeID INVALID_USER_CODE_ID = <%= user_code_id_count %>u;
 
         private struct Transition
         {
             CodePoint first;
             CodePoint last;
             StateID destination_state;
-        }
-
-        private struct UserCodeID
-        {
-            enum count = <%= (@grammar.patterns.map(&:code_id).compact.max || -1) + 1%>;
-            uint user_code_id;
-            alias user_code_id this;
-
-            @disable this();
-
-            this(uint user_code_id)
-            {
-                this.user_code_id = user_code_id;
-            }
-
-            static UserCodeID invalid()
-            {
-                return UserCodeID(count);
-            }
-
-            bool is_valid() const
-            {
-                return user_code_id < count;
-            }
-
-            bool is_invalid() const
-            {
-                return !is_valid();
-            }
         }
 
         private struct State
@@ -236,9 +210,9 @@ class <%= @classname %>
                   Token.invalid(),
 <%   end %>
 <%   if state_table_entry[:code_id] %>
-                  UserCodeID(<%= state_table_entry[:code_id] %>u),
+                  <%= state_table_entry[:code_id] %>u,
 <%   else %>
-                  UserCodeID.invalid(),
+                  INVALID_USER_CODE_ID,
 <%   end %>
                   <%= state_table_entry[:accepts] %>),
 <% end %>
@@ -341,7 +315,7 @@ class <%= @classname %>
             {
             case P_SUCCESS:
                 uint token_to_accept = match_info.accepting_state.token;
-                if (match_info.accepting_state.code_id.is_valid())
+                if (match_info.accepting_state.code_id != INVALID_USER_CODE_ID)
                 {
                     Token user_code_token = user_code(match_info.accepting_state.code_id, m_input[m_input_position..(m_input_position + match_info.length)], &token_info);
                     /* An invalid Token from user_code() means that the user
