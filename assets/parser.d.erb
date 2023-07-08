@@ -564,7 +564,15 @@ class <%= @classname %>
             m_lexer = new Lexer(input);
         }
 
-        bool parse()
+        public enum : size_t
+        {
+            P_SUCCESS,
+            P_DECODE_ERROR,
+            P_UNEXPECTED_INPUT,
+            P_UNEXPECTED_TOKEN,
+        }
+
+        size_t parse()
         {
             Lexer.TokenInfo token_info;
             uint token = _TOKEN_COUNT;
@@ -576,6 +584,15 @@ class <%= @classname %>
                 if (token == _TOKEN_COUNT)
                 {
                     size_t lexer_result = m_lexer.lex_token(&token_info);
+                    switch (lexer_result)
+                    {
+                    case Lexer.P_UNEXPECTED_INPUT:
+                        return P_UNEXPECTED_INPUT;
+                    case Lexer.P_DECODE_ERROR:
+                        return P_DECODE_ERROR;
+                    default:
+                        break;
+                    }
                     token = token_info.token;
                 }
                 uint shift_state = 0xFFFFFFFFu;
@@ -590,7 +607,7 @@ class <%= @classname %>
                     {
                         /* Successful parse. */
                         parse_result = statevalues[$-1].pvalue;
-                        return true;
+                        return P_SUCCESS;
                     }
                 }
                 if (shift_state != 0xFFFFFFFFu)
@@ -634,7 +651,7 @@ class <%= @classname %>
                 {
                     writeln("{other}");
                 }
-                return false;
+                return P_UNEXPECTED_TOKEN;
             }
         }
 

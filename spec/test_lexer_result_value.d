@@ -10,11 +10,11 @@ unittest
 {
     string input = `x`;
     auto parser = new Testparser.Parser(input);
-    assert(parser.parse() == true);
+    assert(parser.parse() == Testparser.Parser.P_SUCCESS);
     assert(parser.result == 1u);
 
     input = `fabulous`;
     parser = new Testparser.Parser(input);
-    assert(parser.parse() == true);
+    assert(parser.parse() == Testparser.Parser.P_SUCCESS);
     assert(parser.result == 8u);
 }

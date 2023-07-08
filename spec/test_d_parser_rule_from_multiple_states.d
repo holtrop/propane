@@ -10,13 +10,13 @@ unittest
 {
     string input = "a";
     auto parser = new Testparser.Parser(input);
-    assert(parser.parse() == false);
+    assert(parser.parse() == Testparser.Parser.P_UNEXPECTED_TOKEN);
 
     input = "a b";
     parser = new Testparser.Parser(input);
-    assert(parser.parse() == true);
+    assert(parser.parse() == Testparser.Parser.P_SUCCESS);
 
     input = "bb";
     parser = new Testparser.Parser(input);
-    assert(parser.parse() == true);
+    assert(parser.parse() == Testparser.Parser.P_SUCCESS);
 }
