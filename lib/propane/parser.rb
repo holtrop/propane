@@ -2,6 +2,10 @@ class Propane
 
   class Parser
 
+    attr_reader :state_table
+    attr_reader :shift_table
+    attr_reader :reduce_table
+
     def initialize(grammar, rule_sets, log)
       @grammar = grammar
       @rule_sets = rule_sets
@@ -33,12 +37,15 @@ class Propane
 
       build_reduce_actions!
       write_log!
+      build_tables!
     end
 
-    def build_tables
-      shift_table = []
-      state_table = []
-      reduce_table = []
+    private
+
+    def build_tables!
+      @state_table = []
+      @shift_table = []
+      @reduce_table = []
       @item_sets.each do |item_set|
         shift_entries = item_set.following_symbols.map do |following_symbol|
           state_id =
@@ -65,19 +72,16 @@ class Propane
           else
             []
           end
-        state_table << {
-          shift_index: shift_table.size,
+        @state_table << {
+          shift_index: @shift_table.size,
           n_shifts: shift_entries.size,
-          reduce_index: reduce_table.size,
+          reduce_index: @reduce_table.size,
           n_reduces: reduce_entries.size,
         }
-        shift_table += shift_entries
-        reduce_table += reduce_entries
+        @shift_table += shift_entries
+        @reduce_table += reduce_entries
       end
-      [state_table, shift_table, reduce_table]
     end
-
-    private
 
     def process_item_set(item_set)
       item_set.following_symbols.each do |following_symbol|

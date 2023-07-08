@@ -165,9 +165,8 @@ class <%= @classname %>
 
     static class Lexer
     {
-<% transition_table, state_table, mode_table = @lexer.build_tables %>
-        alias StateID = <%= get_type_for(state_table.size) %>;
-        enum StateID INVALID_STATE_ID = <%= state_table.size %>u;
+        alias StateID = <%= get_type_for(@lexer.state_table.size) %>;
+        enum StateID INVALID_STATE_ID = <%= @lexer.state_table.size %>u;
 
         private struct Transition
         {
@@ -207,8 +206,8 @@ class <%= @classname %>
 
         private struct State
         {
-            <%= get_type_for(transition_table.size - 1) %> transition_table_index;
-            <%= get_type_for(state_table.map {|ste| ste[:n_transitions]}.max) %> n_transitions;
+            <%= get_type_for(@lexer.transition_table.size - 1) %> transition_table_index;
+            <%= get_type_for(@lexer.state_table.map {|ste| ste[:n_transitions]}.max) %> n_transitions;
             Token token;
             UserCodeID code_id;
             bool accepts;
@@ -220,7 +219,7 @@ class <%= @classname %>
         }
 
         private static immutable Transition[] transitions = [
-<% transition_table.each do |transition_table_entry| %>
+<% @lexer.transition_table.each do |transition_table_entry| %>
             Transition(<%= transition_table_entry[:first] %>u,
                        <%= transition_table_entry[:last] %>u,
                        <%= transition_table_entry[:destination] %>u),
@@ -228,7 +227,7 @@ class <%= @classname %>
         ];
 
         private static immutable State[] states = [
-<% state_table.each do |state_table_entry| %>
+<% @lexer.state_table.each do |state_table_entry| %>
             State(<%= state_table_entry[:transition_table_index] %>u,
                   <%= state_table_entry[:n_transitions] %>u,
 <%   if state_table_entry[:token] %>
@@ -246,7 +245,7 @@ class <%= @classname %>
         ];
 
         private static immutable Mode[] modes = [
-<% mode_table.each do |mode_table_entry| %>
+<% @lexer.mode_table.each do |mode_table_entry| %>
             Mode(<%= mode_table_entry[:state_table_offset] %>),
 <% end %>
         ];
@@ -527,21 +526,20 @@ class <%= @classname %>
             }
         }
 
-<% state_table, shift_table, reduce_table = @parser.build_tables %>
         private static immutable Shift[] shifts = [
-<%   shift_table.each do |shift| %>
+<%   @parser.shift_table.each do |shift| %>
             Shift(<%= shift[:token_id] %>u, <%= shift[:state_id] %>u),
 <%   end %>
         ];
 
         private static immutable Reduce[] reduces = [
-<%   reduce_table.each do |reduce| %>
+<%   @parser.reduce_table.each do |reduce| %>
             Reduce(<%= reduce[:token_id] %>u, <%= reduce[:rule_id] %>u, <%= reduce[:rule_set_id] %>u, <%= reduce[:n_states] %>u),
 <%   end %>
         ];
 
         private static immutable State[] states = [
-<%   state_table.each do |state| %>
+<%   @parser.state_table.each do |state| %>
             State(<%= state[:shift_index] %>u, <%= state[:n_shifts] %>u, <%= state[:reduce_index] %>u, <%= state[:n_reduces] %>u),
 <%   end %>
         ];
