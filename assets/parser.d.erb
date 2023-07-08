@@ -23,6 +23,9 @@ class <%= @classname %>
         P_EOF,
     }
 
+    /* An invalid ID value. */
+    private enum INVALID_ID = 0xFFFF_FFFFu;
+
     alias TokenID = uint;
 
     enum : TokenID
@@ -585,7 +588,7 @@ class <%= @classname %>
             Lexer.TokenInfo token_info;
             uint token = _TOKEN_COUNT;
             StateValue[] statevalues = new StateValue[](1);
-            uint reduced_rule_set = 0xFFFFFFFFu;
+            uint reduced_rule_set = INVALID_ID;
             ParserValue reduced_parser_value;
             for (;;)
             {
@@ -598,26 +601,26 @@ class <%= @classname %>
                     }
                     token = token_info.token;
                 }
-                uint shift_state = 0xFFFFFFFFu;
-                if (reduced_rule_set != 0xFFFFFFFFu)
+                uint shift_state = INVALID_ID;
+                if (reduced_rule_set != INVALID_ID)
                 {
                     shift_state = check_shift(statevalues[$-1].state, reduced_rule_set);
                 }
-                if (shift_state == 0xFFFFFFFFu)
+                if (shift_state == INVALID_ID)
                 {
                     shift_state = check_shift(statevalues[$-1].state, token);
-                    if ((shift_state != 0xFFFFFFFFu) && (token == TOKEN___EOF))
+                    if ((shift_state != INVALID_ID) && (token == TOKEN___EOF))
                     {
                         /* Successful parse. */
                         parse_result = statevalues[$-1].pvalue;
                         return P_SUCCESS;
                     }
                 }
-                if (shift_state != 0xFFFFFFFFu)
+                if (shift_state != INVALID_ID)
                 {
                     /* We have something to shift. */
                     statevalues ~= StateValue(shift_state);
-                    if (reduced_rule_set == 0xFFFFFFFFu)
+                    if (reduced_rule_set == INVALID_ID)
                     {
                         /* We shifted a token, mark it consumed. */
                         token = _TOKEN_COUNT;
@@ -629,13 +632,13 @@ class <%= @classname %>
                         statevalues[$-1].pvalue = reduced_parser_value;
                         ParserValue new_parse_result;
                         reduced_parser_value = new_parse_result;
-                        reduced_rule_set = 0xFFFFFFFFu;
+                        reduced_rule_set = INVALID_ID;
                     }
                     continue;
                 }
 
                 uint reduce_index = check_reduce(statevalues[$-1].state, token);
-                if (reduce_index != 0xFFFFFFFFu)
+                if (reduce_index != INVALID_ID)
                 {
                     /* We have something to reduce. */
                     reduced_parser_value = user_code(reduces[reduce_index].rule, statevalues, reduces[reduce_index].n_states);
@@ -682,7 +685,7 @@ class <%= @classname %>
                     return shifts[i].state;
                 }
             }
-            return 0xFFFFFFFFu;
+            return INVALID_ID;
         }
 
         private uint check_reduce(uint state, uint token)
@@ -706,7 +709,7 @@ class <%= @classname %>
                     return i;
                 }
             }
-            return 0xFFFFFFFFu;
+            return INVALID_ID;
         }
 
         /**
