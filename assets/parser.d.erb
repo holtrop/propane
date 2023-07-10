@@ -54,6 +54,20 @@ class <%= @classname %>
 <% end %>
     }
 
+    /**
+     * A structure to keep track of parser position.
+     *
+     * This is useful for reporting errors, etc...
+     */
+    static struct Position
+    {
+        /** Input text row (0-based). */
+        uint row;
+
+        /** Input text column (0-based). */
+        uint col;
+    }
+
     static class Decoder
     {
         /**
@@ -196,17 +210,15 @@ class <%= @classname %>
 
         public static struct TokenInfo
         {
-            size_t row;
-            size_t col;
+            Position position;
             size_t length;
             Token token;
             ParserValue pvalue;
         }
 
         private string m_input;
-        private size_t m_input_position;
-        private size_t m_input_row;
-        private size_t m_input_col;
+        private size_t m_input_index;
+        private Position m_input_position;
         private size_t m_mode;
 
         this(string input)
@@ -274,8 +286,7 @@ class <%= @classname %>
         private size_t attempt_lex_token(TokenInfo * out_token_info)
         {
             TokenInfo token_info;
-            token_info.row = m_input_row;
-            token_info.col = m_input_col;
+            token_info.position = m_input_position;
             token_info.token = INVALID_TOKEN_ID;
             *out_token_info = token_info; // TODO: remove
             MatchInfo match_info;
@@ -287,7 +298,7 @@ class <%= @classname %>
                 Token token_to_accept = match_info.accepting_state.token;
                 if (match_info.accepting_state.code_id != INVALID_USER_CODE_ID)
                 {
-                    Token user_code_token = user_code(match_info.accepting_state.code_id, m_input[m_input_position..(m_input_position + match_info.length)], &token_info);
+                    Token user_code_token = user_code(match_info.accepting_state.code_id, m_input[m_input_index..(m_input_index + match_info.length)], &token_info);
                     /* An invalid Token from user_code() means that the user
                      * code did not explicitly return a token. So only override
                      * the token to return if the user code does explicitly
@@ -299,15 +310,15 @@ class <%= @classname %>
                 }
 
                 /* Update the input position tracking. */
-                m_input_position += match_info.length;
-                m_input_row += match_info.delta_row;
-                if (match_info.delta_row != 0u)
+                m_input_index += match_info.length;
+                m_input_position.row += match_info.delta_position.row;
+                if (match_info.delta_position.row != 0u)
                 {
-                    m_input_col = match_info.delta_col;
+                    m_input_position.col = match_info.delta_position.col;
                 }
                 else
                 {
-                    m_input_col += match_info.delta_col;
+                    m_input_position.col += match_info.delta_position.col;
                 }
                 if (token_to_accept == INVALID_TOKEN_ID)
                 {
@@ -331,8 +342,7 @@ class <%= @classname %>
         struct MatchInfo
         {
             size_t length;
-            size_t delta_row;
-            size_t delta_col;
+            Position delta_position;
             const(State) * accepting_state;
         }
 
@@ -354,7 +364,7 @@ class <%= @classname %>
             uint current_state = modes[m_mode].state_table_offset;
             for (;;)
             {
-                string input = m_input[(m_input_position + attempt_match.length)..(m_input.length)];
+                string input = m_input[(m_input_index + attempt_match.length)..(m_input.length)];
                 CodePoint code_point;
                 ubyte code_point_length;
                 size_t result = Decoder.decode_code_point(input, code_point, code_point_length);
@@ -367,12 +377,12 @@ class <%= @classname %>
                         attempt_match.length += code_point_length;
                         if (code_point == '\n')
                         {
-                            attempt_match.delta_row++;
-                            attempt_match.delta_col = 0u;
+                            attempt_match.delta_position.row++;
+                            attempt_match.delta_position.col = 0u;
                         }
                         else
                         {
-                            attempt_match.delta_col++;
+                            attempt_match.delta_position.col++;
                         }
                         current_state = transition_state;
                         if (states[current_state].accepts)
