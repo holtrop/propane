@@ -26,9 +26,9 @@ class <%= @classname %>
     /* An invalid ID value. */
     private enum INVALID_ID = 0xFFFF_FFFFu;
 
-    alias TokenID = uint;
+    alias Token = <%= get_type_for(@grammar.invalid_token_id) %>;
 
-    enum : TokenID
+    enum : Token
     {
 <% @grammar.tokens.each_with_index do |token, index| %>
         TOKEN_<%= token.code_name %> = <%= index %>,
@@ -36,37 +36,7 @@ class <%= @classname %>
 <%     raise "Token ID (#{token.id}) does not match index (#{index}) for token #{token.name}!" %>
 <%   end %>
 <% end %>
-        _TOKEN_COUNT = <%= @grammar.tokens.size %>,
-    }
-
-    struct Token
-    {
-        /* Number of tokens in this parser. */
-        enum count = <%= @grammar.tokens.size %>;
-        TokenID token;
-        alias token this;
-
-        @disable this();
-
-        this(TokenID token)
-        {
-            this.token = token;
-        }
-
-        static Token invalid()
-        {
-            return Token(count);
-        }
-
-        bool is_valid() const
-        {
-            return token < count;
-        }
-
-        bool is_invalid() const
-        {
-            return !is_valid();
-        }
+        INVALID_TOKEN_ID = <%= @grammar.invalid_token_id %>,
     }
 
     alias CodePoint = uint;
@@ -207,7 +177,7 @@ class <%= @classname %>
 <%   if state_table_entry[:token] %>
                   Token(<%= state_table_entry[:token] %>u),
 <%   else %>
-                  Token.invalid(),
+                  INVALID_TOKEN_ID,
 <%   end %>
 <%   if state_table_entry[:code_id] %>
                   <%= state_table_entry[:code_id] %>u,
@@ -229,7 +199,7 @@ class <%= @classname %>
             size_t row;
             size_t col;
             size_t length;
-            uint token;
+            Token token;
             ParserValue pvalue;
         }
 
@@ -289,7 +259,7 @@ class <%= @classname %>
             default: break;
             }
 
-            return Token.invalid();
+            return INVALID_TOKEN_ID;
         }
 
         /**
@@ -306,7 +276,7 @@ class <%= @classname %>
             TokenInfo token_info;
             token_info.row = m_input_row;
             token_info.col = m_input_col;
-            token_info.token = _TOKEN_COUNT;
+            token_info.token = INVALID_TOKEN_ID;
             *out_token_info = token_info; // TODO: remove
             MatchInfo match_info;
             size_t unexpected_input_length;
@@ -314,7 +284,7 @@ class <%= @classname %>
             switch (result)
             {
             case P_SUCCESS:
-                uint token_to_accept = match_info.accepting_state.token;
+                Token token_to_accept = match_info.accepting_state.token;
                 if (match_info.accepting_state.code_id != INVALID_USER_CODE_ID)
                 {
                     Token user_code_token = user_code(match_info.accepting_state.code_id, m_input[m_input_position..(m_input_position + match_info.length)], &token_info);
@@ -322,9 +292,9 @@ class <%= @classname %>
                      * code did not explicitly return a token. So only override
                      * the token to return if the user code does explicitly
                      * return a token. */
-                    if (user_code_token.is_valid())
+                    if (user_code_token != INVALID_TOKEN_ID)
                     {
-                        token_to_accept = user_code_token.token;
+                        token_to_accept = user_code_token;
                     }
                 }
 
@@ -339,7 +309,7 @@ class <%= @classname %>
                 {
                     m_input_col += match_info.delta_col;
                 }
-                if (token_to_accept == _TOKEN_COUNT)
+                if (token_to_accept == INVALID_TOKEN_ID)
                 {
                     return P_DROP;
                 }
@@ -475,7 +445,7 @@ class <%= @classname %>
 
         private struct Reduce
         {
-            uint token;
+            Token token;
             uint rule;
             uint rule_set;
             uint n_states;
@@ -530,13 +500,13 @@ class <%= @classname %>
         size_t parse()
         {
             Lexer.TokenInfo token_info;
-            uint token = _TOKEN_COUNT;
+            Token token = INVALID_TOKEN_ID;
             StateValue[] statevalues = new StateValue[](1);
             uint reduced_rule_set = INVALID_ID;
             ParserValue reduced_parser_value;
             for (;;)
             {
-                if (token == _TOKEN_COUNT)
+                if (token == INVALID_TOKEN_ID)
                 {
                     size_t lexer_result = m_lexer.lex_token(&token_info);
                     if (lexer_result != P_TOKEN)
@@ -567,7 +537,7 @@ class <%= @classname %>
                     if (reduced_rule_set == INVALID_ID)
                     {
                         /* We shifted a token, mark it consumed. */
-                        token = _TOKEN_COUNT;
+                        token = INVALID_TOKEN_ID;
                         statevalues[$-1].pvalue = token_info.pvalue;
                     }
                     else
@@ -593,7 +563,7 @@ class <%= @classname %>
 
                 /* Error, unexpected token. */
                 write("Unexpected token ");
-                if (token < _TOKEN_COUNT)
+                if (token != INVALID_TOKEN_ID)
                 {
                     writeln(token_names[token]);
                 }
@@ -618,7 +588,7 @@ class <%= @classname %>
             {
                 if (shifts[i].symbol == symbol)
                 {
-//                    if (symbol < _TOKEN_COUNT)
+//                    if (symbol != INVALID_TOKEN_ID)
 //                    {
 //                        writeln("Shifting ", token_names[symbol]);
 //                    }
@@ -632,17 +602,17 @@ class <%= @classname %>
             return INVALID_ID;
         }
 
-        private uint check_reduce(uint state, uint token)
+        private uint check_reduce(uint state, Token token)
         {
             uint start = states[state].reduce_table_index;
             uint end = start + states[state].n_reduce_entries;
             for (uint i = start; i < end; i++)
             {
                 if ((reduces[i].token == token) ||
-                    (reduces[i].token == _TOKEN_COUNT))
+                    (reduces[i].token == INVALID_TOKEN_ID))
                 {
 //                    write("Reducing rule ", reduces[i].rule, ", rule set ", reduces[i].rule_set, " lookahead ");
-//                    if (token < _TOKEN_COUNT)
+//                    if (token != INVALID_TOKEN_ID)
 //                    {
 //                        writeln(token_names[token]);
 //                    }

@@ -30,6 +30,10 @@ class Propane
       @ptypes["default"]
     end
 
+    def invalid_token_id
+      @tokens.size
+    end
+
     private
 
     def parse_grammar!
