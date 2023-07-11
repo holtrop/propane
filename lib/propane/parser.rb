@@ -5,6 +5,7 @@ class Propane
     attr_reader :state_table
     attr_reader :shift_table
     attr_reader :reduce_table
+    attr_reader :rule_sets
 
     def initialize(grammar, rule_sets, log)
       @grammar = grammar

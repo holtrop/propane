@@ -448,10 +448,15 @@ class <%= @classname %>
     static class Parser
     {
         alias ReduceID = <%= get_type_for(@parser.reduce_table.size) %>;
+<% # A "symbol" is either a token ID or a rule set ID. %>
+<% # %>
+<% # Rule set IDs start after token IDs, so to store either a token ID %>
+<% # or a rule set ID, we just need to know the maximum rule set ID. %>
+        alias SymbolID = <%= get_type_for(@parser.rule_sets.map(&:last).map(&:id).max) %>;
 
         private struct Shift
         {
-            uint symbol;
+            SymbolID symbol;
             uint state;
         }
 
@@ -459,7 +464,7 @@ class <%= @classname %>
         {
             Token token;
             uint rule;
-            uint rule_set;
+            SymbolID rule_set;
             uint n_states;
         }
 
@@ -514,7 +519,7 @@ class <%= @classname %>
             Lexer.TokenInfo token_info;
             Token token = INVALID_TOKEN_ID;
             StateValue[] statevalues = new StateValue[](1);
-            uint reduced_rule_set = INVALID_ID;
+            size_t reduced_rule_set = INVALID_ID;
             ParserValue reduced_parser_value;
             for (;;)
             {
@@ -592,7 +597,7 @@ class <%= @classname %>
             return parse_result.v_<%= start_rule_type[0] %>;
         }
 
-        private uint check_shift(uint state, uint symbol)
+        private uint check_shift(uint state, size_t symbol)
         {
             uint start = states[state].shift_table_index;
             uint end = start + states[state].n_shift_entries;
