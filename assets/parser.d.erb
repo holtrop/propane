@@ -24,7 +24,7 @@ class <%= @classname %>
     }
 
     /* An invalid ID value. */
-    private enum INVALID_ID = 0xFFFF_FFFFu;
+    private enum size_t INVALID_ID = cast(size_t)-1;
 
     alias Token = <%= get_type_for(@grammar.invalid_token_id) %>;
 
@@ -481,10 +481,10 @@ class <%= @classname %>
 
         private struct StateValue
         {
-            uint state;
+            size_t state;
             ParserValue pvalue;
 
-            this(uint state)
+            this(size_t state)
             {
                 this.state = state;
             }
@@ -535,7 +535,7 @@ class <%= @classname %>
                     }
                     token = token_info.token;
                 }
-                uint shift_state = INVALID_ID;
+                size_t shift_state = INVALID_ID;
                 if (reduced_rule_set != INVALID_ID)
                 {
                     shift_state = check_shift(statevalues[$-1].state, reduced_rule_set);
@@ -600,7 +600,7 @@ class <%= @classname %>
             return parse_result.v_<%= start_rule_type[0] %>;
         }
 
-        private uint check_shift(uint state, size_t symbol)
+        private size_t check_shift(size_t state, size_t symbol)
         {
             uint start = states[state].shift_table_index;
             uint end = start + states[state].n_shift_entries;
@@ -622,7 +622,7 @@ class <%= @classname %>
             return INVALID_ID;
         }
 
-        private size_t check_reduce(uint state, Token token)
+        private size_t check_reduce(size_t state, Token token)
         {
             size_t start = states[state].reduce_table_index;
             size_t end = start + states[state].n_reduce_entries;
