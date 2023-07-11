@@ -79,8 +79,8 @@ class <%= @classname %>
          * - P_EOF
          */
         static size_t decode_code_point(string input,
-            ref CodePoint out_code_point,
-            ref ubyte out_code_point_length)
+            CodePoint * out_code_point,
+            ubyte * out_code_point_length)
         {
             if (input.length == 0u)
             {
@@ -141,8 +141,8 @@ class <%= @classname %>
                     code_point = (code_point << 6u) | (b & 0x3Fu);
                 }
             }
-            out_code_point = code_point;
-            out_code_point_length = code_point_length;
+            *out_code_point = code_point;
+            *out_code_point_length = code_point_length;
             return P_SUCCESS;
         }
     }
@@ -291,7 +291,7 @@ class <%= @classname %>
             *out_token_info = token_info; // TODO: remove
             MatchInfo match_info;
             size_t unexpected_input_length;
-            size_t result = find_longest_match(match_info, unexpected_input_length);
+            size_t result = find_longest_match(&match_info, &unexpected_input_length);
             switch (result)
             {
             case P_SUCCESS:
@@ -356,8 +356,8 @@ class <%= @classname %>
          * - P_EOF
          */
         private size_t find_longest_match(
-            ref MatchInfo out_match_info,
-            ref size_t out_unexpected_input_length)
+            MatchInfo * out_match_info,
+            size_t * out_unexpected_input_length)
         {
             MatchInfo longest_match;
             MatchInfo attempt_match;
@@ -367,7 +367,7 @@ class <%= @classname %>
                 string input = m_input[(m_input_index + attempt_match.length)..(m_input.length)];
                 CodePoint code_point;
                 ubyte code_point_length;
-                size_t result = Decoder.decode_code_point(input, code_point, code_point_length);
+                size_t result = Decoder.decode_code_point(input, &code_point, &code_point_length);
                 switch (result)
                 {
                 case P_SUCCESS:
@@ -393,12 +393,12 @@ class <%= @classname %>
                     }
                     else if (longest_match.length > 0)
                     {
-                        out_match_info = longest_match;
+                        *out_match_info = longest_match;
                         return P_SUCCESS;
                     }
                     else
                     {
-                        out_unexpected_input_length = attempt_match.length + code_point_length;
+                        *out_unexpected_input_length = attempt_match.length + code_point_length;
                         return P_UNEXPECTED_INPUT;
                     }
                     break;
@@ -408,13 +408,13 @@ class <%= @classname %>
                     if (longest_match.length > 0)
                     {
                         /* We have a match, so use it. */
-                        out_match_info = longest_match;
+                        *out_match_info = longest_match;
                         return P_SUCCESS;
                     }
                     else if (attempt_match.length != 0)
                     {
                         /* There is a partial match - error! */
-                        out_unexpected_input_length = attempt_match.length;
+                        *out_unexpected_input_length = attempt_match.length;
                         return P_UNEXPECTED_INPUT;
                     }
                     else

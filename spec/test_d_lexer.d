@@ -12,31 +12,31 @@ unittest
     Testparser.CodePoint code_point;
     ubyte code_point_length;
 
-    result = Testparser.Decoder.decode_code_point("5", code_point, code_point_length);
+    result = Testparser.Decoder.decode_code_point("5", &code_point, &code_point_length);
     assert(result == Testparser.P_SUCCESS);
     assert(code_point == '5');
     assert(code_point_length == 1u);
 
-    result = Testparser.Decoder.decode_code_point("", code_point, code_point_length);
+    result = Testparser.Decoder.decode_code_point("", &code_point, &code_point_length);
     assert(result == Testparser.P_EOF);
 
-    result = Testparser.Decoder.decode_code_point("\xC2\xA9", code_point, code_point_length);
+    result = Testparser.Decoder.decode_code_point("\xC2\xA9", &code_point, &code_point_length);
     assert(result == Testparser.P_SUCCESS);
     assert(code_point == 0xA9u);
     assert(code_point_length == 2u);
 
-    result = Testparser.Decoder.decode_code_point("\xf0\x9f\xa7\xa1", code_point, code_point_length);
+    result = Testparser.Decoder.decode_code_point("\xf0\x9f\xa7\xa1", &code_point, &code_point_length);
     assert(result == Testparser.P_SUCCESS);
     assert(code_point == 0x1F9E1u);
     assert(code_point_length == 4u);
 
-    result = Testparser.Decoder.decode_code_point("\xf0\x9f\x27", code_point, code_point_length);
+    result = Testparser.Decoder.decode_code_point("\xf0\x9f\x27", &code_point, &code_point_length);
     assert(result == Testparser.P_DECODE_ERROR);
 
-    result = Testparser.Decoder.decode_code_point("\xf0\x9f\xa7\xFF", code_point, code_point_length);
+    result = Testparser.Decoder.decode_code_point("\xf0\x9f\xa7\xFF", &code_point, &code_point_length);
     assert(result == Testparser.P_DECODE_ERROR);
 
-    result = Testparser.Decoder.decode_code_point("\xfe", code_point, code_point_length);
+    result = Testparser.Decoder.decode_code_point("\xfe", &code_point, &code_point_length);
     assert(result == Testparser.P_DECODE_ERROR);
 }
 
