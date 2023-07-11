@@ -447,6 +447,8 @@ class <%= @classname %>
 
     static class Parser
     {
+        alias ReduceID = <%= get_type_for(@parser.reduce_table.size) %>;
+
         private struct Shift
         {
             uint symbol;
@@ -465,8 +467,8 @@ class <%= @classname %>
         {
             uint shift_table_index;
             uint n_shift_entries;
-            uint reduce_table_index;
-            uint n_reduce_entries;
+            ReduceID reduce_table_index;
+            ReduceID n_reduce_entries;
         }
 
         private struct StateValue
@@ -561,7 +563,7 @@ class <%= @classname %>
                     continue;
                 }
 
-                uint reduce_index = check_reduce(statevalues[$-1].state, token);
+                size_t reduce_index = check_reduce(statevalues[$-1].state, token);
                 if (reduce_index != INVALID_ID)
                 {
                     /* We have something to reduce. */
@@ -612,11 +614,11 @@ class <%= @classname %>
             return INVALID_ID;
         }
 
-        private uint check_reduce(uint state, Token token)
+        private size_t check_reduce(uint state, Token token)
         {
-            uint start = states[state].reduce_table_index;
-            uint end = start + states[state].n_reduce_entries;
-            for (uint i = start; i < end; i++)
+            size_t start = states[state].reduce_table_index;
+            size_t end = start + states[state].n_reduce_entries;
+            for (size_t i = start; i < end; i++)
             {
                 if ((reduces[i].token == token) ||
                     (reduces[i].token == INVALID_TOKEN_ID))
