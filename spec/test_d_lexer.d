@@ -45,24 +45,24 @@ unittest
     TokenInfo token_info;
     string input = "5 + 4 * \n677 + 567";
     Lexer lexer = new Lexer(input);
-    assert(lexer.lex_token(&token_info) == P_TOKEN);
+    assert(lexer.lex_token(&token_info) == P_SUCCESS);
     assert(token_info == TokenInfo(Position(0, 0), 1, TOKEN_int));
-    assert(lexer.lex_token(&token_info) == P_TOKEN);
+    assert(lexer.lex_token(&token_info) == P_SUCCESS);
     assert(token_info == TokenInfo(Position(0, 2), 1, TOKEN_plus));
-    assert(lexer.lex_token(&token_info) == P_TOKEN);
+    assert(lexer.lex_token(&token_info) == P_SUCCESS);
     assert(token_info == TokenInfo(Position(0, 4), 1, TOKEN_int));
-    assert(lexer.lex_token(&token_info) == P_TOKEN);
+    assert(lexer.lex_token(&token_info) == P_SUCCESS);
     assert(token_info == TokenInfo(Position(0, 6), 1, TOKEN_times));
-    assert(lexer.lex_token(&token_info) == P_TOKEN);
+    assert(lexer.lex_token(&token_info) == P_SUCCESS);
     assert(token_info == TokenInfo(Position(1, 0), 3, TOKEN_int));
-    assert(lexer.lex_token(&token_info) == P_TOKEN);
+    assert(lexer.lex_token(&token_info) == P_SUCCESS);
     assert(token_info == TokenInfo(Position(1, 4), 1, TOKEN_plus));
-    assert(lexer.lex_token(&token_info) == P_TOKEN);
+    assert(lexer.lex_token(&token_info) == P_SUCCESS);
     assert(token_info == TokenInfo(Position(1, 6), 3, TOKEN_int));
-    assert(lexer.lex_token(&token_info) == P_TOKEN);
+    assert(lexer.lex_token(&token_info) == P_SUCCESS);
     assert(token_info == TokenInfo(Position(1, 9), 0, TOKEN___EOF));
 
     lexer = new Lexer("");
-    assert(lexer.lex_token(&token_info) == P_TOKEN);
+    assert(lexer.lex_token(&token_info) == P_SUCCESS);
     assert(token_info == TokenInfo(Position(0, 0), 0, TOKEN___EOF));
 }

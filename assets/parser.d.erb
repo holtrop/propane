@@ -16,7 +16,6 @@ public enum : size_t
     P_DECODE_ERROR,
     P_UNEXPECTED_INPUT,
     P_UNEXPECTED_TOKEN,
-    P_TOKEN,
     P_DROP,
     P_EOF,
 }
@@ -242,7 +241,7 @@ public static class Lexer
      * Lex the next token in the input stream.
      *
      * Returns one of:
-     * - P_TOKEN
+     * - P_SUCCESS
      * - P_DECODE_ERROR
      * - P_UNEXPECTED_INPUT
      */
@@ -289,7 +288,7 @@ public static class Lexer
      * Attempt to lex the next token in the input stream.
      *
      * Returns one of:
-     * - P_TOKEN
+     * - P_SUCCESS
      * - P_DECODE_ERROR
      * - P_UNEXPECTED_INPUT
      * - P_DROP
@@ -338,12 +337,12 @@ public static class Lexer
             token_info.token = token_to_accept;
             token_info.length = match_info.length;
             *out_token_info = token_info;
-            return P_TOKEN;
+            return P_SUCCESS;
 
         case P_EOF:
             token_info.token = TOKEN___EOF;
             *out_token_info = token_info;
-            return P_TOKEN;
+            return P_SUCCESS;
 
         default:
             return result;
@@ -544,7 +543,7 @@ public static class Parser
             if (token == INVALID_TOKEN_ID)
             {
                 size_t lexer_result = m_lexer.lex_token(&token_info);
-                if (lexer_result != P_TOKEN)
+                if (lexer_result != P_SUCCESS)
                 {
                     return lexer_result;
                 }
