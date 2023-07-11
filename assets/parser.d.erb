@@ -454,6 +454,7 @@ class <%= @classname %>
 <% # or a rule set ID, we just need to know the maximum rule set ID. %>
         alias SymbolID = <%= get_type_for(@parser.rule_sets.map(&:last).map(&:id).max) %>;
         alias StateID = <%= get_type_for(@parser.state_table.size) %>;
+        alias RuleID = <%= get_type_for(@grammar.rules.size) %>;
 
         private struct Shift
         {
@@ -464,7 +465,7 @@ class <%= @classname %>
         private struct Reduce
         {
             Token token;
-            uint rule;
+            RuleID rule;
             SymbolID rule_set;
             StateID n_states;
         }
