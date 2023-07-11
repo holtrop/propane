@@ -9,12 +9,12 @@ int main()
 unittest
 {
     string input = "abcdef";
-    auto parser = new Testparser.Parser(input);
-    assert(parser.parse() == Testparser.P_SUCCESS);
+    auto parser = new Parser(input);
+    assert(parser.parse() == P_SUCCESS);
     writeln("pass1");
 
     input = "abcabcdef";
-    parser = new Testparser.Parser(input);
-    assert(parser.parse() == Testparser.P_SUCCESS);
+    parser = new Parser(input);
+    assert(parser.parse() == P_SUCCESS);
     writeln("pass2");
 }

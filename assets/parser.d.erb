@@ -9,605 +9,620 @@ import std.stdio;
 <%= code %>
 <% end %>
 
-class <%= @classname %>
+/* Result codes. */
+public enum : size_t
 {
-    /* Result codes. */
-    public enum : size_t
-    {
-        P_SUCCESS,
-        P_DECODE_ERROR,
-        P_UNEXPECTED_INPUT,
-        P_UNEXPECTED_TOKEN,
-        P_TOKEN,
-        P_DROP,
-        P_EOF,
-    }
+    P_SUCCESS,
+    P_DECODE_ERROR,
+    P_UNEXPECTED_INPUT,
+    P_UNEXPECTED_TOKEN,
+    P_TOKEN,
+    P_DROP,
+    P_EOF,
+}
 
-    /* An invalid ID value. */
-    private enum size_t INVALID_ID = cast(size_t)-1;
+/* An invalid ID value. */
+private enum size_t INVALID_ID = cast(size_t)-1;
 
-    alias Token = <%= get_type_for(@grammar.invalid_token_id) %>;
+/** Token ID type. */
+public alias Token = <%= get_type_for(@grammar.invalid_token_id) %>;
 
-    enum : Token
-    {
+/** Token IDs. */
+public enum : Token
+{
 <% @grammar.tokens.each_with_index do |token, index| %>
-        TOKEN_<%= token.code_name %> = <%= index %>,
+    TOKEN_<%= token.code_name %> = <%= index %>,
 <%   unless token.id == index %>
 <%     raise "Token ID (#{token.id}) does not match index (#{index}) for token #{token.name}!" %>
 <%   end %>
 <% end %>
-        INVALID_TOKEN_ID = <%= @grammar.invalid_token_id %>,
-    }
+    INVALID_TOKEN_ID = <%= @grammar.invalid_token_id %>,
+}
 
-    alias CodePoint = uint;
-
-    static immutable string[] token_names = [
+/** Token names. */
+public static immutable string[] token_names = [
 <% @grammar.tokens.each_with_index do |token, index| %>
-        "<%= token.name %>",
+    "<%= token.name %>",
 <% end %>
-    ];
+];
 
-    static union ParserValue
-    {
+/** Code point type. */
+public alias CodePoint = uint;
+
+/** Parser values type(s). */
+public static union ParserValue
+{
 <% @grammar.ptypes.each do |name, typestring| %>
-        <%= typestring %> v_<%= name %>;
+    <%= typestring %> v_<%= name %>;
 <% end %>
-    }
+}
 
+/**
+ * A structure to keep track of parser position.
+ *
+ * This is useful for reporting errors, etc...
+ */
+public static struct Position
+{
+    /** Input text row (0-based). */
+    uint row;
+
+    /** Input text column (0-based). */
+    uint col;
+}
+
+/**************************************************************************
+ * Decoder
+ *************************************************************************/
+
+public static class Decoder
+{
     /**
-     * A structure to keep track of parser position.
+     * Decode a UTF-8 code point.
      *
-     * This is useful for reporting errors, etc...
+     * Returns one of:
+     * - P_SUCCESS
+     * - P_DECODE_ERROR
+     * - P_EOF
      */
-    static struct Position
+    static size_t decode_code_point(string input,
+        CodePoint * out_code_point,
+        ubyte * out_code_point_length)
     {
-        /** Input text row (0-based). */
-        uint row;
-
-        /** Input text column (0-based). */
-        uint col;
-    }
-
-    static class Decoder
-    {
-        /**
-         * Decode a UTF-8 code point.
-         *
-         * Returns one of:
-         * - P_SUCCESS
-         * - P_DECODE_ERROR
-         * - P_EOF
-         */
-        static size_t decode_code_point(string input,
-            CodePoint * out_code_point,
-            ubyte * out_code_point_length)
+        if (input.length == 0u)
         {
-            if (input.length == 0u)
+            return P_EOF;
+        }
+        char c = input[0];
+        CodePoint code_point;
+        ubyte code_point_length;
+        if ((c & 0x80u) == 0u)
+        {
+            code_point = c;
+            code_point_length = 1u;
+        }
+        else
+        {
+            ubyte following_bytes;
+            if ((c & 0xE0u) == 0xC0u)
             {
-                return P_EOF;
+                code_point = c & 0x1Fu;
+                following_bytes = 1u;
             }
-            char c = input[0];
-            CodePoint code_point;
-            ubyte code_point_length;
-            if ((c & 0x80u) == 0u)
+            else if ((c & 0xF0u) == 0xE0u)
             {
-                code_point = c;
-                code_point_length = 1u;
+                code_point = c & 0x0Fu;
+                following_bytes = 2u;
+            }
+            else if ((c & 0xF8u) == 0xF0u)
+            {
+                code_point = c & 0x07u;
+                following_bytes = 3u;
+            }
+            else if ((c & 0xFCu) == 0xF8u)
+            {
+                code_point = c & 0x03u;
+                following_bytes = 4u;
+            }
+            else if ((c & 0xFEu) == 0xFCu)
+            {
+                code_point = c & 0x01u;
+                following_bytes = 5u;
             }
             else
             {
-                ubyte following_bytes;
-                if ((c & 0xE0u) == 0xC0u)
-                {
-                    code_point = c & 0x1Fu;
-                    following_bytes = 1u;
-                }
-                else if ((c & 0xF0u) == 0xE0u)
-                {
-                    code_point = c & 0x0Fu;
-                    following_bytes = 2u;
-                }
-                else if ((c & 0xF8u) == 0xF0u)
-                {
-                    code_point = c & 0x07u;
-                    following_bytes = 3u;
-                }
-                else if ((c & 0xFCu) == 0xF8u)
-                {
-                    code_point = c & 0x03u;
-                    following_bytes = 4u;
-                }
-                else if ((c & 0xFEu) == 0xFCu)
-                {
-                    code_point = c & 0x01u;
-                    following_bytes = 5u;
-                }
-                else
-                {
-                    return P_DECODE_ERROR;
-                }
-                if (input.length <= following_bytes)
-                {
-                    return P_DECODE_ERROR;
-                }
-                code_point_length = cast(ubyte)(following_bytes + 1u);
-                for (size_t i = 0u; i < following_bytes; i++)
-                {
-                    char b = input[i + 1u];
-                    if ((b & 0xC0u) != 0x80u)
-                    {
-                        return P_DECODE_ERROR;
-                    }
-                    code_point = (code_point << 6u) | (b & 0x3Fu);
-                }
+                return P_DECODE_ERROR;
             }
-            *out_code_point = code_point;
-            *out_code_point_length = code_point_length;
-            return P_SUCCESS;
+            if (input.length <= following_bytes)
+            {
+                return P_DECODE_ERROR;
+            }
+            code_point_length = cast(ubyte)(following_bytes + 1u);
+            for (size_t i = 0u; i < following_bytes; i++)
+            {
+                char b = input[i + 1u];
+                if ((b & 0xC0u) != 0x80u)
+                {
+                    return P_DECODE_ERROR;
+                }
+                code_point = (code_point << 6u) | (b & 0x3Fu);
+            }
+        }
+        *out_code_point = code_point;
+        *out_code_point_length = code_point_length;
+        return P_SUCCESS;
+    }
+}
+
+/**************************************************************************
+ * Lexer
+ *************************************************************************/
+
+private alias LexerStateID = <%= get_type_for(@lexer.state_table.size) %>;
+private enum LexerStateID INVALID_LEXER_STATE_ID = <%= @lexer.state_table.size %>u;
+<% user_code_id_count = (@grammar.patterns.map(&:code_id).compact.max || 0) + 1 %>
+private alias UserCodeID = <%= get_type_for(user_code_id_count) %>;
+private enum UserCodeID INVALID_USER_CODE_ID = <%= user_code_id_count %>u;
+
+private struct Transition
+{
+    CodePoint first;
+    CodePoint last;
+    LexerStateID destination_state;
+}
+
+private struct LexerState
+{
+    <%= get_type_for(@lexer.transition_table.size - 1) %> transition_table_index;
+    <%= get_type_for(@lexer.state_table.map {|ste| ste[:n_transitions]}.max) %> n_transitions;
+    Token token;
+    UserCodeID code_id;
+    bool accepts;
+}
+
+private struct Mode
+{
+    uint state_table_offset;
+}
+
+private static immutable Transition[] lexer_transitions = [
+<% @lexer.transition_table.each do |transition_table_entry| %>
+    Transition(<%= transition_table_entry[:first] %>u,
+               <%= transition_table_entry[:last] %>u,
+               <%= transition_table_entry[:destination] %>u),
+<% end %>
+];
+
+private static immutable LexerState[] lexer_states = [
+<% @lexer.state_table.each do |state_table_entry| %>
+LexerState(<%= state_table_entry[:transition_table_index] %>u,
+<%= state_table_entry[:n_transitions] %>u,
+<%   if state_table_entry[:token] %>
+Token(<%= state_table_entry[:token] %>u),
+<%   else %>
+INVALID_TOKEN_ID,
+<%   end %>
+<%   if state_table_entry[:code_id] %>
+<%= state_table_entry[:code_id] %>u,
+<%   else %>
+INVALID_USER_CODE_ID,
+<%   end %>
+<%= state_table_entry[:accepts] %>),
+<% end %>
+];
+
+private static immutable Mode[] modes = [
+<% @lexer.mode_table.each do |mode_table_entry| %>
+    Mode(<%= mode_table_entry[:state_table_offset] %>),
+<% end %>
+];
+
+public static struct TokenInfo
+{
+    Position position;
+    size_t length;
+    Token token;
+    ParserValue pvalue;
+}
+
+public static class Lexer
+{
+    private string m_input;
+    private size_t m_input_index;
+    private Position m_input_position;
+    private size_t m_mode;
+
+    this(string input)
+    {
+        m_input = input;
+        m_mode = <%= @lexer.mode_id("default") %>;
+    }
+
+    /**
+     * Lex the next token in the input stream.
+     *
+     * Returns one of:
+     * - P_TOKEN
+     * - P_DECODE_ERROR
+     * - P_UNEXPECTED_INPUT
+     */
+    size_t lex_token(TokenInfo * out_token_info)
+    {
+        for (;;)
+        {
+            size_t result = attempt_lex_token(out_token_info);
+            if (result != P_DROP)
+            {
+                return result;
+            }
         }
     }
 
-    static class Lexer
+    /**
+     * Execute user code associated with a lexer pattern.
+     *
+     * @param code_id The ID of the user code block to execute.
+     * @param match Matched text for this pattern.
+     * @param out_token_info Lexer token info in progress.
+     *
+     * @return Token to accept, or invalid token if the user code does
+     *   not explicitly return a token.
+     */
+    private Token user_code(UserCodeID code_id, string match, TokenInfo * out_token_info)
     {
-        alias LexerStateID = <%= get_type_for(@lexer.state_table.size) %>;
-        enum LexerStateID INVALID_LEXER_STATE_ID = <%= @lexer.state_table.size %>u;
-<% user_code_id_count = (@grammar.patterns.map(&:code_id).compact.max || 0) + 1 %>
-        alias UserCodeID = <%= get_type_for(user_code_id_count) %>;
-        enum UserCodeID INVALID_USER_CODE_ID = <%= user_code_id_count %>u;
-
-        private struct Transition
+        switch (code_id)
         {
-            CodePoint first;
-            CodePoint last;
-            LexerStateID destination_state;
-        }
-
-        private struct LexerState
-        {
-            <%= get_type_for(@lexer.transition_table.size - 1) %> transition_table_index;
-            <%= get_type_for(@lexer.state_table.map {|ste| ste[:n_transitions]}.max) %> n_transitions;
-            Token token;
-            UserCodeID code_id;
-            bool accepts;
-        }
-
-        private struct Mode
-        {
-            uint state_table_offset;
-        }
-
-        private static immutable Transition[] transitions = [
-<% @lexer.transition_table.each do |transition_table_entry| %>
-            Transition(<%= transition_table_entry[:first] %>u,
-                       <%= transition_table_entry[:last] %>u,
-                       <%= transition_table_entry[:destination] %>u),
-<% end %>
-        ];
-
-        private static immutable LexerState[] states = [
-<% @lexer.state_table.each do |state_table_entry| %>
-    LexerState(<%= state_table_entry[:transition_table_index] %>u,
-        <%= state_table_entry[:n_transitions] %>u,
-<%   if state_table_entry[:token] %>
-        Token(<%= state_table_entry[:token] %>u),
-<%   else %>
-        INVALID_TOKEN_ID,
-<%   end %>
-<%   if state_table_entry[:code_id] %>
-        <%= state_table_entry[:code_id] %>u,
-<%   else %>
-        INVALID_USER_CODE_ID,
-<%   end %>
-        <%= state_table_entry[:accepts] %>),
-<% end %>
-        ];
-
-        private static immutable Mode[] modes = [
-<% @lexer.mode_table.each do |mode_table_entry| %>
-            Mode(<%= mode_table_entry[:state_table_offset] %>),
-<% end %>
-        ];
-
-        public static struct TokenInfo
-        {
-            Position position;
-            size_t length;
-            Token token;
-            ParserValue pvalue;
-        }
-
-        private string m_input;
-        private size_t m_input_index;
-        private Position m_input_position;
-        private size_t m_mode;
-
-        this(string input)
-        {
-            m_input = input;
-            m_mode = <%= @lexer.mode_id("default") %>;
-        }
-
-        /**
-         * Lex the next token in the input stream.
-         *
-         * Returns one of:
-         * - P_TOKEN
-         * - P_DECODE_ERROR
-         * - P_UNEXPECTED_INPUT
-         */
-        size_t lex_token(TokenInfo * out_token_info)
-        {
-            for (;;)
-            {
-                size_t result = attempt_lex_token(out_token_info);
-                if (result != P_DROP)
-                {
-                    return result;
-                }
-            }
-        }
-
-        /**
-         * Execute user code associated with a lexer pattern.
-         *
-         * @param code_id The ID of the user code block to execute.
-         * @param match Matched text for this pattern.
-         * @param out_token_info Lexer token info in progress.
-         *
-         * @return Token to accept, or invalid token if the user code does
-         *   not explicitly return a token.
-         */
-        private Token user_code(UserCodeID code_id, string match, TokenInfo * out_token_info)
-        {
-            switch (code_id)
-            {
 <% @grammar.patterns.each do |pattern| %>
 <%   if pattern.code_id %>
-            case <%= pattern.code_id %>u: {
+        case <%= pattern.code_id %>u: {
 <%= expand_code(pattern.code, false, nil, pattern) %>
-            } break;
+        } break;
 <%   end %>
 <% end %>
-            default: break;
-            }
-
-            return INVALID_TOKEN_ID;
+        default: break;
         }
 
-        /**
-         * Attempt to lex the next token in the input stream.
-         *
-         * Returns one of:
-         * - P_TOKEN
-         * - P_DECODE_ERROR
-         * - P_UNEXPECTED_INPUT
-         * - P_DROP
-         */
-        private size_t attempt_lex_token(TokenInfo * out_token_info)
+        return INVALID_TOKEN_ID;
+    }
+
+    /**
+     * Attempt to lex the next token in the input stream.
+     *
+     * Returns one of:
+     * - P_TOKEN
+     * - P_DECODE_ERROR
+     * - P_UNEXPECTED_INPUT
+     * - P_DROP
+     */
+    private size_t attempt_lex_token(TokenInfo * out_token_info)
+    {
+        TokenInfo token_info;
+        token_info.position = m_input_position;
+        token_info.token = INVALID_TOKEN_ID;
+        *out_token_info = token_info; // TODO: remove
+        MatchInfo match_info;
+        size_t unexpected_input_length;
+        size_t result = find_longest_match(&match_info, &unexpected_input_length);
+        switch (result)
         {
-            TokenInfo token_info;
-            token_info.position = m_input_position;
-            token_info.token = INVALID_TOKEN_ID;
-            *out_token_info = token_info; // TODO: remove
-            MatchInfo match_info;
-            size_t unexpected_input_length;
-            size_t result = find_longest_match(&match_info, &unexpected_input_length);
+        case P_SUCCESS:
+            Token token_to_accept = match_info.accepting_state.token;
+            if (match_info.accepting_state.code_id != INVALID_USER_CODE_ID)
+            {
+                Token user_code_token = user_code(match_info.accepting_state.code_id, m_input[m_input_index..(m_input_index + match_info.length)], &token_info);
+                /* An invalid Token from user_code() means that the user
+                 * code did not explicitly return a token. So only override
+                 * the token to return if the user code does explicitly
+                 * return a token. */
+                if (user_code_token != INVALID_TOKEN_ID)
+                {
+                    token_to_accept = user_code_token;
+                }
+            }
+
+            /* Update the input position tracking. */
+            m_input_index += match_info.length;
+            m_input_position.row += match_info.delta_position.row;
+            if (match_info.delta_position.row != 0u)
+            {
+                m_input_position.col = match_info.delta_position.col;
+            }
+            else
+            {
+                m_input_position.col += match_info.delta_position.col;
+            }
+            if (token_to_accept == INVALID_TOKEN_ID)
+            {
+                return P_DROP;
+            }
+            token_info.token = token_to_accept;
+            token_info.length = match_info.length;
+            *out_token_info = token_info;
+            return P_TOKEN;
+
+        case P_EOF:
+            token_info.token = TOKEN___EOF;
+            *out_token_info = token_info;
+            return P_TOKEN;
+
+        default:
+            return result;
+        }
+    }
+
+    struct MatchInfo
+    {
+        size_t length;
+        Position delta_position;
+        const(LexerState) * accepting_state;
+    }
+
+    /**
+     * Find the longest lexer pattern match at the current position.
+     *
+     * Returns one of:
+     * - P_SUCCESS
+     * - P_DECODE_ERROR
+     * - P_UNEXPECTED_INPUT
+     * - P_EOF
+     */
+    private size_t find_longest_match(
+        MatchInfo * out_match_info,
+        size_t * out_unexpected_input_length)
+    {
+        MatchInfo longest_match;
+        MatchInfo attempt_match;
+        uint current_state = modes[m_mode].state_table_offset;
+        for (;;)
+        {
+            string input = m_input[(m_input_index + attempt_match.length)..(m_input.length)];
+            CodePoint code_point;
+            ubyte code_point_length;
+            size_t result = Decoder.decode_code_point(input, &code_point, &code_point_length);
             switch (result)
             {
             case P_SUCCESS:
-                Token token_to_accept = match_info.accepting_state.token;
-                if (match_info.accepting_state.code_id != INVALID_USER_CODE_ID)
+                LexerStateID transition_state = transition(current_state, code_point);
+                if (transition_state != INVALID_LEXER_STATE_ID)
                 {
-                    Token user_code_token = user_code(match_info.accepting_state.code_id, m_input[m_input_index..(m_input_index + match_info.length)], &token_info);
-                    /* An invalid Token from user_code() means that the user
-                     * code did not explicitly return a token. So only override
-                     * the token to return if the user code does explicitly
-                     * return a token. */
-                    if (user_code_token != INVALID_TOKEN_ID)
+                    attempt_match.length += code_point_length;
+                    if (code_point == '\n')
                     {
-                        token_to_accept = user_code_token;
+                        attempt_match.delta_position.row++;
+                        attempt_match.delta_position.col = 0u;
+                    }
+                    else
+                    {
+                        attempt_match.delta_position.col++;
+                    }
+                    current_state = transition_state;
+                    if (lexer_states[current_state].accepts)
+                    {
+                        attempt_match.accepting_state = &lexer_states[current_state];
+                        longest_match = attempt_match;
                     }
                 }
-
-                /* Update the input position tracking. */
-                m_input_index += match_info.length;
-                m_input_position.row += match_info.delta_position.row;
-                if (match_info.delta_position.row != 0u)
+                else if (longest_match.length > 0)
                 {
-                    m_input_position.col = match_info.delta_position.col;
+                    *out_match_info = longest_match;
+                    return P_SUCCESS;
                 }
                 else
                 {
-                    m_input_position.col += match_info.delta_position.col;
+                    *out_unexpected_input_length = attempt_match.length + code_point_length;
+                    return P_UNEXPECTED_INPUT;
                 }
-                if (token_to_accept == INVALID_TOKEN_ID)
-                {
-                    return P_DROP;
-                }
-                token_info.token = token_to_accept;
-                token_info.length = match_info.length;
-                *out_token_info = token_info;
-                return P_TOKEN;
+                break;
 
             case P_EOF:
-                token_info.token = TOKEN___EOF;
-                *out_token_info = token_info;
-                return P_TOKEN;
+                /* We hit EOF. */
+                if (longest_match.length > 0)
+                {
+                    /* We have a match, so use it. */
+                    *out_match_info = longest_match;
+                    return P_SUCCESS;
+                }
+                else if (attempt_match.length != 0)
+                {
+                    /* There is a partial match - error! */
+                    *out_unexpected_input_length = attempt_match.length;
+                    return P_UNEXPECTED_INPUT;
+                }
+                else
+                {
+                    /* Valid EOF return. */
+                    return P_EOF;
+                }
+                break;
 
             default:
                 return result;
             }
         }
-
-        struct MatchInfo
-        {
-            size_t length;
-            Position delta_position;
-            const(LexerState) * accepting_state;
-        }
-
-        /**
-         * Find the longest lexer pattern match at the current position.
-         *
-         * Returns one of:
-         * - P_SUCCESS
-         * - P_DECODE_ERROR
-         * - P_UNEXPECTED_INPUT
-         * - P_EOF
-         */
-        private size_t find_longest_match(
-            MatchInfo * out_match_info,
-            size_t * out_unexpected_input_length)
-        {
-            MatchInfo longest_match;
-            MatchInfo attempt_match;
-            uint current_state = modes[m_mode].state_table_offset;
-            for (;;)
-            {
-                string input = m_input[(m_input_index + attempt_match.length)..(m_input.length)];
-                CodePoint code_point;
-                ubyte code_point_length;
-                size_t result = Decoder.decode_code_point(input, &code_point, &code_point_length);
-                switch (result)
-                {
-                case P_SUCCESS:
-                    LexerStateID transition_state = transition(current_state, code_point);
-                    if (transition_state != INVALID_LEXER_STATE_ID)
-                    {
-                        attempt_match.length += code_point_length;
-                        if (code_point == '\n')
-                        {
-                            attempt_match.delta_position.row++;
-                            attempt_match.delta_position.col = 0u;
-                        }
-                        else
-                        {
-                            attempt_match.delta_position.col++;
-                        }
-                        current_state = transition_state;
-                        if (states[current_state].accepts)
-                        {
-                            attempt_match.accepting_state = &states[current_state];
-                            longest_match = attempt_match;
-                        }
-                    }
-                    else if (longest_match.length > 0)
-                    {
-                        *out_match_info = longest_match;
-                        return P_SUCCESS;
-                    }
-                    else
-                    {
-                        *out_unexpected_input_length = attempt_match.length + code_point_length;
-                        return P_UNEXPECTED_INPUT;
-                    }
-                    break;
-
-                case P_EOF:
-                    /* We hit EOF. */
-                    if (longest_match.length > 0)
-                    {
-                        /* We have a match, so use it. */
-                        *out_match_info = longest_match;
-                        return P_SUCCESS;
-                    }
-                    else if (attempt_match.length != 0)
-                    {
-                        /* There is a partial match - error! */
-                        *out_unexpected_input_length = attempt_match.length;
-                        return P_UNEXPECTED_INPUT;
-                    }
-                    else
-                    {
-                        /* Valid EOF return. */
-                        return P_EOF;
-                    }
-                    break;
-
-                default:
-                    return result;
-                }
-            }
-        }
-
-        private LexerStateID transition(uint current_state, uint code_point)
-        {
-            uint transition_table_index = states[current_state].transition_table_index;
-            for (uint i = 0u; i < states[current_state].n_transitions; i++)
-            {
-                if ((transitions[transition_table_index + i].first <= code_point) &&
-                    (code_point <= transitions[transition_table_index + i].last))
-                {
-                    return transitions[transition_table_index + i].destination_state;
-                }
-            }
-            return INVALID_LEXER_STATE_ID;
-        }
     }
 
-    static class Parser
+    private LexerStateID transition(uint current_state, uint code_point)
     {
-        alias ReduceID = <%= get_type_for(@parser.reduce_table.size) %>;
+        uint transition_table_index = lexer_states[current_state].transition_table_index;
+        for (uint i = 0u; i < lexer_states[current_state].n_transitions; i++)
+        {
+            if ((lexer_transitions[transition_table_index + i].first <= code_point) &&
+                (code_point <= lexer_transitions[transition_table_index + i].last))
+            {
+                return lexer_transitions[transition_table_index + i].destination_state;
+            }
+        }
+        return INVALID_LEXER_STATE_ID;
+    }
+}
+
+/**************************************************************************
+ * Parser
+ *************************************************************************/
+
+private alias ReduceID = <%= get_type_for(@parser.reduce_table.size) %>;
 <% # A "symbol" is either a token ID or a rule set ID. %>
 <% # %>
 <% # Rule set IDs start after token IDs, so to store either a token ID %>
 <% # or a rule set ID, we just need to know the maximum rule set ID. %>
-        alias SymbolID = <%= get_type_for(@parser.rule_sets.map(&:last).map(&:id).max) %>;
-        alias StateID = <%= get_type_for(@parser.state_table.size) %>;
-        alias RuleID = <%= get_type_for(@grammar.rules.size) %>;
-        alias ShiftID = <%= get_type_for(@parser.shift_table.size) %>;
+private alias SymbolID = <%= get_type_for(@parser.rule_sets.map(&:last).map(&:id).max) %>;
+private alias StateID = <%= get_type_for(@parser.state_table.size) %>;
+private alias RuleID = <%= get_type_for(@grammar.rules.size) %>;
+private alias ShiftID = <%= get_type_for(@parser.shift_table.size) %>;
 
-        private struct Shift
-        {
-            SymbolID symbol;
-            StateID state;
-        }
+private struct Shift
+{
+    SymbolID symbol;
+    StateID state;
+}
 
-        private struct Reduce
-        {
-            Token token;
-            RuleID rule;
-            SymbolID rule_set;
-            StateID n_states;
-        }
+private struct Reduce
+{
+    Token token;
+    RuleID rule;
+    SymbolID rule_set;
+    StateID n_states;
+}
 
-        private struct ParserState
-        {
-            ShiftID shift_table_index;
-            ShiftID n_shift_entries;
-            ReduceID reduce_table_index;
-            ReduceID n_reduce_entries;
-        }
+private struct ParserState
+{
+    ShiftID shift_table_index;
+    ShiftID n_shift_entries;
+    ReduceID reduce_table_index;
+    ReduceID n_reduce_entries;
+}
 
-        private struct StateValue
-        {
-            size_t state;
-            ParserValue pvalue;
+private struct StateValue
+{
+    size_t state;
+    ParserValue pvalue;
 
-            this(size_t state)
-            {
-                this.state = state;
-            }
-        }
+    this(size_t state)
+    {
+        this.state = state;
+    }
+}
 
-        private static immutable Shift[] shifts = [
+private static immutable Shift[] parser_shifts = [
 <%   @parser.shift_table.each do |shift| %>
-            Shift(<%= shift[:token_id] %>u, <%= shift[:state_id] %>u),
+    Shift(<%= shift[:token_id] %>u, <%= shift[:state_id] %>u),
 <%   end %>
-        ];
+];
 
-        private static immutable Reduce[] reduces = [
+private static immutable Reduce[] parser_reduces = [
 <%   @parser.reduce_table.each do |reduce| %>
-            Reduce(<%= reduce[:token_id] %>u, <%= reduce[:rule_id] %>u, <%= reduce[:rule_set_id] %>u, <%= reduce[:n_states] %>u),
+    Reduce(<%= reduce[:token_id] %>u, <%= reduce[:rule_id] %>u, <%= reduce[:rule_set_id] %>u, <%= reduce[:n_states] %>u),
 <%   end %>
-        ];
+];
 
-        private static immutable ParserState[] states = [
+private static immutable ParserState[] parser_states = [
 <%   @parser.state_table.each do |state| %>
-            ParserState(<%= state[:shift_index] %>u, <%= state[:n_shifts] %>u, <%= state[:reduce_index] %>u, <%= state[:n_reduces] %>u),
+    ParserState(<%= state[:shift_index] %>u, <%= state[:n_shifts] %>u, <%= state[:reduce_index] %>u, <%= state[:n_reduces] %>u),
 <%   end %>
-        ];
+];
 
-        private Lexer m_lexer;
+public static class Parser
+{
+    private Lexer m_lexer;
 
-        private ParserValue parse_result;
+    private ParserValue parse_result;
 
-        this(string input)
+    this(string input)
+    {
+        m_lexer = new Lexer(input);
+    }
+
+    size_t parse()
+    {
+        TokenInfo token_info;
+        Token token = INVALID_TOKEN_ID;
+        StateValue[] statevalues = new StateValue[](1);
+        size_t reduced_rule_set = INVALID_ID;
+        ParserValue reduced_parser_value;
+        for (;;)
         {
-            m_lexer = new Lexer(input);
-        }
-
-        size_t parse()
-        {
-            Lexer.TokenInfo token_info;
-            Token token = INVALID_TOKEN_ID;
-            StateValue[] statevalues = new StateValue[](1);
-            size_t reduced_rule_set = INVALID_ID;
-            ParserValue reduced_parser_value;
-            for (;;)
+            if (token == INVALID_TOKEN_ID)
             {
-                if (token == INVALID_TOKEN_ID)
+                size_t lexer_result = m_lexer.lex_token(&token_info);
+                if (lexer_result != P_TOKEN)
                 {
-                    size_t lexer_result = m_lexer.lex_token(&token_info);
-                    if (lexer_result != P_TOKEN)
-                    {
-                        return lexer_result;
-                    }
-                    token = token_info.token;
+                    return lexer_result;
                 }
-                size_t shift_state = INVALID_ID;
-                if (reduced_rule_set != INVALID_ID)
+                token = token_info.token;
+            }
+            size_t shift_state = INVALID_ID;
+            if (reduced_rule_set != INVALID_ID)
+            {
+                shift_state = check_shift(statevalues[$-1].state, reduced_rule_set);
+            }
+            if (shift_state == INVALID_ID)
+            {
+                shift_state = check_shift(statevalues[$-1].state, token);
+                if ((shift_state != INVALID_ID) && (token == TOKEN___EOF))
                 {
-                    shift_state = check_shift(statevalues[$-1].state, reduced_rule_set);
+                    /* Successful parse. */
+                    parse_result = statevalues[$-1].pvalue;
+                    return P_SUCCESS;
                 }
-                if (shift_state == INVALID_ID)
+            }
+            if (shift_state != INVALID_ID)
+            {
+                /* We have something to shift. */
+                statevalues ~= StateValue(shift_state);
+                if (reduced_rule_set == INVALID_ID)
                 {
-                    shift_state = check_shift(statevalues[$-1].state, token);
-                    if ((shift_state != INVALID_ID) && (token == TOKEN___EOF))
-                    {
-                        /* Successful parse. */
-                        parse_result = statevalues[$-1].pvalue;
-                        return P_SUCCESS;
-                    }
-                }
-                if (shift_state != INVALID_ID)
-                {
-                    /* We have something to shift. */
-                    statevalues ~= StateValue(shift_state);
-                    if (reduced_rule_set == INVALID_ID)
-                    {
-                        /* We shifted a token, mark it consumed. */
-                        token = INVALID_TOKEN_ID;
-                        statevalues[$-1].pvalue = token_info.pvalue;
-                    }
-                    else
-                    {
-                        /* We shifted a RuleSet. */
-                        statevalues[$-1].pvalue = reduced_parser_value;
-                        ParserValue new_parse_result;
-                        reduced_parser_value = new_parse_result;
-                        reduced_rule_set = INVALID_ID;
-                    }
-                    continue;
-                }
-
-                size_t reduce_index = check_reduce(statevalues[$-1].state, token);
-                if (reduce_index != INVALID_ID)
-                {
-                    /* We have something to reduce. */
-                    reduced_parser_value = user_code(reduces[reduce_index].rule, statevalues, reduces[reduce_index].n_states);
-                    reduced_rule_set = reduces[reduce_index].rule_set;
-                    statevalues.length -= reduces[reduce_index].n_states;
-                    continue;
-                }
-
-                /* Error, unexpected token. */
-                write("Unexpected token ");
-                if (token != INVALID_TOKEN_ID)
-                {
-                    writeln(token_names[token]);
+                    /* We shifted a token, mark it consumed. */
+                    token = INVALID_TOKEN_ID;
+                    statevalues[$-1].pvalue = token_info.pvalue;
                 }
                 else
                 {
-                    writeln("{other}");
+                    /* We shifted a RuleSet. */
+                    statevalues[$-1].pvalue = reduced_parser_value;
+                    ParserValue new_parse_result;
+                    reduced_parser_value = new_parse_result;
+                    reduced_rule_set = INVALID_ID;
                 }
-                return P_UNEXPECTED_TOKEN;
+                continue;
             }
-        }
 
-        @property <%= start_rule_type[1] %> result()
-        {
-            return parse_result.v_<%= start_rule_type[0] %>;
-        }
-
-        private size_t check_shift(size_t state, size_t symbol)
-        {
-            uint start = states[state].shift_table_index;
-            uint end = start + states[state].n_shift_entries;
-            for (uint i = start; i < end; i++)
+            size_t reduce_index = check_reduce(statevalues[$-1].state, token);
+            if (reduce_index != INVALID_ID)
             {
-                if (shifts[i].symbol == symbol)
-                {
+                /* We have something to reduce. */
+                reduced_parser_value = user_code(parser_reduces[reduce_index].rule, statevalues, parser_reduces[reduce_index].n_states);
+                reduced_rule_set = parser_reduces[reduce_index].rule_set;
+                statevalues.length -= parser_reduces[reduce_index].n_states;
+                continue;
+            }
+
+            /* Error, unexpected token. */
+            write("Unexpected token ");
+            if (token != INVALID_TOKEN_ID)
+            {
+                writeln(token_names[token]);
+            }
+            else
+            {
+                writeln("{other}");
+            }
+            return P_UNEXPECTED_TOKEN;
+        }
+    }
+
+    @property <%= start_rule_type[1] %> result()
+    {
+        return parse_result.v_<%= start_rule_type[0] %>;
+    }
+
+    private size_t check_shift(size_t state, size_t symbol)
+    {
+        uint start = parser_states[state].shift_table_index;
+        uint end = start + parser_states[state].n_shift_entries;
+        for (uint i = start; i < end; i++)
+        {
+            if (parser_shifts[i].symbol == symbol)
+            {
 //                    if (symbol != INVALID_TOKEN_ID)
 //                    {
 //                        writeln("Shifting ", token_names[symbol]);
@@ -616,22 +631,22 @@ class <%= @classname %>
 //                    {
 //                        writeln("Shifting rule set ", symbol);
 //                    }
-                    return shifts[i].state;
-                }
+                return parser_shifts[i].state;
             }
-            return INVALID_ID;
         }
+        return INVALID_ID;
+    }
 
-        private size_t check_reduce(size_t state, Token token)
+    private size_t check_reduce(size_t state, Token token)
+    {
+        size_t start = parser_states[state].reduce_table_index;
+        size_t end = start + parser_states[state].n_reduce_entries;
+        for (size_t i = start; i < end; i++)
         {
-            size_t start = states[state].reduce_table_index;
-            size_t end = start + states[state].n_reduce_entries;
-            for (size_t i = start; i < end; i++)
+            if ((parser_reduces[i].token == token) ||
+                (parser_reduces[i].token == INVALID_TOKEN_ID))
             {
-                if ((reduces[i].token == token) ||
-                    (reduces[i].token == INVALID_TOKEN_ID))
-                {
-//                    write("Reducing rule ", reduces[i].rule, ", rule set ", reduces[i].rule_set, " lookahead ");
+//                    write("Reducing rule ", parser_reduces[i].rule, ", rule set ", parser_reduces[i].rule_set, " lookahead ");
 //                    if (token != INVALID_TOKEN_ID)
 //                    {
 //                        writeln(token_names[token]);
@@ -640,36 +655,35 @@ class <%= @classname %>
 //                    {
 //                        writeln("{other}");
 //                    }
-                    return i;
-                }
+                return i;
             }
-            return INVALID_ID;
         }
+        return INVALID_ID;
+    }
 
-        /**
-         * Execute user code associated with a parser rule.
-         *
-         * @param rule The ID of the rule.
-         *
-         * @return Parse value.
-         */
-        private ParserValue user_code(uint rule, StateValue[] statevalues, uint n_states)
+    /**
+     * Execute user code associated with a parser rule.
+     *
+     * @param rule The ID of the rule.
+     *
+     * @return Parse value.
+     */
+    private ParserValue user_code(uint rule, StateValue[] statevalues, uint n_states)
+    {
+        ParserValue _pvalue;
+
+        switch (rule)
         {
-            ParserValue _pvalue;
-
-            switch (rule)
-            {
 <% @grammar.rules.each do |rule| %>
 <%   if rule.code %>
-            case <%= rule.id %>u: {
+        case <%= rule.id %>u: {
 <%= expand_code(rule.code, true, rule, nil) %>
-            } break;
+        } break;
 <%   end %>
 <% end %>
-            default: break;
-            }
-
-            return _pvalue;
+        default: break;
         }
+
+        return _pvalue;
     }
 }

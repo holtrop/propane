@@ -9,11 +9,11 @@ int main()
 unittest
 {
     string input = `x`;
-    auto parser = new Testparser.Parser(input);
-    assert(parser.parse() == Testparser.P_UNEXPECTED_INPUT);
+    auto parser = new Parser(input);
+    assert(parser.parse() == P_UNEXPECTED_INPUT);
 
     input = `123`;
-    parser = new Testparser.Parser(input);
-    assert(parser.parse() == Testparser.P_SUCCESS);
+    parser = new Parser(input);
+    assert(parser.parse() == P_SUCCESS);
     assert(parser.result == 123u);
 }

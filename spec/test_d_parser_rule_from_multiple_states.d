@@ -9,14 +9,14 @@ int main()
 unittest
 {
     string input = "a";
-    auto parser = new Testparser.Parser(input);
-    assert(parser.parse() == Testparser.P_UNEXPECTED_TOKEN);
+    auto parser = new Parser(input);
+    assert(parser.parse() == P_UNEXPECTED_TOKEN);
 
     input = "a b";
-    parser = new Testparser.Parser(input);
-    assert(parser.parse() == Testparser.P_SUCCESS);
+    parser = new Parser(input);
+    assert(parser.parse() == P_SUCCESS);
 
     input = "bb";
-    parser = new Testparser.Parser(input);
-    assert(parser.parse() == Testparser.P_SUCCESS);
+    parser = new Parser(input);
+    assert(parser.parse() == P_SUCCESS);
 }
