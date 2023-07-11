@@ -453,11 +453,12 @@ class <%= @classname %>
 <% # Rule set IDs start after token IDs, so to store either a token ID %>
 <% # or a rule set ID, we just need to know the maximum rule set ID. %>
         alias SymbolID = <%= get_type_for(@parser.rule_sets.map(&:last).map(&:id).max) %>;
+        alias StateID = <%= get_type_for(@parser.state_table.size) %>;
 
         private struct Shift
         {
             SymbolID symbol;
-            uint state;
+            StateID state;
         }
 
         private struct Reduce
@@ -465,7 +466,7 @@ class <%= @classname %>
             Token token;
             uint rule;
             SymbolID rule_set;
-            uint n_states;
+            StateID n_states;
         }
 
         private struct ParserState
