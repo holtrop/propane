@@ -455,6 +455,7 @@ class <%= @classname %>
         alias SymbolID = <%= get_type_for(@parser.rule_sets.map(&:last).map(&:id).max) %>;
         alias StateID = <%= get_type_for(@parser.state_table.size) %>;
         alias RuleID = <%= get_type_for(@grammar.rules.size) %>;
+        alias ShiftID = <%= get_type_for(@parser.shift_table.size) %>;
 
         private struct Shift
         {
@@ -472,8 +473,8 @@ class <%= @classname %>
 
         private struct ParserState
         {
-            uint shift_table_index;
-            uint n_shift_entries;
+            ShiftID shift_table_index;
+            ShiftID n_shift_entries;
             ReduceID reduce_table_index;
             ReduceID n_reduce_entries;
         }
