@@ -328,29 +328,14 @@ private struct lexer_match_info_t
 /** Lexer transition table. */
 private immutable lexer_transition_t[] lexer_transition_table = [
 <% @lexer.transition_table.each do |transition_table_entry| %>
-  lexer_transition_t(
-      <%= transition_table_entry[:first] %>u,
-      <%= transition_table_entry[:last] %>u,
-      <%= transition_table_entry[:destination] %>u),
+  lexer_transition_t(<%= transition_table_entry[:first] %>u, <%= transition_table_entry[:last] %>u, <%= transition_table_entry[:destination] %>u),
 <% end %>
 ];
 
 /** Lexer state table. */
 private immutable lexer_state_t[] lexer_state_table = [
 <% @lexer.state_table.each do |state_table_entry| %>
-    lexer_state_t(<%= state_table_entry[:transition_table_index] %>u,
-<%= state_table_entry[:n_transitions] %>u,
-<%   if state_table_entry[:token] %>
-        <%= state_table_entry[:token] %>u,
-<%   else %>
-        INVALID_TOKEN_ID,
-<%   end %>
-<%   if state_table_entry[:code_id] %>
-        <%= state_table_entry[:code_id] %>u,
-<%   else %>
-        INVALID_USER_CODE_ID,
-<%   end %>
-        <%= state_table_entry[:accepts] %>),
+    lexer_state_t(<%= state_table_entry[:transition_table_index] %>u, <%= state_table_entry[:n_transitions] %>u, <%= state_table_entry[:token] || "INVALID_TOKEN_ID" %>, <%= state_table_entry[:code_id] || "INVALID_USER_CODE_ID" %>, <%= state_table_entry[:accepts] %>),
 <% end %>
 ];
 
