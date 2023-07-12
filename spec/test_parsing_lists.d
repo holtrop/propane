@@ -9,17 +9,18 @@ int main()
 unittest
 {
     string input = "a";
-    auto parser = new Parser(input);
-    assert(parser.parse() == P_SUCCESS);
-    assert(parser.result == 1u);
+    p_context_t context;
+    p_context_init(&context, input);
+    assert(p_parse(&context) == P_SUCCESS);
+    assert(p_result(&context) == 1u);
 
     input = "";
-    parser = new Parser(input);
-    assert(parser.parse() == P_SUCCESS);
-    assert(parser.result == 0u);
+    p_context_init(&context, input);
+    assert(p_parse(&context) == P_SUCCESS);
+    assert(p_result(&context) == 0u);
 
     input = "aaaaaaaaaaaaaaaa";
-    parser = new Parser(input);
-    assert(parser.parse() == P_SUCCESS);
-    assert(parser.result == 16u);
+    p_context_init(&context, input);
+    assert(p_parse(&context) == P_SUCCESS);
+    assert(p_result(&context) == 16u);
 }

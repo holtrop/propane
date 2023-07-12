@@ -9,6 +9,7 @@ int main()
 unittest
 {
     string input = "defghidef";
-    auto parser = new Parser(input);
-    assert(parser.parse() == P_SUCCESS);
+    p_context_t context;
+    p_context_init(&context, input);
+    assert(p_parse(&context) == P_SUCCESS);
 }

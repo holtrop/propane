@@ -203,7 +203,7 @@ class Propane
           unless mode_id
             raise Error.new("Lexer mode '#{mode_name}' not found")
           end
-          "m_mode = #{mode_id}u"
+          "context.mode = #{mode_id}u"
         end
       end
       code
