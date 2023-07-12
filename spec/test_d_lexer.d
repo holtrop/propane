@@ -9,7 +9,7 @@ int main()
 unittest
 {
     size_t result;
-    CodePoint code_point;
+    p_code_point_t code_point;
     ubyte code_point_length;
 
     result = p_decode_code_point("5", &code_point, &code_point_length);
@@ -42,28 +42,28 @@ unittest
 
 unittest
 {
-    TokenInfo token_info;
+    p_token_info_t token_info;
     string input = "5 + 4 * \n677 + 567";
     p_context_t context;
     p_context_init(&context, input);
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == TokenInfo(Position(0, 0), 1, TOKEN_int));
+    assert(token_info == p_token_info_t(p_position_t(0, 0), 1, TOKEN_int));
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == TokenInfo(Position(0, 2), 1, TOKEN_plus));
+    assert(token_info == p_token_info_t(p_position_t(0, 2), 1, TOKEN_plus));
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == TokenInfo(Position(0, 4), 1, TOKEN_int));
+    assert(token_info == p_token_info_t(p_position_t(0, 4), 1, TOKEN_int));
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == TokenInfo(Position(0, 6), 1, TOKEN_times));
+    assert(token_info == p_token_info_t(p_position_t(0, 6), 1, TOKEN_times));
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == TokenInfo(Position(1, 0), 3, TOKEN_int));
+    assert(token_info == p_token_info_t(p_position_t(1, 0), 3, TOKEN_int));
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == TokenInfo(Position(1, 4), 1, TOKEN_plus));
+    assert(token_info == p_token_info_t(p_position_t(1, 4), 1, TOKEN_plus));
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == TokenInfo(Position(1, 6), 3, TOKEN_int));
+    assert(token_info == p_token_info_t(p_position_t(1, 6), 3, TOKEN_int));
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == TokenInfo(Position(1, 9), 0, TOKEN___EOF));
+    assert(token_info == p_token_info_t(p_position_t(1, 9), 0, TOKEN___EOF));
 
     p_context_init(&context, "");
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == TokenInfo(Position(0, 0), 0, TOKEN___EOF));
+    assert(token_info == p_token_info_t(p_position_t(0, 0), 0, TOKEN___EOF));
 }
