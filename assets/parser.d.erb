@@ -106,7 +106,7 @@ public struct p_context_t
     size_t input_index;
 
     /** Input text position (row/column). */
-    p_position_t input_position;
+    p_position_t text_position;
 
     /** Current lexer mode. */
     size_t mode;
@@ -443,6 +443,7 @@ private size_t find_longest_match(p_context_t * context,
 {
     lexer_match_info_t longest_match;
     lexer_match_info_t attempt_match;
+    *out_match_info = longest_match;
     uint current_state = lexer_mode_table[context.mode].state_table_offset;
     for (;;)
     {
@@ -506,6 +507,13 @@ private size_t find_longest_match(p_context_t * context,
             }
             break;
 
+        case P_DECODE_ERROR:
+            /* If we see a decode error, we may be partially in the middle of
+             * matching a pattern, so return the attempted match info so that
+             * the input text position can be updated. */
+            *out_match_info = attempt_match;
+            return result;
+
         default:
             return result;
         }
@@ -533,7 +541,7 @@ private size_t find_longest_match(p_context_t * context,
 private size_t attempt_lex_token(p_context_t * context, p_token_info_t * out_token_info)
 {
     p_token_info_t token_info;
-    token_info.position = context.input_position;
+    token_info.position = context.text_position;
     token_info.token = INVALID_TOKEN_ID;
     *out_token_info = token_info; // TODO: remove
     lexer_match_info_t match_info;
@@ -560,15 +568,16 @@ private size_t attempt_lex_token(p_context_t * context, p_token_info_t * out_tok
 
         /* Update the input position tracking. */
         context.input_index += match_info.length;
-        context.input_position.row += match_info.delta_position.row;
+        context.text_position.row += match_info.delta_position.row;
         if (match_info.delta_position.row != 0u)
         {
-            context.input_position.col = match_info.delta_position.col;
+            context.text_position.col = match_info.delta_position.col;
         }
         else
         {
-            context.input_position.col += match_info.delta_position.col;
+            context.text_position.col += match_info.delta_position.col;
         }
+
         if (token_to_accept == INVALID_TOKEN_ID)
         {
             return P_DROP;
@@ -582,6 +591,20 @@ private size_t attempt_lex_token(p_context_t * context, p_token_info_t * out_tok
         token_info.token = TOKEN___EOF;
         *out_token_info = token_info;
         return P_SUCCESS;
+
+    case P_DECODE_ERROR:
+        /* Update the input position tracking. */
+        context.input_index += match_info.length;
+        context.text_position.row += match_info.delta_position.row;
+        if (match_info.delta_position.row != 0u)
+        {
+            context.text_position.col = match_info.delta_position.col;
+        }
+        else
+        {
+            context.text_position.col += match_info.delta_position.col;
+        }
+        return result;
 
     default:
         return result;
@@ -902,6 +925,12 @@ public size_t p_parse(p_context_t * context)
         {
             writeln("{other}");
         }
+        /* A token was successfully lexed, so the input text position was
+         * advanced. However, this is an unexpected token, so we want to reset
+         * the context text position to point to the token rather than the text
+         * after it, so that if the caller wants to report the error position,
+         * it will point to the correct position of the unexpected token. */
+        context.text_position = token_info.position;
         return P_UNEXPECTED_TOKEN;
     }
 }
@@ -917,4 +946,17 @@ public size_t p_parse(p_context_t * context)
 public <%= start_rule_type[1] %> p_result(p_context_t * context)
 {
     return context.parse_result.v_<%= start_rule_type[0] %>;
+}
+
+/**
+ * Get the current text input position.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ *
+ * @return Current text position.
+ */
+public p_position_t p_position(p_context_t * context)
+{
+    return context.text_position;
 }

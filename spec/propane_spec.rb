@@ -359,6 +359,21 @@ EOF
     expect(results.status).to eq 0
   end
 
+  it "tracks position of parser errors" do
+    write_grammar <<EOF
+token a;
+token num /\\d+/;
+drop /\\s+/;
+Start -> a num Start;
+Start -> a num;
+EOF
+    build_parser
+    compile("spec/test_error_positions.d")
+    results = run
+    expect(results.stderr).to eq ""
+    expect(results.status).to eq 0
+  end
+
   it "allows creating a JSON parser" do
     write_grammar(File.read("spec/json_parser.propane"))
     build_parser
