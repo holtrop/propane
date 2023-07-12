@@ -56,7 +56,7 @@ class Propane
               item_set.following_item_set[following_symbol].id
             end
           {
-            token_id: following_symbol.id,
+            symbol_id: following_symbol.id,
             state_id: state_id,
           }
         end

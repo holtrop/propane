@@ -620,7 +620,7 @@ private struct StateValue
 
 private static immutable Shift[] parser_shifts = [
 <%   @parser.shift_table.each do |shift| %>
-    Shift(<%= shift[:token_id] %>u, <%= shift[:state_id] %>u),
+    Shift(<%= shift[:symbol_id] %>u, <%= shift[:state_id] %>u),
 <%   end %>
 ];
 
