@@ -34,6 +34,7 @@ EOF
       expect(grammar.modulename).to eq "a.b"
       expect(grammar.ptype).to eq "XYZ  *"
       expect(grammar.ptypes).to eq("default" => "XYZ  *")
+      expect(grammar.prefix).to eq "p_"
 
       o = grammar.tokens.find {|token| token.name == "while"}
       expect(o).to_not be_nil
@@ -111,8 +112,11 @@ token code2 <<
 >>
 
 tokenid token_with_no_pattern;
+
+prefix myparser_;
 EOF
       grammar = Grammar.new(input)
+      expect(grammar.prefix).to eq "myparser_"
 
       o = grammar.tokens.find {|token| token.name == "code1"}
       expect(o).to_not be_nil

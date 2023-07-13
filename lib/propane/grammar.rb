@@ -12,6 +12,7 @@ class Propane
     attr_reader :tokens
     attr_reader :code_blocks
     attr_reader :ptypes
+    attr_reader :prefix
 
     def initialize(input)
       @patterns = []
@@ -23,6 +24,7 @@ class Propane
       @mode = nil
       @input = input.gsub("\r\n", "\n")
       @ptypes = {"default" => "void *"}
+      @prefix = "p_"
       parse_grammar!
     end
 
@@ -55,6 +57,7 @@ class Propane
       elsif parse_drop_statement!
       elsif parse_rule_statement!
       elsif parse_code_block_statement!
+      elsif parse_prefix_statement!
       else
         if @input.size > 25
           @input = @input.slice(0..20) + "..."
@@ -191,6 +194,13 @@ class Propane
       if code = parse_code_block!
         @code_blocks << code
         @mode = nil
+        true
+      end
+    end
+
+    def parse_prefix_statement!
+      if md = consume!(/prefix\s+(#{IDENTIFIER_REGEX})\s*;/)
+        @prefix = md[1]
         true
       end
     end

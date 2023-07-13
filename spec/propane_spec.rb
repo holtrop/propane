@@ -4,12 +4,14 @@ require "open3"
 Results = Struct.new(:stdout, :stderr, :status)
 
 describe Propane do
-  def write_grammar(grammar)
-    File.write("spec/run/testparser.propane", grammar)
+  def write_grammar(grammar, options = {})
+    options[:name] ||= ""
+    File.write("spec/run/testparser#{options[:name]}.propane", grammar)
   end
 
   def build_parser(options = {})
-    command = %w[./propane.sh spec/run/testparser.propane spec/run/testparser.d --log spec/run/testparser.log]
+    options[:name] ||= ""
+    command = %W[./propane.sh spec/run/testparser#{options[:name]}.propane spec/run/testparser#{options[:name]}.d --log spec/run/testparser#{options[:name]}.log]
     if (options[:capture])
       stdout, stderr, status = Open3.capture3(*command)
       Results.new(stdout, stderr, status)
@@ -19,8 +21,13 @@ describe Propane do
     end
   end
 
-  def compile(*test_files)
-    result = system(*%w[ldc2 --unittest -of spec/run/testparser spec/run/testparser.d -Ispec], *test_files)
+  def compile(test_files, options = {})
+    test_files = Array(test_files)
+    options[:parsers] ||= [""]
+    parsers = options[:parsers].map do |name|
+      "spec/run/testparser#{name}.d"
+    end
+    result = system(*%w[ldc2 --unittest -of spec/run/testparser -Ispec], *parsers, *test_files)
     expect(result).to be_truthy
   end
 
@@ -377,6 +384,28 @@ EOF
   it "allows creating a JSON parser" do
     write_grammar(File.read("spec/json_parser.propane"))
     build_parser
-    compile("spec/test_parsing_json.d", "spec/json_types.d")
+    compile(["spec/test_parsing_json.d", "spec/json_types.d"])
+  end
+
+  it "allows generating multiple parsers in the same program" do
+    write_grammar(<<EOF, name: "myp1")
+prefix myp1_;
+token a;
+token num /\\d+/;
+drop /\\s+/;
+Start -> a num;
+EOF
+    build_parser(name: "myp1")
+    write_grammar(<<EOF, name: "myp2")
+prefix myp2_;
+token b;
+token c;
+Start -> b c b;
+EOF
+    build_parser(name: "myp2")
+    compile("spec/test_multiple_parsers.d", parsers: %w[myp1 myp2])
+    results = run
+    expect(results.stderr).to eq ""
+    expect(results.status).to eq 0
   end
 end

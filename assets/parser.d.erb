@@ -25,19 +25,19 @@ import std.stdio;
 /* Result codes. */
 public enum : size_t
 {
-    P_SUCCESS,
-    P_DECODE_ERROR,
-    P_UNEXPECTED_INPUT,
-    P_UNEXPECTED_TOKEN,
-    P_DROP,
-    P_EOF,
+    <%= @grammar.prefix.upcase %>SUCCESS,
+    <%= @grammar.prefix.upcase %>DECODE_ERROR,
+    <%= @grammar.prefix.upcase %>UNEXPECTED_INPUT,
+    <%= @grammar.prefix.upcase %>UNEXPECTED_TOKEN,
+    <%= @grammar.prefix.upcase %>DROP,
+    <%= @grammar.prefix.upcase %>EOF,
 }
 
 /** Token type. */
-public alias p_token_t = <%= get_type_for(@grammar.invalid_token_id) %>;
+public alias <%= @grammar.prefix %>token_t = <%= get_type_for(@grammar.invalid_token_id) %>;
 
 /** Token IDs. */
-public enum : p_token_t
+public enum : <%= @grammar.prefix %>token_t
 {
 <% @grammar.tokens.each_with_index do |token, index| %>
     TOKEN_<%= token.code_name %> = <%= index %>,
@@ -49,10 +49,10 @@ public enum : p_token_t
 }
 
 /** Code point type. */
-public alias p_code_point_t = uint;
+public alias <%= @grammar.prefix %>code_point_t = uint;
 
 /** Parser values type(s). */
-public union p_value_t
+public union <%= @grammar.prefix %>value_t
 {
 <% @grammar.ptypes.each do |name, typestring| %>
     <%= typestring %> v_<%= name %>;
@@ -64,7 +64,7 @@ public union p_value_t
  *
  * This is useful for reporting errors, etc...
  */
-public struct p_position_t
+public struct <%= @grammar.prefix %>position_t
 {
     /** Input text row (0-based). */
     uint row;
@@ -74,19 +74,19 @@ public struct p_position_t
 }
 
 /** Lexed token information. */
-public struct p_token_info_t
+public struct <%= @grammar.prefix %>token_info_t
 {
     /** Text position where the token was found. */
-    p_position_t position;
+    <%= @grammar.prefix %>position_t position;
 
     /** Number of input bytes used by the token. */
     size_t length;
 
     /** Token that was lexed. */
-    p_token_t token;
+    <%= @grammar.prefix %>token_t token;
 
     /** Parser value associated with the token. */
-    p_value_t pvalue;
+    <%= @grammar.prefix %>value_t pvalue;
 }
 
 /**
@@ -95,7 +95,7 @@ public struct p_token_info_t
  * The user must allocate an instance of this structure and pass it to any
  * public API function.
  */
-public struct p_context_t
+public struct <%= @grammar.prefix %>context_t
 {
     /* Lexer context data. */
 
@@ -106,7 +106,7 @@ public struct p_context_t
     size_t input_index;
 
     /** Input text position (row/column). */
-    p_position_t text_position;
+    <%= @grammar.prefix %>position_t text_position;
 
     /** Current lexer mode. */
     size_t mode;
@@ -114,7 +114,7 @@ public struct p_context_t
     /* Parser context data. */
 
     /** Parse result value. */
-    p_value_t parse_result;
+    <%= @grammar.prefix %>value_t parse_result;
 }
 
 /**************************************************************************
@@ -122,7 +122,7 @@ public struct p_context_t
  *************************************************************************/
 
 /** Token names. */
-public immutable string[] p_token_names = [
+public immutable string[] <%= @grammar.prefix %>token_names = [
 <% @grammar.tokens.each_with_index do |token, index| %>
     "<%= token.name %>",
 <% end %>
@@ -131,6 +131,19 @@ public immutable string[] p_token_names = [
 /**************************************************************************
  * Private types
  *************************************************************************/
+
+<% if @grammar.prefix.upcase != "P_" %>
+/* Result codes. */
+private enum : size_t
+{
+    P_SUCCESS,
+    P_DECODE_ERROR,
+    P_UNEXPECTED_INPUT,
+    P_UNEXPECTED_TOKEN,
+    P_DROP,
+    P_EOF,
+}
+<% end %>
 
 /* An invalid ID value. */
 private enum size_t INVALID_ID = cast(size_t)-1;
@@ -147,10 +160,10 @@ private enum size_t INVALID_ID = cast(size_t)-1;
  * @param input
  *   Text input.
  */
-public void p_context_init(p_context_t * context, string input)
+public void <%= @grammar.prefix %>context_init(<%= @grammar.prefix %>context_t * context, string input)
 {
     /* New default-initialized context structure. */
-    p_context_t newcontext;
+    <%= @grammar.prefix %>context_t newcontext;
 
     /* Lexer initialization. */
     newcontext.input = input;
@@ -179,15 +192,15 @@ public void p_context_init(p_context_t * context, string input)
  * @retval P_DECODE_ERROR when an encoding error is observed
  * @retval P_EOF when the end of the text input is reached
  */
-public size_t p_decode_code_point(string input,
-    p_code_point_t * out_code_point, ubyte * out_code_point_length)
+public size_t <%= @grammar.prefix %>decode_code_point(string input,
+    <%= @grammar.prefix %>code_point_t * out_code_point, ubyte * out_code_point_length)
 {
     if (input.length == 0u)
     {
         return P_EOF;
     }
     char c = input[0];
-    p_code_point_t code_point;
+    <%= @grammar.prefix %>code_point_t code_point;
     ubyte code_point_length;
     if ((c & 0x80u) == 0u)
     {
@@ -272,10 +285,10 @@ private enum lexer_user_code_id_t INVALID_USER_CODE_ID = <%= user_code_id_count 
 private struct lexer_transition_t
 {
     /** First code point in the range for this transition. */
-    p_code_point_t first;
+    <%= @grammar.prefix %>code_point_t first;
 
     /** Last code point in the range for this transition. */
-    p_code_point_t last;
+    <%= @grammar.prefix %>code_point_t last;
 
     /** Destination lexer state ID for this transition. */
     lexer_state_id_t destination_state;
@@ -291,7 +304,7 @@ private struct lexer_state_t
     <%= get_type_for(@lexer.state_table.map {|ste| ste[:n_transitions]}.max) %> n_transitions;
 
     /** Lexer token formed at this state. */
-    p_token_t token;
+    <%= @grammar.prefix %>token_t token;
 
     /** Lexer user code ID to execute at this state. */
     lexer_user_code_id_t code_id;
@@ -319,7 +332,7 @@ private struct lexer_match_info_t
     size_t length;
 
     /** Input text position delta. */
-    p_position_t delta_position;
+    <%= @grammar.prefix %>position_t delta_position;
 
     /** Accepting lexer state from the match. */
     const(lexer_state_t) * accepting_state;
@@ -361,9 +374,9 @@ private immutable lexer_mode_t[] lexer_mode_table = [
  * @return Token to accept, or invalid token if the user code does
  *   not explicitly return a token.
  */
-private p_token_t lexer_user_code(p_context_t * context,
+private <%= @grammar.prefix %>token_t lexer_user_code(<%= @grammar.prefix %>context_t * context,
     lexer_user_code_id_t code_id, string match,
-    p_token_info_t * out_token_info)
+    <%= @grammar.prefix %>token_info_t * out_token_info)
 {
     switch (code_id)
     {
@@ -423,7 +436,7 @@ private lexer_state_id_t check_lexer_transition(uint current_state, uint code_po
  * @retval P_EOF
  *   The end of the text input was reached.
  */
-private size_t find_longest_match(p_context_t * context,
+private size_t find_longest_match(<%= @grammar.prefix %>context_t * context,
     lexer_match_info_t * out_match_info, size_t * out_unexpected_input_length)
 {
     lexer_match_info_t longest_match;
@@ -433,9 +446,9 @@ private size_t find_longest_match(p_context_t * context,
     for (;;)
     {
         string input = context.input[(context.input_index + attempt_match.length)..(context.input.length)];
-        p_code_point_t code_point;
+        <%= @grammar.prefix %>code_point_t code_point;
         ubyte code_point_length;
-        size_t result = p_decode_code_point(input, &code_point, &code_point_length);
+        size_t result = <%= @grammar.prefix %>decode_code_point(input, &code_point, &code_point_length);
         switch (result)
         {
         case P_SUCCESS:
@@ -523,9 +536,9 @@ private size_t find_longest_match(p_context_t * context,
  * @retval P_DROP
  *   A drop pattern was matched so the lexer should continue.
  */
-private size_t attempt_lex_token(p_context_t * context, p_token_info_t * out_token_info)
+private size_t attempt_lex_token(<%= @grammar.prefix %>context_t * context, <%= @grammar.prefix %>token_info_t * out_token_info)
 {
-    p_token_info_t token_info;
+    <%= @grammar.prefix %>token_info_t token_info;
     token_info.position = context.text_position;
     token_info.token = INVALID_TOKEN_ID;
     *out_token_info = token_info; // TODO: remove
@@ -535,11 +548,11 @@ private size_t attempt_lex_token(p_context_t * context, p_token_info_t * out_tok
     switch (result)
     {
     case P_SUCCESS:
-        p_token_t token_to_accept = match_info.accepting_state.token;
+        <%= @grammar.prefix %>token_t token_to_accept = match_info.accepting_state.token;
         if (match_info.accepting_state.code_id != INVALID_USER_CODE_ID)
         {
             string match = context.input[context.input_index..(context.input_index + match_info.length)];
-            p_token_t user_code_token = lexer_user_code(context,
+            <%= @grammar.prefix %>token_t user_code_token = lexer_user_code(context,
                 match_info.accepting_state.code_id, match, &token_info);
             /* An invalid token returned from lexer_user_code() means that the
              * user code did not explicitly return a token. So only override
@@ -612,7 +625,7 @@ private size_t attempt_lex_token(p_context_t * context, p_token_info_t * out_tok
  * @reval P_UNEXPECTED_INPUT
  *   Input text does not match any lexer pattern.
  */
-public size_t p_lex(p_context_t * context, p_token_info_t * out_token_info)
+public size_t <%= @grammar.prefix %>lex(<%= @grammar.prefix %>context_t * context, <%= @grammar.prefix %>token_info_t * out_token_info)
 {
     for (;;)
     {
@@ -662,7 +675,7 @@ private struct shift_t
 private struct reduce_t
 {
     /** Lookahead token. */
-    p_token_t token;
+    <%= @grammar.prefix %>token_t token;
 
     /**
      * Rule ID.
@@ -716,7 +729,7 @@ private struct state_value_t
     size_t state_id;
 
     /** Parser value from this state. */
-    p_value_t pvalue;
+    <%= @grammar.prefix %>value_t pvalue;
 
     this(size_t state_id)
     {
@@ -752,9 +765,9 @@ private immutable parser_state_t[] parser_state_table = [
  *
  * @return Parse value.
  */
-private p_value_t parser_user_code(uint rule, state_value_t[] statevalues, uint n_states)
+private <%= @grammar.prefix %>value_t parser_user_code(uint rule, state_value_t[] statevalues, uint n_states)
 {
-    p_value_t _pvalue;
+    <%= @grammar.prefix %>value_t _pvalue;
 
     switch (rule)
     {
@@ -805,7 +818,7 @@ private size_t check_shift(size_t state_id, size_t symbol_id)
  *
  * @return State to reduce to, or INVALID_ID if none.
  */
-private size_t check_reduce(size_t state_id, p_token_t token)
+private size_t check_reduce(size_t state_id, <%= @grammar.prefix %>token_t token)
 {
     size_t start = parser_state_table[state_id].reduce_table_index;
     size_t end = start + parser_state_table[state_id].n_reduce_entries;
@@ -828,7 +841,7 @@ private size_t check_reduce(size_t state_id, p_token_t token)
  *
  * @retval P_SUCCESS
  *   The parser successfully matched the input text. The parse result value
- *   can be accessed with p_result().
+ *   can be accessed with <%= @grammar.prefix %>result().
  * @retval P_UNEXPECTED_TOKEN
  *   An unexpected token was encountered that does not match any grammar rule.
  * @reval P_DECODE_ERROR
@@ -836,18 +849,18 @@ private size_t check_reduce(size_t state_id, p_token_t token)
  * @reval P_UNEXPECTED_INPUT
  *   Input text does not match any lexer pattern.
  */
-public size_t p_parse(p_context_t * context)
+public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context)
 {
-    p_token_info_t token_info;
-    p_token_t token = INVALID_TOKEN_ID;
+    <%= @grammar.prefix %>token_info_t token_info;
+    <%= @grammar.prefix %>token_t token = INVALID_TOKEN_ID;
     state_value_t[] statevalues = new state_value_t[](1);
     size_t reduced_rule_set = INVALID_ID;
-    p_value_t reduced_parser_value;
+    <%= @grammar.prefix %>value_t reduced_parser_value;
     for (;;)
     {
         if (token == INVALID_TOKEN_ID)
         {
-            size_t lexer_result = p_lex(context, &token_info);
+            size_t lexer_result = <%= @grammar.prefix %>lex(context, &token_info);
             if (lexer_result != P_SUCCESS)
             {
                 return lexer_result;
@@ -883,7 +896,7 @@ public size_t p_parse(p_context_t * context)
             {
                 /* We shifted a RuleSet. */
                 statevalues[$-1].pvalue = reduced_parser_value;
-                p_value_t new_parse_result;
+                <%= @grammar.prefix %>value_t new_parse_result;
                 reduced_parser_value = new_parse_result;
                 reduced_rule_set = INVALID_ID;
             }
@@ -904,7 +917,7 @@ public size_t p_parse(p_context_t * context)
         write("Unexpected token ");
         if (token != INVALID_TOKEN_ID)
         {
-            writeln(p_token_names[token]);
+            writeln(<%= @grammar.prefix %>token_names[token]);
         }
         else
         {
@@ -928,7 +941,7 @@ public size_t p_parse(p_context_t * context)
  *
  * @return Parse result value.
  */
-public <%= start_rule_type[1] %> p_result(p_context_t * context)
+public <%= start_rule_type[1] %> <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
 {
     return context.parse_result.v_<%= start_rule_type[0] %>;
 }
@@ -941,7 +954,7 @@ public <%= start_rule_type[1] %> p_result(p_context_t * context)
  *
  * @return Current text position.
  */
-public p_position_t p_position(p_context_t * context)
+public <%= @grammar.prefix %>position_t <%= @grammar.prefix %>position(<%= @grammar.prefix %>context_t * context)
 {
     return context.text_position;
 }
