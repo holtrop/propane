@@ -247,7 +247,7 @@ class Propane
         @log.puts "  Reduce actions:"
         case item_set.reduce_actions
         when Rule
-          @log.puts "    * => #{item_set.reduce_actions.id} (#{item_set.reduce_actions.name})"
+          @log.puts "    * => rule #{item_set.reduce_actions.id}, rule set #{@rule_sets[item_set.reduce_actions.name].id} (#{item_set.reduce_actions.name})"
         when Hash
           item_set.reduce_actions.each do |token, rule|
             @log.puts "    lookahead #{token.name} => #{rule.name} (#{rule.id}), rule set ##{rule.rule_set.id}"
