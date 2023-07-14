@@ -27,7 +27,7 @@ describe Propane do
     parsers = options[:parsers].map do |name|
       "spec/run/testparser#{name}.d"
     end
-    result = system(*%w[ldc2 --unittest -of spec/run/testparser -Ispec], *parsers, *test_files)
+    result = system(*%w[ldc2 --unittest -of spec/run/testparser -Ispec], *parsers, *test_files, "spec/testutils.d")
     expect(result).to be_truthy
   end
 
