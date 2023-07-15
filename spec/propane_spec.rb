@@ -127,6 +127,65 @@ EOF
     build_parser
   end
 
+  it "generates a parser that does basic math - user guide example" do
+    write_grammar <<EOF
+<<
+import std.math;
+>>
+
+ptype ulong;
+
+token plus /\\+/;
+token times /\\*/;
+token power /\\*\\*/;
+token integer /\\d+/ <<
+  ulong v;
+  foreach (c; match)
+  {
+    v *= 10;
+    v += (c - '0');
+  }
+  $$ = v;
+>>
+token lparen /\\(/;
+token rparen /\\)/;
+drop /\\s+/;
+
+Start -> E1 <<
+  $$ = $1;
+>>
+E1 -> E2 <<
+  $$ = $1;
+>>
+E1 -> E1 plus E2 <<
+  $$ = $1 + $3;
+>>
+E2 -> E3 <<
+  $$ = $1;
+>>
+E2 -> E2 times E3 <<
+  $$ = $1 * $3;
+>>
+E3 -> E4 <<
+  $$ = $1;
+>>
+E3 -> E3 power E4 <<
+  $$ = pow($1, $3);
+>>
+E4 -> integer <<
+  $$ = $1;
+>>
+E4 -> lparen E1 rparen <<
+  $$ = $2;
+>>
+EOF
+    build_parser
+    compile("spec/test_basic_math_grammar.d")
+    results = run
+    expect(results.stderr).to eq ""
+    expect(results.status).to eq 0
+  end
+
   it "generates an SLR parser" do
     write_grammar <<EOF
 token one /1/;

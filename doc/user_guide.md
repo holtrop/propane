@@ -49,6 +49,60 @@ detailed information about the parser states and transitions.
 A Propane grammar file provides Propane with the patterns, tokens, grammar
 rules, and user code blocks from which to build the generated lexer and parser.
 
+Example grammar file:
+
+```
+<<
+import std.math;
+>>
+
+ptype ulong;
+
+token plus /\\+/;
+token times /\\*/;
+token power /\\*\\*/;
+token integer /\\d+/ <<
+  ulong v;
+  foreach (c; match)
+  {
+    v *= 10;
+    v += (c - '0');
+  }
+  $$ = v;
+>>
+token lparen /\\(/;
+token rparen /\\)/;
+drop /\\s+/;
+
+Start -> E1 <<
+  $$ = $1;
+>>
+E1 -> E2 <<
+  $$ = $1;
+>>
+E1 -> E1 plus E2 <<
+  $$ = $1 + $3;
+>>
+E2 -> E3 <<
+  $$ = $1;
+>>
+E2 -> E2 times E3 <<
+  $$ = $1 * $3;
+>>
+E3 -> E4 <<
+  $$ = $1;
+>>
+E3 -> E3 power E4 <<
+  $$ = pow($1, $3);
+>>
+E4 -> integer <<
+  $$ = $1;
+>>
+E4 -> lparen E1 rparen <<
+  $$ = $2;
+>>
+```
+
 #> License
 
 Propane is licensed under the terms of the MIT License:
