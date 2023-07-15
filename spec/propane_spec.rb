@@ -69,7 +69,7 @@ describe Propane do
     FileUtils.mkdir_p("spec/run")
   end
 
-  it "generates a D lexer" do
+  it "generates a lexer" do
     write_grammar <<EOF
 token int /\\d+/;
 token plus /\\+/;
@@ -82,7 +82,7 @@ Foo -> plus <<
 >>
 EOF
     build_parser
-    compile("spec/test_d_lexer.d")
+    compile("spec/test_lexer.d")
     results = run
     expect(results.stderr).to eq ""
     expect(results.status).to eq 0
@@ -206,7 +206,7 @@ R1 -> a b;
 R2 -> a b;
 EOF
     build_parser
-    compile("spec/test_d_parser_identical_rules_lookahead.d")
+    compile("spec/test_parser_identical_rules_lookahead.d")
     results = run
     expect(results.status).to eq 0
   end
@@ -221,7 +221,7 @@ Start -> b R1;
 R1 -> b;
 EOF
     build_parser
-    compile("spec/test_d_parser_rule_from_multiple_states.d")
+    compile("spec/test_parser_rule_from_multiple_states.d")
     results = run
     expect(results.status).to eq 0
   end
