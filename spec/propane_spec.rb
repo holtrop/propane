@@ -228,6 +228,9 @@ EOF
 
   it "executes user code when matching lexer token" do
     write_grammar <<EOF
+<<
+import std.stdio;
+>>
 token abc <<
   writeln("abc!");
 >>
@@ -251,6 +254,9 @@ EOF
 
   it "supports a pattern statement" do
     write_grammar <<EOF
+<<
+import std.stdio;
+>>
 token abc;
 /def/ <<
   writeln("def!");
@@ -272,6 +278,9 @@ EOF
 
   it "supports returning tokens from pattern code blocks" do
     write_grammar <<EOF
+<<
+import std.stdio;
+>>
 token abc;
 /def/ <<
   writeln("def!");
@@ -295,6 +304,9 @@ EOF
 
   it "supports lexer modes" do
     write_grammar <<EOF
+<<
+import std.stdio;
+>>
 token abc;
 token def;
 tokenid string;
@@ -328,6 +340,9 @@ EOF
 
   it "executes user code associated with a parser rule" do
     write_grammar <<EOF
+<<
+import std.stdio;
+>>
 token a;
 token b;
 Start -> A B <<
@@ -393,6 +408,9 @@ EOF
 
   it "provides matched text to user code blocks" do
     write_grammar <<EOF
+<<
+import std.stdio;
+>>
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
   writeln("Matched token is ", match);
 >>
