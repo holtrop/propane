@@ -13,6 +13,7 @@ unittest
     p_context_init(&context, input);
     assert(p_parse(&context) == P_UNEXPECTED_TOKEN);
     assert(p_position(&context) == p_position_t(0, 1));
+    assert(context.token == TOKEN___EOF);
 
     input = "a b";
     p_context_init(&context, input);

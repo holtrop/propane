@@ -113,6 +113,9 @@ public struct <%= @grammar.prefix %>context_t
 
     /** Parse result value. */
     <%= @grammar.prefix %>value_t parse_result;
+
+    /** Unexpected token received. */
+    <%= @grammar.prefix %>token_t token;
 }
 
 /**************************************************************************
@@ -842,6 +845,7 @@ private size_t check_reduce(size_t state_id, <%= @grammar.prefix %>token_t token
  *   can be accessed with <%= @grammar.prefix %>result().
  * @retval P_UNEXPECTED_TOKEN
  *   An unexpected token was encountered that does not match any grammar rule.
+ *   The value context.token holds the unexpected token.
  * @reval P_DECODE_ERROR
  *   The decoder encountered invalid text encoding.
  * @reval P_UNEXPECTED_INPUT
@@ -917,6 +921,7 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
          * after it, so that if the caller wants to report the error position,
          * it will point to the correct position of the unexpected token. */
         context.text_position = token_info.position;
+        context.token = token;
         return P_UNEXPECTED_TOKEN;
     }
 }
