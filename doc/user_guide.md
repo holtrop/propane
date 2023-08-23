@@ -103,6 +103,89 @@ E4 -> lparen E1 rparen <<
 >>
 ```
 
+##> User Code Blocks
+
+User code blocks begin with the line following a "<<" token and end with the
+line preceding a grammar line consisting of solely the ">>" token.
+All text lines in the code block are copied verbatim into the output file.
+
+### Standalone Code Blocks
+
+C example:
+
+```
+#include <stdio.h>
+```
+
+D example:
+
+```
+<<
+import std.stdio;
+>>
+```
+
+Standalone code blocks are emitted early in the output file as top-level code
+outside the context of any function.
+Standalone code blocks are a good place to include/import any other necessary
+supporting code modules.
+They can also define helper functions that can be reused by lexer or parser
+user code blocks.
+They are emitted in the order they are defined in the grammar file.
+
+For a C target, the word "header" may immediately follow the "<<" token to
+cause Propane to emit the code block in the generated header file rather than
+the generated implementation file.
+This allows including another header that may be necessary to define any types
+needed by a `ptype` directive, for example:
+
+    <<header
+    #include "mytypes.h"
+    >>
+
+### Lexer pattern code blocks
+
+Example:
+
+```
+ptype ulong;
+
+token integer /\\d+/ <<
+  ulong v;
+  foreach (c; match)
+  {
+    v *= 10;
+    v += (c - '0');
+  }
+  $$ = v;
+>>
+```
+
+Lexer code blocks appear following a `token` or `pattern` expression.
+User code in a lexer code block will be executed when the lexer matches the
+given pattern.
+Assignment to the `$$` symbol will associate a parser value with the lexed
+token.
+This parser value can then be used later in a parser rule.
+
+### Parser rule code blocks
+
+Example:
+
+```
+E1 -> E1 plus E2 <<
+  $$ = $1 + $3;
+>>
+```
+
+Parser rule code blocks appear following a rule expression.
+User code in a parser rule code block will be executed when the parser reduces
+the given rule.
+Assignment to the `$$` symbol will associate a parser value with the reduced
+rule.
+Parser values for the rules or tokens in the rule pattern can be accessed
+positionally with tokens `$1`, `$2`, `$3`, etc...
+
 #> License
 
 Propane is licensed under the terms of the MIT License:
