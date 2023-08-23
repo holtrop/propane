@@ -11,14 +11,27 @@ class Propane
         @log = StringIO.new
       end
       @classname = @grammar.classname || File.basename(output_file).sub(%r{[^a-zA-Z0-9].*}, "").capitalize
+      @language =
+        if output_file =~ /\.([a-z]+)$/
+          $1
+        else
+          "d"
+        end
       process_grammar!
     end
 
     def generate
-      erb = ERB.new(File.read(File.join(File.dirname(File.expand_path(__FILE__)), "../../assets/parser.d.erb")), trim_mode: "<>")
-      result = erb.result(binding.clone)
-      File.open(@output_file, "wb") do |fh|
-        fh.write(result)
+      extensions = [@language]
+      if @language == "c"
+        extensions += %w[h]
+      end
+      extensions.each do |extension|
+        erb = ERB.new(File.read(File.join(File.dirname(File.expand_path(__FILE__)), "../../assets/parser.#{extension}.erb")), trim_mode: "<>")
+        output_file = @output_file.sub(%r{\.[a-z]+$}, ".#{extension}")
+        result = erb.result(binding.clone)
+        File.open(output_file, "wb") do |fh|
+          fh.write(result)
+        end
       end
       @log.close
     end
@@ -191,11 +204,21 @@ class Propane
         end
         code = code.gsub(/\$(\d+)/) do |match|
           index = $1.to_i
-          "statevalues[$-1-n_states+#{index}].pvalue.v_#{rule.components[index - 1].ptypename}"
+          case @language
+          when "c"
+            "state_values_stack_index(statevalues, -1 - (int)n_states + #{index})->pvalue.v_#{rule.components[index - 1].ptypename}"
+          when "d"
+            "statevalues[$-1-n_states+#{index}].pvalue.v_#{rule.components[index - 1].ptypename}"
+          end
         end
       else
         code = code.gsub(/\$\$/) do |match|
-          "out_token_info.pvalue.v_#{pattern.ptypename}"
+          case @language
+          when "c"
+            "out_token_info->pvalue.v_#{pattern.ptypename}"
+          when "d"
+            "out_token_info.pvalue.v_#{pattern.ptypename}"
+          end
         end
         code = code.gsub(/\$mode\(([a-zA-Z_][a-zA-Z_0-9]*)\)/) do |match|
           mode_name = $1
@@ -203,7 +226,12 @@ class Propane
           unless mode_id
             raise Error.new("Lexer mode '#{mode_name}' not found")
           end
-          "context.mode = #{mode_id}u"
+          case @language
+          when "c"
+            "context->mode = #{mode_id}u"
+          when "d"
+            "context.mode = #{mode_id}u"
+          end
         end
       end
       code
@@ -229,11 +257,26 @@ class Propane
     #   Type.
     def get_type_for(max)
       if max <= 0xFF
-        "ubyte"
+        case @language
+        when "c"
+          "uint8_t"
+        when "d"
+          "ubyte"
+        end
       elsif max <= 0xFFFF
-        "ushort"
+        case @language
+        when "c"
+          "uint16_t"
+        when "d"
+          "ushort"
+        end
       else
-        "uint"
+        case @language
+        when "c"
+          "uint32_t"
+        else
+          "uint"
+        end
       end
     end
 

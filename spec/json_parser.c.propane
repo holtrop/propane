@@ -1,0 +1,183 @@
+<<header
+#include "json_types.h"
+#include "testutils.h"
+>>
+<<
+#include "math.h"
+#include <stdbool.h>
+static str_t string_value;
+>>
+
+ptype JSONValue *;
+
+drop /\s+/;
+token lbrace /\{/;
+token rbrace /\}/;
+token lbracket /\[/;
+token rbracket /\]/;
+token comma /,/;
+token colon /:/;
+token number /-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][-+]?[0-9]+)?/ <<
+    double n = 0.0;
+    bool negative = false;
+    size_t i = 0u;
+    if (match[i] == '-')
+    {
+        negative = true;
+        i++;
+    }
+    while ('0' <= match[i] && match[i] <= '9')
+    {
+        n *= 10.0;
+        n += (match[i] - '0');
+        i++;
+    }
+    if (match[i] == '.')
+    {
+        i++;
+        double mult = 0.1;
+        while ('0' <= match[i] && match[i] <= '9')
+        {
+            n += mult * (match[i] - '0');
+            mult /= 10.0;
+            i++;
+        }
+    }
+    if (match[i] == 'e' || match[i] == 'E')
+    {
+        bool exp_negative = false;
+        i++;
+        if (match[i] == '-')
+        {
+            exp_negative = true;
+            i++;
+        }
+        else if (match[i] == '+')
+        {
+            i++;
+        }
+        long exp = 0.0;
+        while ('0' <= match[i] && match[i] <= '9')
+        {
+            exp *= 10;
+            exp += (match[i] - '0');
+            i++;
+        }
+        if (exp_negative)
+        {
+            exp = -exp;
+        }
+        n = pow(n, exp);
+    }
+    if (negative)
+    {
+        n = -n;
+    }
+    $$ = JSONValue_new(JSON_NUMBER);
+    $$->number = n;
+>>
+token true <<
+  $$ = JSONValue_new(JSON_TRUE);
+>>
+token false <<
+  $$ = JSONValue_new(JSON_FALSE);
+>>
+token null <<
+  $$ = JSONValue_new(JSON_NULL);
+>>
+/"/ <<
+  $mode(string);
+  str_init(&string_value, "");
+>>
+string: token string /"/ <<
+  $$ = JSONValue_new(JSON_STRING);
+  $$->string = string_value;
+  $mode(default);
+>>
+string: /\\"/ <<
+  str_append(&string_value, "\"");
+>>
+string: /\\\\/ <<
+  str_append(&string_value, "\\");
+>>
+string: /\\\// <<
+  str_append(&string_value, "/");
+>>
+string: /\\b/ <<
+  str_append(&string_value, "\b");
+>>
+string: /\\f/ <<
+  str_append(&string_value, "\f");
+>>
+string: /\\n/ <<
+  str_append(&string_value, "\n");
+>>
+string: /\\r/ <<
+  str_append(&string_value, "\r");
+>>
+string: /\\t/ <<
+  str_append(&string_value, "\t");
+>>
+string: /\\u[0-9a-fA-F]{4}/ <<
+  /* Not actually going to encode the code point for this example... */
+  char s[] = {'{', match[2], match[3], match[4], match[5], '}', 0};
+  str_append(&string_value, s);
+>>
+string: /[^\\]/ <<
+  char s[] = {match[0], 0};
+  str_append(&string_value, s);
+>>
+Start -> Value <<
+  $$ = $1;
+>>
+Value -> string <<
+  $$ = $1;
+>>
+Value -> number <<
+  $$ = $1;
+>>
+Value -> Object <<
+  $$ = $1;
+>>
+Value -> Array <<
+  $$ = $1;
+>>
+Value -> true <<
+  $$ = $1;
+>>
+Value -> false <<
+  $$ = $1;
+>>
+Value -> null <<
+  $$ = $1;
+>>
+Object -> lbrace rbrace <<
+  $$ = JSONObject_new();
+>>
+Object -> lbrace KeyValues rbrace <<
+  $$ = $2;
+>>
+KeyValues -> KeyValue <<
+  $$ = $1;
+>>
+KeyValues -> KeyValues comma KeyValue <<
+  JSONObject_append($1, $3->object.entries[0].name, $3->object.entries[0].value);
+  $$ = $1;
+>>
+KeyValue -> string colon Value <<
+  $$ = JSONObject_new();
+  JSONObject_append($$, str_cstr(&$1->string), $3);
+>>
+Array -> lbracket rbracket <<
+  $$ = JSONArray_new();
+>>
+Array -> lbracket Values rbracket <<
+  $$ = $2;
+>>
+Values -> Value <<
+  $$ = $1;
+>>
+Values -> Values comma Value <<
+  JSONArray_append($1, $3);
+  $$ = $1;
+>>

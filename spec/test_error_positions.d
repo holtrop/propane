@@ -33,6 +33,5 @@ unittest
     input = "a 12\n\na\n\n77\na   \xAA";
     p_context_init(&context, input);
     assert(p_parse(&context) == P_DECODE_ERROR);
-    writeln(p_position(&context));
     assert(p_position(&context) == p_position_t(5, 4));
 }

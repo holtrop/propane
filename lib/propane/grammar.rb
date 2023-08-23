@@ -18,7 +18,7 @@ class Propane
       @patterns = []
       @tokens = []
       @rules = []
-      @code_blocks = []
+      @code_blocks = {}
       @line_number = 1
       @next_line_number = @line_number
       @mode = nil
@@ -191,8 +191,13 @@ class Propane
     end
 
     def parse_code_block_statement!
-      if code = parse_code_block!
-        @code_blocks << code
+      if md = consume!(/<<([a-z]*)\n(.*?)^>>\n/m)
+        name, code = md[1..2]
+        if @code_blocks[name]
+          @code_blocks[name] += code
+        else
+          @code_blocks[name] = code
+        end
         @mode = nil
         true
       end

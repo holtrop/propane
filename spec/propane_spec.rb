@@ -11,7 +11,7 @@ describe Propane do
 
   def build_parser(options = {})
     options[:name] ||= ""
-    command = %W[./propane.sh spec/run/testparser#{options[:name]}.propane spec/run/testparser#{options[:name]}.d --log spec/run/testparser#{options[:name]}.log]
+    command = %W[./propane.sh spec/run/testparser#{options[:name]}.propane spec/run/testparser#{options[:name]}.#{options[:language]} --log spec/run/testparser#{options[:name]}.log]
     if (options[:capture])
       stdout, stderr, status = Open3.capture3(*command)
       Results.new(stdout, stderr, status)
@@ -25,9 +25,14 @@ describe Propane do
     test_files = Array(test_files)
     options[:parsers] ||= [""]
     parsers = options[:parsers].map do |name|
-      "spec/run/testparser#{name}.d"
+      "spec/run/testparser#{name}.#{options[:language]}"
     end
-    result = system(*%w[ldc2 --unittest -of spec/run/testparser -Ispec], *parsers, *test_files, "spec/testutils.d")
+    case options[:language]
+    when "c"
+      result = system(*%w[gcc -Wall -o spec/run/testparser -Ispec -Ispec/run], *parsers, *test_files, "spec/testutils.c", "-lm")
+    when "d"
+      result = system(*%w[ldc2 --unittest -of spec/run/testparser -Ispec], *parsers, *test_files, "spec/testutils.d")
+    end
     expect(result).to be_truthy
   end
 
@@ -69,8 +74,12 @@ describe Propane do
     FileUtils.mkdir_p("spec/run")
   end
 
-  it "generates a lexer" do
-    write_grammar <<EOF
+  %w[d c].each do |language|
+
+    context "#{language.upcase} language" do
+
+      it "generates a lexer" do
+        write_grammar <<EOF
 token int /\\d+/;
 token plus /\\+/;
 token times /\\*/;
@@ -81,15 +90,33 @@ Foo -> int <<
 Foo -> plus <<
 >>
 EOF
-    build_parser
-    compile("spec/test_lexer.d")
-    results = run
-    expect(results.stderr).to eq ""
-    expect(results.status).to eq 0
-  end
+        build_parser(language: language)
+        compile("spec/test_lexer.#{language}", language: language)
+        results = run
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
 
-  it "detects a lexer error when an unknown character is seen" do
-    write_grammar <<EOF
+      it "detects a lexer error when an unknown character is seen" do
+        case language
+        when "c"
+          write_grammar <<EOF
+ptype int;
+token int /\\d+/ <<
+  int v = 0;
+  for (size_t i = 0u; i < match_length; i++)
+  {
+    v *= 10;
+    v += (match[i] - '0');
+  }
+  $$ = v;
+>>
+Start -> int <<
+  $$ = $1;
+>>
+EOF
+        when "d"
+          write_grammar <<EOF
 ptype int;
 token int /\\d+/ <<
   int v;
@@ -104,15 +131,16 @@ Start -> int <<
   $$ = $1;
 >>
 EOF
-    build_parser
-    compile("spec/test_lexer_unknown_character.d")
-    results = run
-    expect(results.stderr).to eq ""
-    expect(results.status).to eq 0
-  end
+        end
+        build_parser(language: language)
+        compile("spec/test_lexer_unknown_character.#{language}", language: language)
+        results = run
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
 
-  it "generates a parser" do
-    write_grammar <<EOF
+      it "generates a parser" do
+        write_grammar <<EOF
 token plus /\\+/;
 token times /\\*/;
 token zero /0/;
@@ -124,11 +152,65 @@ E -> B;
 B -> zero;
 B -> one;
 EOF
-    build_parser
-  end
+        build_parser(language: language)
+      end
 
-  it "generates a parser that does basic math - user guide example" do
-    write_grammar <<EOF
+      it "generates a parser that does basic math - user guide example" do
+        case language
+        when "c"
+          write_grammar <<EOF
+<<
+#include <math.h>
+>>
+
+ptype size_t;
+
+token plus /\\+/;
+token times /\\*/;
+token power /\\*\\*/;
+token integer /\\d+/ <<
+  size_t v = 0u;
+  for (size_t i = 0u; i < match_length; i++)
+  {
+    v *= 10;
+    v += (match[i] - '0');
+  }
+  $$ = v;
+>>
+token lparen /\\(/;
+token rparen /\\)/;
+drop /\\s+/;
+
+Start -> E1 <<
+  $$ = $1;
+>>
+E1 -> E2 <<
+  $$ = $1;
+>>
+E1 -> E1 plus E2 <<
+  $$ = $1 + $3;
+>>
+E2 -> E3 <<
+  $$ = $1;
+>>
+E2 -> E2 times E3 <<
+  $$ = $1 * $3;
+>>
+E3 -> E4 <<
+  $$ = $1;
+>>
+E3 -> E3 power E4 <<
+  $$ = (size_t)pow($1, $3);
+>>
+E4 -> integer <<
+  $$ = $1;
+>>
+E4 -> lparen E1 rparen <<
+  $$ = $2;
+>>
+EOF
+        when "d"
+          write_grammar <<EOF
 <<
 import std.math;
 >>
@@ -179,25 +261,26 @@ E4 -> lparen E1 rparen <<
   $$ = $2;
 >>
 EOF
-    build_parser
-    compile("spec/test_basic_math_grammar.d")
-    results = run
-    expect(results.stderr).to eq ""
-    expect(results.status).to eq 0
-  end
+        end
+        build_parser(language: language)
+        compile("spec/test_basic_math_grammar.#{language}", language: language)
+        results = run
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
 
-  it "generates an SLR parser" do
-    write_grammar <<EOF
+      it "generates an SLR parser" do
+        write_grammar <<EOF
 token one /1/;
 Start -> E;
 E -> one E;
 E -> one;
 EOF
-    build_parser
-  end
+        build_parser(language: language)
+      end
 
-  it "distinguishes between multiple identical rules with lookahead symbol" do
-    write_grammar <<EOF
+      it "distinguishes between multiple identical rules with lookahead symbol" do
+        write_grammar <<EOF
 token a;
 token b;
 Start -> R1 a;
@@ -205,14 +288,14 @@ Start -> R2 b;
 R1 -> a b;
 R2 -> a b;
 EOF
-    build_parser
-    compile("spec/test_parser_identical_rules_lookahead.d")
-    results = run
-    expect(results.status).to eq 0
-  end
+        build_parser(language: language)
+        compile("spec/test_parser_identical_rules_lookahead.#{language}", language: language)
+        results = run
+        expect(results.status).to eq 0
+      end
 
-  it "handles reducing a rule that could be arrived at from multiple states" do
-    write_grammar <<EOF
+      it "handles reducing a rule that could be arrived at from multiple states" do
+        write_grammar <<EOF
 token a;
 token b;
 drop /\\s+/;
@@ -220,14 +303,29 @@ Start -> a R1;
 Start -> b R1;
 R1 -> b;
 EOF
-    build_parser
-    compile("spec/test_parser_rule_from_multiple_states.d")
-    results = run
-    expect(results.status).to eq 0
-  end
+        build_parser(language: language)
+        compile("spec/test_parser_rule_from_multiple_states.#{language}", language: language)
+        results = run
+        expect(results.status).to eq 0
+      end
 
-  it "executes user code when matching lexer token" do
-    write_grammar <<EOF
+      it "executes user code when matching lexer token" do
+        case language
+        when "c"
+          write_grammar <<EOF
+<<
+#include <stdio.h>
+>>
+token abc <<
+  printf("abc!\\n");
+>>
+token def;
+Start -> Abcs def;
+Abcs -> ;
+Abcs -> abc Abcs;
+EOF
+        when "d"
+          write_grammar <<EOF
 <<
 import std.stdio;
 >>
@@ -239,21 +337,35 @@ Start -> Abcs def;
 Abcs -> ;
 Abcs -> abc Abcs;
 EOF
-    build_parser
-    compile("spec/test_user_code.d")
-    results = run
-    expect(results.status).to eq 0
-    verify_lines(results.stdout, [
-      "abc!",
-      "pass1",
-      "abc!",
-      "abc!",
-      "pass2",
-    ])
-  end
+        end
+        build_parser(language: language)
+        compile("spec/test_user_code.#{language}", language: language)
+        results = run
+        expect(results.status).to eq 0
+        verify_lines(results.stdout, [
+          "abc!",
+          "pass1",
+          "abc!",
+          "abc!",
+          "pass2",
+        ])
+      end
 
-  it "supports a pattern statement" do
-    write_grammar <<EOF
+      it "supports a pattern statement" do
+        case language
+        when "c"
+          write_grammar <<EOF
+<<
+#include <stdio.h>
+>>
+token abc;
+/def/ <<
+  printf("def!\\n");
+>>
+Start -> abc;
+EOF
+        when "d"
+          write_grammar <<EOF
 <<
 import std.stdio;
 >>
@@ -263,21 +375,39 @@ token abc;
 >>
 Start -> abc;
 EOF
-    build_parser
-    compile("spec/test_pattern.d")
-    results = run
-    expect(results.status).to eq 0
-    verify_lines(results.stdout, [
-      "def!",
-      "pass1",
-      "def!",
-      "def!",
-      "pass2",
-    ])
-  end
+        end
+        build_parser(language: language)
+        compile("spec/test_pattern.#{language}", language: language)
+        results = run
+        expect(results.status).to eq 0
+        verify_lines(results.stdout, [
+          "def!",
+          "pass1",
+          "def!",
+          "def!",
+          "pass2",
+        ])
+      end
 
-  it "supports returning tokens from pattern code blocks" do
-    write_grammar <<EOF
+      it "supports returning tokens from pattern code blocks" do
+        case language
+        when "c"
+          write_grammar <<EOF
+<<
+#include <stdio.h>
+>>
+token abc;
+/def/ <<
+  printf("def!\\n");
+>>
+/ghi/ <<
+  printf("ghi!\\n");
+  return $token(abc);
+>>
+Start -> abc;
+EOF
+        when "d"
+          write_grammar <<EOF
 <<
 import std.stdio;
 >>
@@ -291,19 +421,44 @@ token abc;
 >>
 Start -> abc;
 EOF
-    build_parser
-    compile("spec/test_return_token_from_pattern.d")
-    results = run
-    expect(results.status).to eq 0
-    verify_lines(results.stdout, [
-      "def!",
-      "ghi!",
-      "def!",
-    ])
-  end
+        end
+        build_parser(language: language)
+        compile("spec/test_return_token_from_pattern.#{language}", language: language)
+        results = run
+        expect(results.status).to eq 0
+        verify_lines(results.stdout, [
+          "def!",
+          "ghi!",
+          "def!",
+        ])
+      end
 
-  it "supports lexer modes" do
-    write_grammar <<EOF
+      it "supports lexer modes" do
+        case language
+        when "c"
+          write_grammar <<EOF
+<<
+#include <stdio.h>
+>>
+token abc;
+token def;
+tokenid string;
+drop /\\s+/;
+/"/ <<
+  printf("begin string mode\\n");
+  $mode(string);
+>>
+string: /[^"]+/ <<
+  printf("captured string\\n");
+>>
+string: /"/ <<
+  $mode(default);
+  return $token(string);
+>>
+Start -> abc string def;
+EOF
+        when "d"
+          write_grammar <<EOF
 <<
 import std.stdio;
 >>
@@ -324,22 +479,42 @@ string: /"/ <<
 >>
 Start -> abc string def;
 EOF
-    build_parser
-    compile("spec/test_lexer_modes.d")
-    results = run
-    expect(results.status).to eq 0
-    verify_lines(results.stdout, [
-      "begin string mode",
-      "captured string",
-      "pass1",
-      "begin string mode",
-      "captured string",
-      "pass2",
-    ])
-  end
+        end
+        build_parser(language: language)
+        compile("spec/test_lexer_modes.#{language}", language: language)
+        results = run
+        expect(results.status).to eq 0
+        verify_lines(results.stdout, [
+          "begin string mode",
+          "captured string",
+          "pass1",
+          "begin string mode",
+          "captured string",
+          "pass2",
+        ])
+      end
 
-  it "executes user code associated with a parser rule" do
-    write_grammar <<EOF
+      it "executes user code associated with a parser rule" do
+        case language
+        when "c"
+          write_grammar <<EOF
+<<
+#include <stdio.h>
+>>
+token a;
+token b;
+Start -> A B <<
+  printf("Start!\\n");
+>>
+A -> a <<
+  printf("A!\\n");
+>>
+B -> b <<
+  printf("B!\\n");
+>>
+EOF
+        when "d"
+          write_grammar <<EOF
 <<
 import std.stdio;
 >>
@@ -355,20 +530,21 @@ B -> b <<
   writeln("B!");
 >>
 EOF
-    build_parser
-    compile("spec/test_parser_rule_user_code.d")
-    results = run
-    expect(results.status).to eq 0
-    verify_lines(results.stdout, [
-      "A!",
-      "B!",
-      "Start!",
-    ])
-  end
+        end
+        build_parser(language: language)
+        compile("spec/test_parser_rule_user_code.#{language}", language: language)
+        results = run
+        expect(results.status).to eq 0
+        verify_lines(results.stdout, [
+          "A!",
+          "B!",
+          "Start!",
+        ])
+      end
 
-  it "parses lists" do
-    write_grammar <<EOF
-ptype uint;
+      it "parses lists" do
+        write_grammar <<EOF
+ptype #{language == "c" ? "uint32_t" : "uint"};
 token a;
 Start -> As <<
   $$ = $1;
@@ -380,15 +556,15 @@ As -> As a <<
   $$ = $1 + 1u;
 >>
 EOF
-    build_parser
-    compile("spec/test_parsing_lists.d")
-    results = run
-    expect(results.status).to eq 0
-    expect(results.stderr).to eq ""
-  end
+        build_parser(language: language)
+        compile("spec/test_parsing_lists.#{language}", language: language)
+        results = run
+        expect(results.status).to eq 0
+        expect(results.stderr).to eq ""
+      end
 
-  it "fails to generate a parser for a LR(1) grammar that is not LALR" do
-    write_grammar <<EOF
+      it "fails to generate a parser for a LR(1) grammar that is not LALR" do
+        write_grammar <<EOF
 token a;
 token b;
 token c;
@@ -401,13 +577,29 @@ Start -> b E d;
 E -> e;
 F -> e;
 EOF
-    results = build_parser(capture: true)
-    expect(results.status).to_not eq 0
-    expect(results.stderr).to match %r{reduce/reduce conflict.*\(E\).*\(F\)}
-  end
+        results = build_parser(capture: true, language: language)
+        expect(results.status).to_not eq 0
+        expect(results.stderr).to match %r{reduce/reduce conflict.*\(E\).*\(F\)}
+      end
 
-  it "provides matched text to user code blocks" do
-    write_grammar <<EOF
+      it "provides matched text to user code blocks" do
+        case language
+        when "c"
+          write_grammar <<EOF
+<<
+#include <stdio.h>
+#include <stdlib.h>
+>>
+token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
+  char * t = malloc(match_length + 1);
+  strncpy(t, (char *)match, match_length);
+  printf("Matched token is %s\\n", t);
+  free(t);
+>>
+Start -> id;
+EOF
+        when "d"
+          write_grammar <<EOF
 <<
 import std.stdio;
 >>
@@ -416,18 +608,31 @@ token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
 >>
 Start -> id;
 EOF
-    build_parser
-    compile("spec/test_lexer_match_text.d")
-    results = run
-    expect(results.status).to eq 0
-    verify_lines(results.stdout, [
-      "Matched token is identifier_123",
-      "pass1",
-    ])
-  end
+        end
+        build_parser(language: language)
+        compile("spec/test_lexer_match_text.#{language}", language: language)
+        results = run
+        expect(results.status).to eq 0
+        verify_lines(results.stdout, [
+          "Matched token is identifier_123",
+          "pass1",
+        ])
+      end
 
-  it "allows storing a result value for the lexer" do
-    write_grammar <<EOF
+      it "allows storing a result value for the lexer" do
+        case language
+        when "c"
+          write_grammar <<EOF
+ptype uint64_t;
+token word /[a-z]+/ <<
+  $$ = match_length;
+>>
+Start -> word <<
+  $$ = $1;
+>>
+EOF
+        when "d"
+          write_grammar <<EOF
 ptype ulong;
 token word /[a-z]+/ <<
   $$ = match.length;
@@ -436,53 +641,56 @@ Start -> word <<
   $$ = $1;
 >>
 EOF
-    build_parser
-    compile("spec/test_lexer_result_value.d")
-    results = run
-    expect(results.stderr).to eq ""
-    expect(results.status).to eq 0
-  end
+        end
+        build_parser(language: language)
+        compile("spec/test_lexer_result_value.#{language}", language: language)
+        results = run
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
 
-  it "tracks position of parser errors" do
-    write_grammar <<EOF
+      it "tracks position of parser errors" do
+        write_grammar <<EOF
 token a;
 token num /\\d+/;
 drop /\\s+/;
 Start -> a num Start;
 Start -> a num;
 EOF
-    build_parser
-    compile("spec/test_error_positions.d")
-    results = run
-    expect(results.stderr).to eq ""
-    expect(results.status).to eq 0
-  end
+        build_parser(language: language)
+        compile("spec/test_error_positions.#{language}", language: language)
+        results = run
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
 
-  it "allows creating a JSON parser" do
-    write_grammar(File.read("spec/json_parser.propane"))
-    build_parser
-    compile(["spec/test_parsing_json.d", "spec/json_types.d"])
-  end
+      it "allows creating a JSON parser" do
+        write_grammar(File.read("spec/json_parser.#{language}.propane"))
+        build_parser(language: language)
+        compile(["spec/test_parsing_json.#{language}", "spec/json_types.#{language}"], language: language)
+      end
 
-  it "allows generating multiple parsers in the same program" do
-    write_grammar(<<EOF, name: "myp1")
+      it "allows generating multiple parsers in the same program" do
+        write_grammar(<<EOF, name: "myp1")
 prefix myp1_;
 token a;
 token num /\\d+/;
 drop /\\s+/;
 Start -> a num;
 EOF
-    build_parser(name: "myp1")
-    write_grammar(<<EOF, name: "myp2")
+        build_parser(name: "myp1", language: language)
+        write_grammar(<<EOF, name: "myp2")
 prefix myp2_;
 token b;
 token c;
 Start -> b c b;
 EOF
-    build_parser(name: "myp2")
-    compile("spec/test_multiple_parsers.d", parsers: %w[myp1 myp2])
-    results = run
-    expect(results.stderr).to eq ""
-    expect(results.status).to eq 0
+        build_parser(name: "myp2", language: language)
+        compile("spec/test_multiple_parsers.#{language}", parsers: %w[myp1 myp2], language: language)
+        results = run
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+    end
   end
 end
