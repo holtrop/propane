@@ -114,7 +114,9 @@ All text lines in the code block are copied verbatim into the output file.
 C example:
 
 ```
-#include <stdio.h>
+<<
+#include &lt;stdio.h>
+>>
 ```
 
 D example:
@@ -139,9 +141,11 @@ the generated implementation file.
 This allows including another header that may be necessary to define any types
 needed by a `ptype` directive, for example:
 
-    <<header
-    #include "mytypes.h"
-    >>
+```
+<&lt;header
+#include "mytypes.h"
+>>
+```
 
 ### Lexer pattern code blocks
 
@@ -185,6 +189,64 @@ Assignment to the `$$` symbol will associate a parser value with the reduced
 rule.
 Parser values for the rules or tokens in the rule pattern can be accessed
 positionally with tokens `$1`, `$2`, `$3`, etc...
+
+##> Specifying parser value types - the `ptype` statement
+
+The `ptype` statement is used to define parser value type(s).
+Example:
+
+```
+ptype void *;
+```
+
+This defines the default parser value type to be `void *` (this is, in fact,
+the default parser value type if the grammar file does not specify otherwise).
+
+Each defined lexer token type and parser rule has an associated parser value
+type.
+When the lexer runs, each lexed token has a parser value associated with it.
+When the parser runs, each instance of a reduced rule has a parser value
+associated with it.
+Propane supports using different parser value types for different rules and
+token types.
+The example `ptype` statement above defines the default parser value type.
+A parser value type name can optionally be specified following the `ptype`
+keyword.
+For example:
+
+```
+ptype Value;
+ptype array = Value[];
+ptype dict = Value[string];
+
+Object -> lbrace rbrace <<
+  $$ = new Value();
+>>
+
+Values (array) -> Value <<
+  $$ = [$1];
+>>
+Values -> Values comma Value <<
+  $$ = $1 ~ [$3];
+>>
+
+KeyValue (dict) -> string colon Value <<
+  $$ = [$1: $3];
+>>
+```
+
+In this example, the default parser value type is `Value`.
+A parser value type named `array` is defined to mean `Value[]`.
+A parser value type named `dict` is defined to mean `Value[string]`.
+Any defined tokens or rules that do not specify a parser value type will have
+the default parser value type associated with them.
+To associate a different parser value type with a token or rule, write the
+parser value type name in parentheses following the name of the token or rule.
+In this example:
+
+  * a reduced `Object`'s parser value has a type of `Value`.
+  * a reduced `Values`'s parser value has a type of `Value[]`.
+  * a reduced `KeyValue`'s parser value has a type of `Value[string]`.
 
 #> License
 
