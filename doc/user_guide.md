@@ -12,7 +12,7 @@ Propane is a LALR Parser Generator (LPG) which:
   * accepts LR(0), SLR, and LALR grammars
   * generates a built-in lexer to tokenize input
   * supports UTF-8 lexer inputs
-  * generates a table-driven parser to parse input in linear time
+  * generates a table-driven shift/reduce parser to parse input in linear time
   * target C or D language outputs
   * is MIT-licensed
   * is distributable as a standalone Ruby script
@@ -111,6 +111,9 @@ White space in the grammar file is also ignored.
 
 It is convention to use the extension `.propane` for the Propane grammar file,
 however any file name is accepted by Propane.
+
+This user guide follows the convention of beginning a token name with a
+lowercase character and beginning a rule name with an uppercase character.
 
 ##> User Code Blocks
 
@@ -465,6 +468,76 @@ In this example:
   * a reduced `Object`'s parser value has a type of `Value`.
   * a reduced `Values`'s parser value has a type of `Value[]`.
   * a reduced `KeyValue`'s parser value has a type of `Value[string]`.
+
+##> Specifying a parser rule - the rule statement
+
+Rule statements create parser rules which define the grammar that will be
+parsed by the generated parser.
+
+Multiple rules with the same name can be specified.
+Rules with the same name define a rule set for that name and act as
+alternatives that the parser can accept when attempting to match a reference to
+that rule.
+
+The grammar file must define a rule with the name `Start` which will be used as
+the top-level starting rule that the parser attempts to reduce.
+
+Example:
+
+```
+ptype ulong;
+token word /[a-z]+/ <<
+  $$ = match.length;
+>>
+Start -> word <<
+  $$ = $1;
+>>
+```
+
+In the above example the `Start` rule is defined to match a single `word`
+token.
+
+Example:
+
+```
+Start -> E1 <<
+  $$ = $1;
+>>
+E1 -> E2 <<
+  $$ = $1;
+>>
+E1 -> E1 plus E2 <<
+  $$ = $1 + $3;
+>>
+E2 -> E3 <<
+  $$ = $1;
+>>
+E2 -> E2 times E3 <<
+  $$ = $1 * $3;
+>>
+E3 -> E4 <<
+  $$ = $1;
+>>
+E3 -> E3 power E4 <<
+  $$ = pow($1, $3);
+>>
+E4 -> integer <<
+  $$ = $1;
+>>
+E4 -> lparen E1 rparen <<
+  $$ = $2;
+>>
+```
+
+A parser rule has zero or more terms on the right side of its definition.
+Each of these terms is either a token name or a rule name.
+
+In a parser rule code block, parser values for the right side terms are
+accessible as `$1` for the first term's parser value, `$2` for the second
+term's parser value, etc...
+The `$$` symbol accesses the output parser value for this rule.
+The above examples demonstrate how the parser values for the rule components
+can be used to produce the parser value for the accepted rule.
 
 ##> Specifying the parser module name - the `module` statement
 
