@@ -7,7 +7,7 @@ ${/remove}
 
 #> Overview
 
-Propane is an LR Parser Generator (LPG) which:
+Propane is a LALR Parser Generator (LPG) which:
 
   * accepts LR(0), SLR, and LALR grammars
   * generates a built-in lexer to tokenize input
@@ -56,8 +56,10 @@ Example grammar file:
 import std.math;
 >>
 
+# Parser values are unsigned integers.
 ptype ulong;
 
+# A few basic arithmetic operators.
 token plus /\\+/;
 token times /\\*/;
 token power /\\*\\*/;
@@ -72,6 +74,7 @@ token integer /\\d+/ <<
 >>
 token lparen /\\(/;
 token rparen /\\)/;
+# Drop whitespace.
 drop /\\s+/;
 
 Start -> E1 <<
@@ -102,6 +105,12 @@ E4 -> lparen E1 rparen <<
   $$ = $2;
 >>
 ```
+
+Grammar files can contain comment lines beginning with `#` which are ignored.
+White space in the grammar file is also ignored.
+
+It is convention to use the extension `.propane` for the Propane grammar file,
+however any file name is accepted by Propane.
 
 ##> User Code Blocks
 
@@ -165,7 +174,7 @@ token integer /\\d+/ <<
 >>
 ```
 
-Lexer code blocks appear following a `token` or `pattern` expression.
+Lexer code blocks appear following a `token` or pattern expression.
 User code in a lexer code block will be executed when the lexer matches the
 given pattern.
 Assignment to the `$$` symbol will associate a parser value with the lexed
@@ -189,6 +198,215 @@ Assignment to the `$$` symbol will associate a parser value with the reduced
 rule.
 Parser values for the rules or tokens in the rule pattern can be accessed
 positionally with tokens `$1`, `$2`, `$3`, etc...
+
+##> Specifying tokens - the `token` statement
+
+The `token` statement allows defining a lexer token and a pattern to match that
+token.
+The name of the token must be specified immediately following the `token`
+keyword.
+A regular expression pattern may optionally follow the token name.
+If a regular expression pattern is not specified, the name of the token is
+taken to be the pattern.
+See also: ${#Regular expression syntax}.
+
+Example:
+
+```
+token for;
+```
+
+In this example, the token name is `for` and the pattern to match it is
+`/for/`.
+
+Example:
+
+```
+token lbrace /\{/;
+```
+
+In this example, the token name is `lbrace` and a single left curly brace will
+match it.
+
+The `token` statement can also include a user code block.
+The user code block will be executed whenever the token is matched by the
+lexer.
+
+Example:
+
+```
+token if <<
+  writeln("'if' keyword lexed");
+>>
+```
+
+The `token` statement is actually a shortcut statement for a combination of a
+`tokenid` statement and a pattern statement.
+To define a lexer token without an associated pattern to match it, use a
+`tokenid` statement.
+To define a lexer pattern that may or may not result in a matched token, use
+a pattern statement.
+
+##> Defining tokens without a matching pattern - the `tokenid` statement
+
+The `tokenid` statement can be used to define a token without associating it
+with a lexer pattern that matches it.
+
+Example:
+
+```
+tokenid string;
+```
+
+The `tokenid` statement can be useful when defining a token that may optionally
+be returned by user code associated with a pattern.
+
+It is also useful when lexer modes and multiple lexer patterns are required to
+build up a full token.
+A common example is parsing a string.
+See the ${#Lexer modes} chapter for more information.
+
+##> Specifying a lexer pattern - the pattern statement
+
+A pattern statement is used to define a lexer pattern that can execute user
+code but may not result in a matched token.
+
+Example:
+
+```
+/foo+/ <<
+  writeln("saw a foo pattern");
+>>
+```
+
+This can be especially useful with ${#Lexer modes}.
+
+See also ${#Regular expression syntax}.
+
+##> Ignoring input sections - the `drop` statement
+
+A `drop` statement can be used to specify a lexer pattern that when matched
+should result in the matched input being dropped and lexing continuing after
+the matched input.
+
+A common use for a `drop` statement would be to ignore whitespace sequences in
+the user input.
+
+Example:
+
+```
+drop /\s+/;
+```
+
+See also ${#Regular expression syntax}.
+
+##> Regular expression syntax
+
+A regular expression ("regex") is used to define lexer patterns in `token`,
+pattern, and `drop` statements.
+A regular expression begins and ends with a `/` character.
+
+Example:
+
+```
+/#.*$/
+```
+
+Regular expressions can include many special characters:
+
+  * The `.` character matches any input character other than a newline.
+  * The `*` character matches any number of the previous regex element.
+  * The `+` character matches one or more of the previous regex element.
+  * The `?` character matches 0 or 1 of the previous regex element.
+  * The `[` character begins a character class.
+  * The `(` character begins a matching group.
+  * The `{` character begins a count qualifier.
+  * The `\` character escapes the following character and changes its meaning:
+    * The `\d` sequence matches any character `0` through `9`.
+    * The `\s` sequence matches a space, horizontal tab `\t`, carriage return
+    `\r`, a form feed `\f`, or a vertical tab `\v` character.
+    * Any other character matches itself.
+  * The `|` character creates an alternate match.
+
+Any other character just matches itself in the input stream.
+
+A character class consists of a list of character alternates or character
+ranges that can be matched by the character class.
+For example `[a-zA-Z_]` matches any lowercase character between `a` and `z` or
+any uppercase character between `A` and `Z` or the underscore `_` character.
+Character classes can also be negative character classes if the first character
+after the `[` is a `^` character.
+In this case, the set of characters matched by the character class is the
+inverse of what it otherwise would have been.
+For example, `[^0-9]` matches any character other than 0 through 9.
+
+A matching group can be used to override the pattern sequence that multiplicity
+specifiers apply to.
+For example, the pattern `/foo+/` matches "foo" or "foooo", while the pattern
+`/(foo)+/` matches "foo" or "foofoofoo", but not "foooo".
+
+A count qualifier in curly braces can be used to restrict the number of matches
+of the preceding atom to an explicit minimum and maximum range.
+For example, the pattern `\d{3}` matches exactly 3 digits 0-9.
+Both a minimum and maximum multiplicity count can be specified and separated by
+a comma.
+For example, `/a{1,5}/` matches between 1 and 5 `a` characters.
+Either the minimum or maximum count can be omitted to omit the corresponding
+restriction in the number of matches allowed.
+
+An alternate match is created with the `|` character.
+For example, the pattern `/foo|bar/` matches either the sequence "foo" or the
+sequence "bar".
+
+##> Lexer modes
+
+Lexer modes can be used to change the set of patterns that are matched by the
+lexer.
+A common use for lexer modes is to match strings.
+
+Example:
+
+```
+<<
+string mystringvalue;
+>>
+
+tokenid str;
+
+# String processing
+/"/ <<
+  mystringvalue = "";
+  $mode(string);
+>>
+string: /[^"]+/ <<
+  mystringvalue += match;
+>>
+string: /"/ <<
+  $mode(default);
+  return $token(str);
+>>
+```
+
+A lexer mode is defined by placing the name before a colon (`:`) character that
+precedes a token or pattern statement.
+The token or pattern statement is restricted to only applying if the named mode
+is active.
+
+By default, the active lexer mode is named `default`.
+A `$mode()` call within a lexer code block can be used to change lexer modes.
+
+In the above example, when the lexer in the default mode sees a doublequote
+(`"`) character, the lexer code block will clear the `mystringvalue` variable
+and will set the lexer mode to `string`.
+When the lexer begins looking for patterns to match against the input, it will
+now look only for patterns tagged for the `string` lexer mode.
+Any non-`"` character will be appended to the `mystringvalue` string.
+A `"` character will end the `string` lexer mode and return to the `default`
+lexer mode.
+It also returns the `str` token now that the token is complete.
+
+Note that the token name `str` above could have been `string` instead - the
+namespace for token names is distinct from the namespace for lexer modes.
 
 ##> Specifying parser value types - the `ptype` statement
 
@@ -247,6 +465,18 @@ In this example:
   * a reduced `Object`'s parser value has a type of `Value`.
   * a reduced `Values`'s parser value has a type of `Value[]`.
   * a reduced `KeyValue`'s parser value has a type of `Value[string]`.
+
+##> Specifying the parser module name - the `module` statement
+
+The `module` statement can be used to specify the module name for a generated
+D module.
+
+```
+module proj.parser;
+```
+
+If a module statement is not present, then the generated D module will not
+contain a module statement and the default module name will be used.
 
 #> License
 
