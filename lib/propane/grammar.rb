@@ -5,7 +5,6 @@ class Propane
     # Reserve identifiers beginning with a double-underscore for internal use.
     IDENTIFIER_REGEX = /(?:[a-zA-Z]|_[a-zA-Z0-9])[a-zA-Z_0-9]*/
 
-    attr_reader :classname
     attr_reader :modulename
     attr_reader :patterns
     attr_reader :rules
@@ -49,7 +48,6 @@ class Propane
       elsif parse_comment_line!
       elsif @mode.nil? && parse_mode_label!
       elsif parse_module_statement!
-      elsif parse_class_statement!
       elsif parse_ptype_statement!
       elsif parse_pattern_statement!
       elsif parse_token_statement!
@@ -84,16 +82,6 @@ class Propane
       if consume!(/module\s+/)
         md = consume!(/([\w.]+)\s*/, "expected module name")
         @modulename = md[1]
-        consume!(/;/, "expected `;'")
-        @mode = nil
-        true
-      end
-    end
-
-    def parse_class_statement!
-      if consume!(/class\s+/)
-        md = consume!(/([\w.]+)\s*/, "expected class name")
-        @classname = md[1]
         consume!(/;/, "expected `;'")
         @mode = nil
         true

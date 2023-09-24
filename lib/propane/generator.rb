@@ -10,7 +10,6 @@ class Propane
       else
         @log = StringIO.new
       end
-      @classname = @grammar.classname || File.basename(output_file).sub(%r{[^a-zA-Z0-9].*}, "").capitalize
       @language =
         if output_file =~ /\.([a-z]+)$/
           $1
