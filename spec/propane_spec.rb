@@ -11,7 +11,12 @@ describe Propane do
 
   def build_parser(options = {})
     options[:name] ||= ""
-    command = %W[./propane.sh spec/run/testparser#{options[:name]}.propane spec/run/testparser#{options[:name]}.#{options[:language]} --log spec/run/testparser#{options[:name]}.log]
+    if ENV["dist_specs"]
+      propane = "dspec/propane"
+    else
+      propane = "./propane.sh"
+    end
+    command = %W[#{propane} spec/run/testparser#{options[:name]}.propane spec/run/testparser#{options[:name]}.#{options[:language]} --log spec/run/testparser#{options[:name]}.log]
     if (options[:capture])
       stdout, stderr, status = Open3.capture3(*command)
       Results.new(stdout, stderr, status)

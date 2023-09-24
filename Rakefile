@@ -10,6 +10,18 @@ RSpec::Core::RakeTask.new(:spec, :example_pattern) do |task, args|
   end
 end
 
+# dspec task is useful to test the distributable release script, but is not
+# useful for coverage information.
+desc "Dist Specs"
+task :dspec, [:example_string] => :build_dist do |task, args|
+  FileUtils.rm_rf("dspec")
+  FileUtils.mkdir_p("dspec")
+  FileUtils.cp("dist/propane", "dspec/propane")
+  ENV["dist_specs"] = "1"
+  Rake::Task["spec"].execute(args)
+  ENV.delete("dist_specs")
+end
+
 task :default => :spec
 
 desc "Build user guide"
