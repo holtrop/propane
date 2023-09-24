@@ -478,6 +478,29 @@ module proj.parser;
 If a module statement is not present, then the generated D module will not
 contain a module statement and the default module name will be used.
 
+##> Specifying the generated API prefix - the `prefix` statement
+
+By default the public API (types, constants, and functions) of the generated
+lexer and parser uses a prefix of `p_`.
+
+This prefix can be changed with the `prefix` statement.
+
+Example:
+
+```
+prefix myparser_;
+```
+
+With a parser generated with this `prefix` statement, instead of calling
+`p_context_init()` you would call `myparser_context_init()`.
+
+The `prefix` statement can be optionally used if you would like to change the
+prefix used by your generated lexer and parser to something other than the
+default.
+
+It can also be used when generating multiple lexers/parsers to be used in the
+same program to avoid symbol collisions.
+
 #> License
 
 Propane is licensed under the terms of the MIT License:
