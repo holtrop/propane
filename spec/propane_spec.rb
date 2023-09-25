@@ -4,19 +4,52 @@ require "open3"
 Results = Struct.new(:stdout, :stderr, :status)
 
 describe Propane do
+  before(:all) do
+    @statics = {}
+  end
+
   def write_grammar(grammar, options = {})
     options[:name] ||= ""
     File.write("spec/run/testparser#{options[:name]}.propane", grammar)
   end
 
   def build_parser(options = {})
-    options[:name] ||= ""
+    @statics[:build_test_id] ||= 0
+    @statics[:build_test_id] += 1
     if ENV["dist_specs"]
-      propane = "dspec/propane"
+      command = %W[dist/propane]
     else
-      propane = "./propane.sh"
+      command = %W[ruby -I spec/run -r _simplecov_setup -I lib bin/propane]
+      command_prefix =
+        if ENV["partial_specs"]
+          "p"
+        else
+          "b"
+        end
+      command_name = "#{command_prefix}#{@statics[:build_test_id]}"
+      File.open("spec/run/_simplecov_setup.rb", "w") do |fh|
+        fh.puts <<EOF
+require "bundler"
+Bundler.setup
+require "simplecov"
+class MyFormatter
+  def format(*args)
+  end
+end
+SimpleCov.start do
+  command_name(#{command_name.inspect})
+  filters.clear
+  add_filter do |src|
+    !(src.filename[SimpleCov.root])
+  end
+  formatter(MyFormatter)
+end
+# force color off
+ENV["TERM"] = nil
+EOF
+      end
     end
-    command = %W[#{propane} spec/run/testparser#{options[:name]}.propane spec/run/testparser#{options[:name]}.#{options[:language]} --log spec/run/testparser#{options[:name]}.log]
+    command += %W[spec/run/testparser#{options[:name]}.propane spec/run/testparser#{options[:name]}.#{options[:language]} --log spec/run/testparser#{options[:name]}.log]
     if (options[:capture])
       stdout, stderr, status = Open3.capture3(*command)
       Results.new(stdout, stderr, status)

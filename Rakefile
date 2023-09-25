@@ -1,4 +1,7 @@
+require "rake/clean"
 require "rspec/core/rake_task"
+
+CLEAN.include %w[spec/run gen .yardoc yard coverage dist]
 
 task :build_dist do
   sh "ruby rb/build_dist.rb"
