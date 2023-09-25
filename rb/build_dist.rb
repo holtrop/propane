@@ -1,5 +1,6 @@
 #!/usr/bin/env ruby
 
+require "erb"
 require "fileutils"
 require "digest/md5"
 
@@ -13,6 +14,24 @@ START_FILE = "bin/#{PROG_NAME}"
 LIB_DIR = "lib"
 DIST = "dist"
 
+ASSETS_TEMPLATE = <<EOF
+class Propane
+  module Assets
+    class << self
+      def get(name)
+        case name
+<% Dir.glob("assets/*").each do |asset_file| %>
+        when <%= File.basename(asset_file).inspect %>
+          <%= File.binread(asset_file).inspect %>
+<% end %>
+        end
+      end
+    end
+  end
+end
+EOF
+
+assets_module = ERB.new(ASSETS_TEMPLATE, trim_mode: "<>").result
 files_processed = {}
 combined_file = []
 
@@ -25,7 +44,11 @@ combine_files = lambda do |file|
         if File.exist?(path)
           unless files_processed[path]
             files_processed[path] = true
-            combine_files[path]
+            if require_name == "propane/assets"
+              combined_file << assets_module
+            else
+              combine_files[path]
+            end
           end
         else
           raise "require path #{path.inspect} not found"
