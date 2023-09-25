@@ -28,3 +28,5 @@ desc "Build user guide"
 task :user_guide do
   system("ruby", "-Ilib", "rb/gen_user_guide.rb")
 end
+
+task :all => [:spec, :dspec, :user_guide]
