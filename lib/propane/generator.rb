@@ -25,7 +25,8 @@ class Propane
         extensions += %w[h]
       end
       extensions.each do |extension|
-        erb = ERB.new(File.read(File.join(File.dirname(File.expand_path(__FILE__)), "../../assets/parser.#{extension}.erb")), trim_mode: "<>")
+        template = Assets.get("parser.#{extension}.erb")
+        erb = ERB.new(template, trim_mode: "<>")
         output_file = @output_file.sub(%r{\.[a-z]+$}, ".#{extension}")
         result = erb.result(binding.clone)
         File.open(output_file, "wb") do |fh|

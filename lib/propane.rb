@@ -1,6 +1,7 @@
 require "erb"
 require "set"
 require "stringio"
+require_relative "propane/assets"
 require_relative "propane/cli"
 require_relative "propane/code_point_range"
 require_relative "propane/fa"
