@@ -390,7 +390,6 @@ static size_t find_longest_match(<%= @grammar.prefix %>context_t * context,
                 /* Valid EOF return. */
                 return P_EOF;
             }
-            break;
 
         case P_DECODE_ERROR:
             /* If we see a decode error, we may be partially in the middle of
