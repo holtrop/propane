@@ -200,7 +200,12 @@ class Propane
       end
       if parser
         code = code.gsub(/\$\$/) do |match|
-          "_pvalue.v_#{rule.ptypename}"
+          case @language
+          when "c"
+            "_pvalue->v_#{rule.ptypename}"
+          when "d"
+            "_pvalue.v_#{rule.ptypename}"
+          end
         end
         code = code.gsub(/\$(\d+)/) do |match|
           index = $1.to_i
@@ -209,6 +214,15 @@ class Propane
             "state_values_stack_index(statevalues, -1 - (int)n_states + #{index})->pvalue.v_#{rule.components[index - 1].ptypename}"
           when "d"
             "statevalues[$-1-n_states+#{index}].pvalue.v_#{rule.components[index - 1].ptypename}"
+          end
+        end
+        code = code.gsub(/\$terminate\((.*)\);/) do |match|
+          user_terminate_code = $1
+          case @language
+          when "c"
+            "context->user_terminate_code = (#{user_terminate_code}); return P_USER_TERMINATED;"
+          when "d"
+            "context.user_terminate_code = (#{user_terminate_code}); return P_USER_TERMINATED;"
           end
         end
       else

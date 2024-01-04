@@ -13,7 +13,7 @@ Propane is a LALR Parser Generator (LPG) which:
   * generates a built-in lexer to tokenize input
   * supports UTF-8 lexer inputs
   * generates a table-driven shift/reduce parser to parse input in linear time
-  * target C or D language outputs
+  * targets C or D language outputs
   * is MIT-licensed
   * is distributable as a standalone Ruby script
 
@@ -573,6 +573,31 @@ default.
 
 It can also be used when generating multiple lexers/parsers to be used in the
 same program to avoid symbol collisions.
+
+##> User termination of the parser
+
+Propane supports allowing parser user code blocks to terminate execution of the
+parser.
+One example use of this functionality is to detect and report an error before
+the parser continues parsing the remainder of the input.
+Another use of this features is to begin parsing input and determine whether a
+different parser should be used instead.
+
+To terminate parsing from a parser user code block, use the `$terminate(code)`
+function, passing an integer expression argument.
+For example:
+
+```
+NewExpression -> new Expression <<
+  $terminate(42);
+>>
+```
+
+The value passed to the `$terminate()` function is known as the "user terminate
+code".
+If the parser returns a `P_USER_TERMINATED` result code, then the user
+terminate code can be accessed using the `p_user_terminate_code()` API
+function.
 
 #> License
 

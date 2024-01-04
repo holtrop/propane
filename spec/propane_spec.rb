@@ -729,6 +729,26 @@ EOF
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
+
+      it "allows the user to terminate the parser" do
+        write_grammar <<EOF
+token a;
+token b;
+token c;
+Start -> Any;
+Any -> a Any;
+Any -> b Any <<
+  $terminate(4200);
+>>
+Any -> c Any;
+Any -> ;
+EOF
+        build_parser(language: language)
+        compile("spec/test_user_terminate.#{language}", language: language)
+        results = run
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
     end
   end
 end
