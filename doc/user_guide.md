@@ -599,6 +599,125 @@ If the parser returns a `P_USER_TERMINATED` result code, then the user
 terminate code can be accessed using the `p_user_terminate_code()` API
 function.
 
+#> Propane generated API
+
+By default, Propane uses a prefix of `p_` when generating a lexer/parser.
+This prefix is used for all publicly declared types and functions.
+The uppercase version of the prefix is used for all constant values.
+
+This section documents the generated API using the default `p_` or `P_` names.
+
+##> Constants
+
+Propane generates the following result code constants:
+
+* `P_SUCCESS`: A successful decode/lex/parse operation has taken place.
+* `P_DECODE_ERROR`: An error occurred when decoding UTF-8 input.
+* `P_UNEXPECTED_INPUT`: Input was received by the lexer that does not match any lexer pattern.
+* `P_UNEXPECTED_TOKEN`: A token was seen in a location that does not match any parser rule.
+* `P_DROP`: The lexer matched a drop pattern.
+* `P_EOF`: The lexer reached the end of the input string.
+* `P_USER_TERMINATED`: A parser user code block has requested to terminate the parser.
+
+Result codes are returned by the functions `p_decode_input()`, `p_lex()`, and `p_parse()`.
+
+##> Types
+
+### `p_context_t`
+
+Propane defines a `p_context_t` structure type.
+The structure is intended to be used opaquely and stores information related to
+the state of the lexer and parser.
+Integrating code must define an instance of the `p_context_t` structure.
+A pointer to this instance is passed to the generated functions.
+
+### `p_position_t`
+
+The `p_position_t` structure contains two fields `row` and `col`.
+These fields contain the 0-based row and column describing a parser position.
+
+##> Functions
+
+### `p_context_init`
+
+The `p_context_init()` function must be called to initialize the context
+structure.
+The input to be used for lexing/parsing is passed in when initializing the
+context structure.
+
+Example:
+
+```
+p_context_t context;
+p_context_init(&context, input, input_length);
+```
+
+### `p_parse`
+
+The `p_parse()` function is the main entry point to the parser.
+It must be passed a pointer to an initialized context structure.
+
+Example:
+
+```
+p_context_t context;
+p_context_init(&context, input, input_length);
+size_t result = p_parse(&context);
+```
+
+### `p_result`
+
+The `p_result()` function can be used to retrieve the final parse value after
+`p_parse()` returns a `P_SUCCESS` value.
+
+Example:
+
+```
+p_context_t context;
+p_context_init(&context, input, input_length);
+size_t result = p_parse(&context);
+if (p_parse(&context) == P_SUCCESS)
+{
+    result = p_result(&context);
+}
+```
+
+### `p_position`
+
+The `p_position()` function can be used to retrieve the parser position where
+an error occurred.
+
+Example:
+
+```
+p_context_t context;
+p_context_init(&context, input, input_length);
+size_t result = p_parse(&context);
+if (p_parse(&context) == P_UNEXPECTED_TOKEN)
+{
+    p_position_t error_position = p_position(&context);
+    fprintf(stderr, "Error: unexpected token at row %u column %u\n",
+        error_position.row + 1, error_position.col + 1);
+}
+```
+
+### `p_user_terminate_code`
+
+The `p_user_terminate_code()` function can be used to retrieve the user
+terminate code after `p_parse()` returns a `P_USER_TERMINATED` value.
+User terminate codes are arbitrary values that can be defined by the user to
+be returned when the user requests to terminate parsing.
+They have no particular meaning to Propane.
+
+Example:
+
+```
+if (p_parse(&context) == P_USER_TERMINATED)
+{
+    size_t user_terminate_code = p_user_terminate_code(&context);
+}
+```
+
 #> License
 
 Propane is licensed under the terms of the MIT License:
