@@ -646,11 +646,18 @@ structure.
 The input to be used for lexing/parsing is passed in when initializing the
 context structure.
 
-Example:
+C example:
 
 ```
 p_context_t context;
 p_context_init(&context, input, input_length);
+```
+
+D example:
+
+```
+p_context_t context;
+p_context_init(&context, input);
 ```
 
 ### `p_parse`
