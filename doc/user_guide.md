@@ -726,6 +726,22 @@ if (p_parse(&context) == P_USER_TERMINATED)
 }
 ```
 
+### `p_token`
+
+The `p_token()` function can be used to retrieve the current parse token.
+This is useful after `p_parse()` returns a `P_UNEXPECTED_TOKEN` value.
+terminate code after `p_parse()` returns a `P_USER_TERMINATED` value to
+indicate what token the parser was not expecting.
+
+Example:
+
+```
+if (p_parse(&context) == P_UNEXPECTED_TOKEN)
+{
+    p_token_t unexpected_token = p_token(&context);
+}
+```
+
 ##> Data
 
 ### `p_token_names`

@@ -841,7 +841,7 @@ static size_t check_reduce(size_t state_id, <%= @grammar.prefix %>token_t token)
  *   can be accessed with <%= @grammar.prefix %>result().
  * @retval P_UNEXPECTED_TOKEN
  *   An unexpected token was encountered that does not match any grammar rule.
- *   The value context->token holds the unexpected token.
+ *   The function p_token(&context) can be used to get the unexpected token.
  * @reval P_DECODE_ERROR
  *   The decoder encountered invalid text encoding.
  * @reval P_UNEXPECTED_INPUT
@@ -973,4 +973,14 @@ size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context)
 size_t <%= @grammar.prefix %>user_terminate_code(<%= @grammar.prefix %>context_t * context)
 {
     return context->user_terminate_code;
+}
+
+/**
+ * Get the parse token.
+ *
+ * @return Parse token.
+ */
+<%= @grammar.prefix %>token_t <%= @grammar.prefix %>token(<%= @grammar.prefix %>context_t * context)
+{
+    return context->token;
 }

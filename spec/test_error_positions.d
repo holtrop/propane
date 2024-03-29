@@ -17,13 +17,13 @@ unittest
     p_context_init(&context, input);
     assert(p_parse(&context) == P_UNEXPECTED_TOKEN);
     assert(p_position(&context) == p_position_t(2, 3));
-    assert(context.token == TOKEN_a);
+    assert(p_token(&context) == TOKEN_a);
 
     input = "12";
     p_context_init(&context, input);
     assert(p_parse(&context) == P_UNEXPECTED_TOKEN);
     assert(p_position(&context) == p_position_t(0, 0));
-    assert(context.token == TOKEN_num);
+    assert(p_token(&context) == TOKEN_num);
 
     input = "a 12\n\nab";
     p_context_init(&context, input);
