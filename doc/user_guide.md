@@ -574,17 +574,18 @@ default.
 It can also be used when generating multiple lexers/parsers to be used in the
 same program to avoid symbol collisions.
 
-##> User termination of the parser
+##> User termination of the lexer or parser
 
-Propane supports allowing parser user code blocks to terminate execution of the
-parser.
-One example use of this functionality is to detect and report an error before
-the parser continues parsing the remainder of the input.
-Another use of this features is to begin parsing input and determine whether a
-different parser should be used instead.
+Propane supports allowing lexer or parser user code blocks to terminate
+execution of the parser.
+Some example uses of this functionality could be to:
 
-To terminate parsing from a parser user code block, use the `$terminate(code)`
-function, passing an integer expression argument.
+  * Detect integer overflow when lexing an integer literal constant.
+  * Detect and report an error as soon as possible during parsing before continuing to parse any more of the input.
+  * Determine whether parsing should stop and instead be performed using a different parser version.
+
+To terminate parsing from a lexer or parser user code block, use the
+`$terminate(code)` function, passing an integer expression argument.
 For example:
 
 ```

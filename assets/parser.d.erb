@@ -31,7 +31,7 @@ public enum : size_t
 }
 
 /** Token type. */
-public alias <%= @grammar.prefix %>token_t = <%= get_type_for(@grammar.invalid_token_id) %>;
+public alias <%= @grammar.prefix %>token_t = <%= get_type_for(@grammar.terminate_token_id) %>;
 
 /** Token IDs. */
 public enum : <%= @grammar.prefix %>token_t
@@ -43,6 +43,7 @@ public enum : <%= @grammar.prefix %>token_t
 <%   end %>
 <% end %>
     INVALID_TOKEN_ID = <%= @grammar.invalid_token_id %>,
+    TERMINATE_TOKEN_ID = <%= @grammar.terminate_token_id %>,
 }
 
 /** Code point type. */
@@ -538,6 +539,8 @@ private size_t find_longest_match(<%= @grammar.prefix %>context_t * context,
  *   Input text does not match any lexer pattern.
  * @retval P_DROP
  *   A drop pattern was matched so the lexer should continue.
+ * @retval P_USER_TERMINATED
+ *   User code has requested to terminate the lexer.
  */
 private size_t attempt_lex_token(<%= @grammar.prefix %>context_t * context, <%= @grammar.prefix %>token_info_t * out_token_info)
 {
@@ -557,6 +560,12 @@ private size_t attempt_lex_token(<%= @grammar.prefix %>context_t * context, <%= 
             string match = context.input[context.input_index..(context.input_index + match_info.length)];
             <%= @grammar.prefix %>token_t user_code_token = lexer_user_code(context,
                 match_info.accepting_state.code_id, match, &token_info);
+            /* A TERMINATE_TOKEN_ID return code from lexer_user_code() means
+             * that the user code is requesting to terminate the lexer. */
+            if (user_code_token == TERMINATE_TOKEN_ID)
+            {
+                return P_USER_TERMINATED;
+            }
             /* An invalid token returned from lexer_user_code() means that the
              * user code did not explicitly return a token. So only override
              * the token to return if the user code does explicitly return a
@@ -627,6 +636,8 @@ private size_t attempt_lex_token(<%= @grammar.prefix %>context_t * context, <%= 
  *   The decoder encountered invalid text encoding.
  * @reval P_UNEXPECTED_INPUT
  *   Input text does not match any lexer pattern.
+ * @retval P_USER_TERMINATED
+ *   User code has requested to terminate the lexer.
  */
 public size_t <%= @grammar.prefix %>lex(<%= @grammar.prefix %>context_t * context, <%= @grammar.prefix %>token_info_t * out_token_info)
 {

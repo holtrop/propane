@@ -198,6 +198,16 @@ class Propane
       code = code.gsub(/\$token\(([$\w]+)\)/) do |match|
         "TOKEN_#{Token.code_name($1)}"
       end
+      code = code.gsub(/\$terminate\((.*)\);/) do |match|
+        user_terminate_code = $1
+        retval = rule ? "P_USER_TERMINATED" : "TERMINATE_TOKEN_ID"
+        case @language
+        when "c"
+          "context->user_terminate_code = (#{user_terminate_code}); return #{retval};"
+        when "d"
+          "context.user_terminate_code = (#{user_terminate_code}); return #{retval};"
+        end
+      end
       if parser
         code = code.gsub(/\$\$/) do |match|
           case @language
@@ -214,15 +224,6 @@ class Propane
             "state_values_stack_index(statevalues, -1 - (int)n_states + #{index})->pvalue.v_#{rule.components[index - 1].ptypename}"
           when "d"
             "statevalues[$-1-n_states+#{index}].pvalue.v_#{rule.components[index - 1].ptypename}"
-          end
-        end
-        code = code.gsub(/\$terminate\((.*)\);/) do |match|
-          user_terminate_code = $1
-          case @language
-          when "c"
-            "context->user_terminate_code = (#{user_terminate_code}); return P_USER_TERMINATED;"
-          when "d"
-            "context.user_terminate_code = (#{user_terminate_code}); return P_USER_TERMINATED;"
           end
         end
       else

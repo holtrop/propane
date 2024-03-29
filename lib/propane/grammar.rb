@@ -35,6 +35,10 @@ class Propane
       @tokens.size
     end
 
+    def terminate_token_id
+      @tokens.size + 1
+    end
+
     private
 
     def parse_grammar!

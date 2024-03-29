@@ -23,7 +23,7 @@
 #define <%= @grammar.prefix.upcase %>USER_TERMINATED 6u
 
 /** Token type. */
-typedef <%= get_type_for(@grammar.invalid_token_id) %> <%= @grammar.prefix %>token_t;
+typedef <%= get_type_for(@grammar.terminate_token_id) %> <%= @grammar.prefix %>token_t;
 
 /** Token IDs. */
 <% @grammar.tokens.each_with_index do |token, index| %>
@@ -33,6 +33,7 @@ typedef <%= get_type_for(@grammar.invalid_token_id) %> <%= @grammar.prefix %>tok
 <%   end %>
 <% end %>
 #define INVALID_TOKEN_ID <%= @grammar.invalid_token_id %>u
+#define TERMINATE_TOKEN_ID <%= @grammar.terminate_token_id %>u
 
 /** Code point type. */
 typedef uint32_t <%= @grammar.prefix %>code_point_t;
