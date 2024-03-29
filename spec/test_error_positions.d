@@ -34,4 +34,7 @@ unittest
     p_context_init(&context, input);
     assert(p_parse(&context) == P_DECODE_ERROR);
     assert(p_position(&context) == p_position_t(5, 4));
+
+    assert(p_token_names[TOKEN_a] == "a");
+    assert(p_token_names[TOKEN_num] == "num");
 }

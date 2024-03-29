@@ -726,6 +726,28 @@ if (p_parse(&context) == P_USER_TERMINATED)
 }
 ```
 
+##> Data
+
+### `p_token_names`
+
+The `p_token_names` array contains the grammar-specified token names.
+It is indexed by the token ID.
+
+C example:
+
+```
+p_context_t context;
+p_context_init(&context, input, input_length);
+size_t result = p_parse(&context);
+if (p_parse(&context) == P_UNEXPECTED_TOKEN)
+{
+    p_position_t error_position = p_position(&context);
+    fprintf(stderr, "Error: unexpected token `%s' at row %u column %u\n",
+        p_token_names[context.token],
+        error_position.row + 1, error_position.col + 1);
+}
+```
+
 #> License
 
 Propane is licensed under the terms of the MIT License:

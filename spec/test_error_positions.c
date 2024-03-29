@@ -35,5 +35,8 @@ int main()
     assert(p_position(&context).row == 5);
     assert(p_position(&context).col == 4);
 
+    assert(strcmp(p_token_names[TOKEN_a], "a") == 0);
+    assert(strcmp(p_token_names[TOKEN_num], "num") == 0);
+
     return 0;
 }
