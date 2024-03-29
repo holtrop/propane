@@ -768,6 +768,89 @@ EOF
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
+
+      it "matches backslash escape sequences" do
+        case language
+        when "c"
+          write_grammar <<EOF
+<<
+  #include <stdio.h>
+>>
+tokenid t;
+/\\a/ <<
+  printf("A\\n");
+>>
+/\\b/ <<
+  printf("B\\n");
+>>
+/\\t/ <<
+  printf("T\\n");
+>>
+/\\n/ <<
+  printf("N\\n");
+>>
+/\\v/ <<
+  printf("V\\n");
+>>
+/\\f/ <<
+  printf("F\\n");
+>>
+/\\r/ <<
+  printf("R\\n");
+>>
+/t/ <<
+  return $token(t);
+>>
+Start -> t;
+EOF
+        when "d"
+          write_grammar <<EOF
+<<
+  import std.stdio;
+>>
+tokenid t;
+/\\a/ <<
+  writeln("A");
+>>
+/\\b/ <<
+  writeln("B");
+>>
+/\\t/ <<
+  writeln("T");
+>>
+/\\n/ <<
+  writeln("N");
+>>
+/\\v/ <<
+  writeln("V");
+>>
+/\\f/ <<
+  writeln("F");
+>>
+/\\r/ <<
+  writeln("R");
+>>
+/t/ <<
+  return $token(t);
+>>
+Start -> t;
+EOF
+        end
+        build_parser(language: language)
+        compile("spec/test_match_backslashes.#{language}", language: language)
+        results = run
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+        verify_lines(results.stdout, [
+          "A",
+          "B",
+          "T",
+          "N",
+          "V",
+          "F",
+          "R",
+        ])
+      end
     end
   end
 end

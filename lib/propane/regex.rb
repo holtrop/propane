@@ -134,8 +134,18 @@ class Propane
       else
         c = @pattern.slice!(0)
         case c
+        when "a"
+          CharacterRangeUnit.new("\a", "\a")
+        when "b"
+          CharacterRangeUnit.new("\b", "\b")
         when "d"
           CharacterRangeUnit.new("0", "9")
+        when "f"
+          CharacterRangeUnit.new("\f", "\f")
+        when "n"
+          CharacterRangeUnit.new("\n", "\n")
+        when "r"
+          CharacterRangeUnit.new("\r", "\r")
         when "s"
           ccu = CharacterClassUnit.new
           ccu << CharacterRangeUnit.new(" ")
@@ -145,6 +155,10 @@ class Propane
           ccu << CharacterRangeUnit.new("\f")
           ccu << CharacterRangeUnit.new("\v")
           ccu
+        when "t"
+          CharacterRangeUnit.new("\t", "\t")
+        when "v"
+          CharacterRangeUnit.new("\v", "\v")
         else
           CharacterRangeUnit.new(c)
         end
