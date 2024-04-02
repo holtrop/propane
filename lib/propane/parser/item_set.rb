@@ -87,14 +87,24 @@ class Propane
 
       # Set of ItemSets that lead to this ItemSet.
       #
-      # This set includes this ItemSet.
-      #
       # @return [Set<ItemSet>]
       #   Set of all ItemSets that lead up to this ItemSet.
       def leading_item_sets
-        @in_sets.reduce(Set[self]) do |result, item_set|
-          result + item_set.leading_item_sets
+        result = Set.new
+        eval_sets = Set[self]
+        evaled = Set.new
+        while eval_sets.size > 0
+          eval_set = eval_sets.first
+          eval_sets.delete(eval_set)
+          evaled << eval_set
+          eval_set.in_sets.each do |in_set|
+            result << in_set
+            unless evaled.include?(in_set)
+              eval_sets << in_set
+            end
+          end
         end
+        result
       end
 
       # Represent the ItemSet as a String.

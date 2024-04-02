@@ -134,7 +134,7 @@ class Propane
       # possible following tokens, we will only look in the item sets leading
       # up to this one. This restriction gives us a more precise lookahead set,
       # and allows us to parse LALR grammars.
-      item_sets = item_set.leading_item_sets
+      item_sets = Set[item_set] + item_set.leading_item_sets
       reduce_rules.reduce({}) do |reduce_actions, reduce_rule|
         lookahead_tokens_for_rule = build_lookahead_tokens_to_reduce(reduce_rule, item_sets)
         lookahead_tokens_for_rule.each do |lookahead_token|

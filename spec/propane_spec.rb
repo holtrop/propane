@@ -851,6 +851,20 @@ EOF
           "R",
         ])
       end
+
+      it "handles when an item set leads to itself" do
+        write_grammar <<EOF
+token one;
+token two;
+
+Start -> Opt one Start;
+Start -> ;
+
+Opt -> two;
+Opt -> ;
+EOF
+        build_parser(language: language)
+      end
     end
   end
 end
