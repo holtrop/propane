@@ -77,33 +77,15 @@ token rparen /\\)/;
 # Drop whitespace.
 drop /\\s+/;
 
-Start -> E1 <<
-  $$ = $1;
->>
-E1 -> E2 <<
-  $$ = $1;
->>
-E1 -> E1 plus E2 <<
-  $$ = $1 + $3;
->>
-E2 -> E3 <<
-  $$ = $1;
->>
-E2 -> E2 times E3 <<
-  $$ = $1 * $3;
->>
-E3 -> E4 <<
-  $$ = $1;
->>
-E3 -> E3 power E4 <<
-  $$ = pow($1, $3);
->>
-E4 -> integer <<
-  $$ = $1;
->>
-E4 -> lparen E1 rparen <<
-  $$ = $2;
->>
+Start -> E1 << $$ = $1; >>
+E1 -> E2 << $$ = $1; >>
+E1 -> E1 plus E2 << $$ = $1 + $3; >>
+E2 -> E3 << $$ = $1; >>
+E2 -> E2 times E3 << $$ = $1 * $3; >>
+E3 -> E4 << $$ = $1; >>
+E3 -> E3 power E4 << $$ = pow($1, $3); >>
+E4 -> integer << $$ = $1; >>
+E4 -> lparen E1 rparen << $$ = $2; >>
 ```
 
 Grammar files can contain comment lines beginning with `#` which are ignored.
@@ -117,8 +99,8 @@ lowercase character and beginning a rule name with an uppercase character.
 
 ##> User Code Blocks
 
-User code blocks begin with the line following a "<<" token and end with the
-line preceding a grammar line consisting of solely the ">>" token.
+User code blocks begin following a "<<" token and end with a ">>" token found
+at the end of a line.
 All text lines in the code block are copied verbatim into the output file.
 
 ### Standalone Code Blocks
@@ -189,9 +171,7 @@ This parser value can then be used later in a parser rule.
 Example:
 
 ```
-E1 -> E1 plus E2 <<
-  $$ = $1 + $3;
->>
+E1 -> E1 plus E2 << $$ = $1 + $3; >>
 ```
 
 Parser rule code blocks appear following a rule expression.
@@ -238,9 +218,7 @@ lexer.
 Example:
 
 ```
-token if <<
-  writeln("'if' keyword lexed");
->>
+token if << writeln("'if' keyword lexed"); >>
 ```
 
 The `token` statement is actually a shortcut statement for a combination of a
@@ -277,9 +255,7 @@ code but may not result in a matched token.
 Example:
 
 ```
-/foo+/ <<
-  writeln("saw a foo pattern");
->>
+/foo+/ << writeln("saw a foo pattern"); >>
 ```
 
 This can be especially useful with ${#Lexer modes}.
@@ -388,9 +364,7 @@ tokenid str;
   mystringvalue = "";
   $mode(string);
 >>
-string: /[^"]+/ <<
-  mystringvalue += match;
->>
+string: /[^"]+/ << mystringvalue += match; >>
 string: /"/ <<
   $mode(default);
   return $token(str);
@@ -447,20 +421,12 @@ ptype Value;
 ptype array = Value[];
 ptype dict = Value[string];
 
-Object -> lbrace rbrace <<
-  $$ = new Value();
->>
+Object -> lbrace rbrace << $$ = new Value(); >>
 
-Values (array) -> Value <<
-  $$ = [$1];
->>
-Values -> Values comma Value <<
-  $$ = $1 ~ [$3];
->>
+Values (array) -> Value << $$ = [$1]; >>
+Values -> Values comma Value << $$ = $1 ~ [$3]; >>
 
-KeyValue (dict) -> string colon Value <<
-  $$ = [$1: $3];
->>
+KeyValue (dict) -> string colon Value << $$ = [$1: $3]; >>
 ```
 
 In this example, the default parser value type is `Value`.
@@ -493,12 +459,8 @@ Example:
 
 ```
 ptype ulong;
-token word /[a-z]+/ <<
-  $$ = match.length;
->>
-Start -> word <<
-  $$ = $1;
->>
+token word /[a-z]+/ << $$ = match.length; >>
+Start -> word << $$ = $1; >>
 ```
 
 In the above example the `Start` rule is defined to match a single `word`
@@ -507,33 +469,15 @@ token.
 Example:
 
 ```
-Start -> E1 <<
-  $$ = $1;
->>
-E1 -> E2 <<
-  $$ = $1;
->>
-E1 -> E1 plus E2 <<
-  $$ = $1 + $3;
->>
-E2 -> E3 <<
-  $$ = $1;
->>
-E2 -> E2 times E3 <<
-  $$ = $1 * $3;
->>
-E3 -> E4 <<
-  $$ = $1;
->>
-E3 -> E3 power E4 <<
-  $$ = pow($1, $3);
->>
-E4 -> integer <<
-  $$ = $1;
->>
-E4 -> lparen E1 rparen <<
-  $$ = $2;
->>
+Start -> E1 << $$ = $1; >>
+E1 -> E2 << $$ = $1; >>
+E1 -> E1 plus E2 << $$ = $1 + $3; >>
+E2 -> E3 << $$ = $1; >>
+E2 -> E2 times E3 << $$ = $1 * $3; >>
+E3 -> E4 << $$ = $1; >>
+E3 -> E3 power E4 << $$ = pow($1, $3); >>
+E4 -> integer << $$ = $1; >>
+E4 -> lparen E1 rparen << $$ = $2; >>
 ```
 
 A parser rule has zero or more terms on the right side of its definition.
@@ -596,9 +540,7 @@ To terminate parsing from a lexer or parser user code block, use the
 For example:
 
 ```
-NewExpression -> new Expression <<
-  $terminate(42);
->>
+NewExpression -> new Expression << $terminate(42); >>
 ```
 
 The value passed to the `$terminate()` function is known as the "user terminate

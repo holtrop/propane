@@ -183,8 +183,10 @@ class Propane
     end
 
     def parse_code_block_statement!
-      if md = consume!(/<<([a-z]*)\n(.*?)^>>\n/m)
+      if md = consume!(/<<([a-z]*)(.*?)>>\n/m)
         name, code = md[1..2]
+        code.sub!(/\A\n/, "")
+        code += "\n" unless code.end_with?("\n")
         if @code_blocks[name]
           @code_blocks[name] += code
         else
@@ -222,8 +224,11 @@ class Propane
     end
 
     def parse_code_block!
-      if md = consume!(/<<\n(.*?)^>>\n/m)
-        md[1]
+      if md = consume!(/<<(.*?)>>\n/m)
+        code = md[1]
+        code.sub!(/\A\n/, "")
+        code += "\n" unless code.end_with?("\n")
+        code
       end
     end
 

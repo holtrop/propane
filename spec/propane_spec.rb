@@ -123,10 +123,8 @@ token plus /\\+/;
 token times /\\*/;
 drop /\\s+/;
 Start -> Foo;
-Foo -> int <<
->>
-Foo -> plus <<
->>
+Foo -> int <<>>
+Foo -> plus <<>>
 EOF
         build_parser(language: language)
         compile("spec/test_lexer.#{language}", language: language)
@@ -149,9 +147,7 @@ token int /\\d+/ <<
   }
   $$ = v;
 >>
-Start -> int <<
-  $$ = $1;
->>
+Start -> int << $$ = $1; >>
 EOF
         when "d"
           write_grammar <<EOF
@@ -165,9 +161,7 @@ token int /\\d+/ <<
   }
   $$ = v;
 >>
-Start -> int <<
-  $$ = $1;
->>
+Start -> int << $$ = $1; >>
 EOF
         end
         build_parser(language: language)
@@ -219,33 +213,15 @@ token lparen /\\(/;
 token rparen /\\)/;
 drop /\\s+/;
 
-Start -> E1 <<
-  $$ = $1;
->>
-E1 -> E2 <<
-  $$ = $1;
->>
-E1 -> E1 plus E2 <<
-  $$ = $1 + $3;
->>
-E2 -> E3 <<
-  $$ = $1;
->>
-E2 -> E2 times E3 <<
-  $$ = $1 * $3;
->>
-E3 -> E4 <<
-  $$ = $1;
->>
-E3 -> E3 power E4 <<
-  $$ = (size_t)pow($1, $3);
->>
-E4 -> integer <<
-  $$ = $1;
->>
-E4 -> lparen E1 rparen <<
-  $$ = $2;
->>
+Start -> E1 << $$ = $1; >>
+E1 -> E2 << $$ = $1; >>
+E1 -> E1 plus E2 << $$ = $1 + $3; >>
+E2 -> E3 << $$ = $1; >>
+E2 -> E2 times E3 << $$ = $1 * $3; >>
+E3 -> E4 << $$ = $1; >>
+E3 -> E3 power E4 << $$ = (size_t)pow($1, $3); >>
+E4 -> integer << $$ = $1; >>
+E4 -> lparen E1 rparen << $$ = $2; >>
 EOF
         when "d"
           write_grammar <<EOF
@@ -271,33 +247,15 @@ token lparen /\\(/;
 token rparen /\\)/;
 drop /\\s+/;
 
-Start -> E1 <<
-  $$ = $1;
->>
-E1 -> E2 <<
-  $$ = $1;
->>
-E1 -> E1 plus E2 <<
-  $$ = $1 + $3;
->>
-E2 -> E3 <<
-  $$ = $1;
->>
-E2 -> E2 times E3 <<
-  $$ = $1 * $3;
->>
-E3 -> E4 <<
-  $$ = $1;
->>
-E3 -> E3 power E4 <<
-  $$ = pow($1, $3);
->>
-E4 -> integer <<
-  $$ = $1;
->>
-E4 -> lparen E1 rparen <<
-  $$ = $2;
->>
+Start -> E1 << $$ = $1; >>
+E1 -> E2 << $$ = $1; >>
+E1 -> E1 plus E2 << $$ = $1 + $3; >>
+E2 -> E3 << $$ = $1; >>
+E2 -> E2 times E3 << $$ = $1 * $3; >>
+E3 -> E4 << $$ = $1; >>
+E3 -> E3 power E4 << $$ = pow($1, $3); >>
+E4 -> integer << $$ = $1; >>
+E4 -> lparen E1 rparen << $$ = $2; >>
 EOF
         end
         build_parser(language: language)
@@ -408,9 +366,7 @@ EOF
 import std.stdio;
 >>
 token abc;
-/def/ <<
-  writeln("def!");
->>
+/def/ << writeln("def!"); >>
 Start -> abc;
 EOF
         end
@@ -435,9 +391,7 @@ EOF
 #include <stdio.h>
 >>
 token abc;
-/def/ <<
-  printf("def!\\n");
->>
+/def/ << printf("def!\\n"); >>
 /ghi/ <<
   printf("ghi!\\n");
   return $token(abc);
@@ -450,9 +404,7 @@ EOF
 import std.stdio;
 >>
 token abc;
-/def/ <<
-  writeln("def!");
->>
+/def/ << writeln("def!"); >>
 /ghi/ <<
   writeln("ghi!");
   return $token(abc);
@@ -541,15 +493,9 @@ EOF
 >>
 token a;
 token b;
-Start -> A B <<
-  printf("Start!\\n");
->>
-A -> a <<
-  printf("A!\\n");
->>
-B -> b <<
-  printf("B!\\n");
->>
+Start -> A B << printf("Start!\\n"); >>
+A -> a << printf("A!\\n"); >>
+B -> b << printf("B!\\n"); >>
 EOF
         when "d"
           write_grammar <<EOF
@@ -558,15 +504,9 @@ import std.stdio;
 >>
 token a;
 token b;
-Start -> A B <<
-  writeln("Start!");
->>
-A -> a <<
-  writeln("A!");
->>
-B -> b <<
-  writeln("B!");
->>
+Start -> A B << writeln("Start!"); >>
+A -> a << writeln("A!"); >>
+B -> b << writeln("B!"); >>
 EOF
         end
         build_parser(language: language)
@@ -584,15 +524,9 @@ EOF
         write_grammar <<EOF
 ptype #{language == "c" ? "uint32_t" : "uint"};
 token a;
-Start -> As <<
-  $$ = $1;
->>
-As -> <<
-  $$ = 0u;
->>
-As -> As a <<
-  $$ = $1 + 1u;
->>
+Start -> As << $$ = $1; >>
+As -> << $$ = 0u; >>
+As -> As a << $$ = $1 + 1u; >>
 EOF
         build_parser(language: language)
         compile("spec/test_parsing_lists.#{language}", language: language)
@@ -756,9 +690,7 @@ token b;
 token c;
 Start -> Any;
 Any -> a Any;
-Any -> b Any <<
-  $terminate(4200);
->>
+Any -> b Any << $terminate(4200); >>
 Any -> c Any;
 Any -> ;
 EOF
@@ -777,30 +709,14 @@ EOF
   #include <stdio.h>
 >>
 tokenid t;
-/\\a/ <<
-  printf("A\\n");
->>
-/\\b/ <<
-  printf("B\\n");
->>
-/\\t/ <<
-  printf("T\\n");
->>
-/\\n/ <<
-  printf("N\\n");
->>
-/\\v/ <<
-  printf("V\\n");
->>
-/\\f/ <<
-  printf("F\\n");
->>
-/\\r/ <<
-  printf("R\\n");
->>
-/t/ <<
-  return $token(t);
->>
+/\\a/ << printf("A\\n"); >>
+/\\b/ << printf("B\\n"); >>
+/\\t/ << printf("T\\n"); >>
+/\\n/ << printf("N\\n"); >>
+/\\v/ << printf("V\\n"); >>
+/\\f/ << printf("F\\n"); >>
+/\\r/ << printf("R\\n"); >>
+/t/ << return $token(t); >>
 Start -> t;
 EOF
         when "d"
@@ -809,27 +725,13 @@ EOF
   import std.stdio;
 >>
 tokenid t;
-/\\a/ <<
-  writeln("A");
->>
-/\\b/ <<
-  writeln("B");
->>
-/\\t/ <<
-  writeln("T");
->>
-/\\n/ <<
-  writeln("N");
->>
-/\\v/ <<
-  writeln("V");
->>
-/\\f/ <<
-  writeln("F");
->>
-/\\r/ <<
-  writeln("R");
->>
+/\\a/ << writeln("A"); >>
+/\\b/ << writeln("B"); >>
+/\\t/ << writeln("T"); >>
+/\\n/ << writeln("N"); >>
+/\\v/ << writeln("V"); >>
+/\\f/ << writeln("F"); >>
+/\\r/ << writeln("R"); >>
 /t/ <<
   return $token(t);
 >>
