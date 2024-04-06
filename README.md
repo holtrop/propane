@@ -17,6 +17,7 @@ can be copied into and versioned in a project's source tree.
 The only requirement to run Propane is that the system has a Ruby interpreter
 installed.
 The latest release can be downloaded from [https://github.com/holtrop/propane/releases](https://github.com/holtrop/propane/releases).
+
 Simply copy the `propane` executable script into the desired location within
 the project to be built (typically the root of the repository) and mark it
 executable.
@@ -55,10 +56,10 @@ import std.math;
 ptype ulong;
 
 # A few basic arithmetic operators.
-token plus /\\+/;
-token times /\\*/;
-token power /\\*\\*/;
-token integer /\\d+/ <<
+token plus /\+/;
+token times /\*/;
+token power /\*\*/;
+token integer /\d+/ <<
   ulong v;
   foreach (c; match)
   {
@@ -67,38 +68,22 @@ token integer /\\d+/ <<
   }
   $$ = v;
 >>
-token lparen /\\(/;
-token rparen /\\)/;
+token lparen /\(/;
+token rparen /\)/;
 # Drop whitespace.
-drop /\\s+/;
+drop /\s+/;
 
-Start -> E1 <<
-  $$ = $1;
->>
-E1 -> E2 <<
-  $$ = $1;
->>
-E1 -> E1 plus E2 <<
-  $$ = $1 + $3;
->>
-E2 -> E3 <<
-  $$ = $1;
->>
-E2 -> E2 times E3 <<
-  $$ = $1 * $3;
->>
-E3 -> E4 <<
-  $$ = $1;
->>
+Start -> E1 << $$ = $1; >>
+E1 -> E2 << $$ = $1; >>
+E1 -> E1 plus E2 << $$ = $1 + $3; >>
+E2 -> E3 << $$ = $1; >>
+E2 -> E2 times E3 << $$ = $1 * $3; >>
+E3 -> E4 << $$ = $1; >>
 E3 -> E3 power E4 <<
   $$ = pow($1, $3);
 >>
-E4 -> integer <<
-  $$ = $1;
->>
-E4 -> lparen E1 rparen <<
-  $$ = $2;
->>
+E4 -> integer << $$ = $1; >>
+E4 -> lparen E1 rparen << $$ = $2; >>
 ```
 
 Grammar files can contain comment lines beginning with `#` which are ignored.
