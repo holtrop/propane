@@ -13,7 +13,7 @@ describe Propane do
     File.write("spec/run/testparser#{options[:name]}.propane", grammar)
   end
 
-  def build_parser(options = {})
+  def run_propane(options = {})
     @statics[:build_test_id] ||= 0
     @statics[:build_test_id] += 1
     if ENV["dist_specs"]
@@ -49,7 +49,11 @@ ENV["TERM"] = nil
 EOF
       end
     end
-    command += %W[spec/run/testparser#{options[:name]}.propane spec/run/testparser#{options[:name]}.#{options[:language]} --log spec/run/testparser#{options[:name]}.log]
+    if options[:args]
+      command += options[:args]
+    else
+      command += %W[spec/run/testparser#{options[:name]}.propane spec/run/testparser#{options[:name]}.#{options[:language]} --log spec/run/testparser#{options[:name]}.log]
+    end
     if (options[:capture])
       stdout, stderr, status = Open3.capture3(*command)
       Results.new(stdout, stderr, status)
@@ -74,7 +78,7 @@ EOF
     expect(result).to be_truthy
   end
 
-  def run
+  def run_test
     stdout, stderr, status = Open3.capture3("spec/run/testparser")
     File.binwrite("spec/run/.stderr", stderr)
     File.binwrite("spec/run/.stdout", stdout)
@@ -112,6 +116,38 @@ EOF
     FileUtils.mkdir_p("spec/run")
   end
 
+  it "reports its version" do
+    results = run_propane(args: %w[--version], capture: true)
+    expect(results.stdout).to match /propane version \d+\.\d+/
+    expect(results.stderr).to eq ""
+    expect(results.status).to eq 0
+  end
+
+  it "shows help usage" do
+    results = run_propane(args: %w[-h], capture: true)
+    expect(results.stdout).to match /Usage/i
+    expect(results.stderr).to eq ""
+    expect(results.status).to eq 0
+  end
+
+  it "errors with unknown option" do
+    results = run_propane(args: %w[-i], capture: true)
+    expect(results.stderr).to match /Error: unknown option -i/
+    expect(results.status).to_not eq 0
+  end
+
+  it "errors when input and output files are not specified" do
+    results = run_propane(args: [], capture: true)
+    expect(results.stderr).to match /Error: specify input and output files/
+    expect(results.status).to_not eq 0
+  end
+
+  it "errors when input file is not readable" do
+    results = run_propane(args: %w[nope.txt out.d], capture: true)
+    expect(results.stderr).to match /Error: cannot read nope.txt/
+    expect(results.status).to_not eq 0
+  end
+
   %w[d c].each do |language|
 
     context "#{language.upcase} language" do
@@ -126,9 +162,9 @@ Start -> Foo;
 Foo -> int <<>>
 Foo -> plus <<>>
 EOF
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_lexer.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -164,9 +200,9 @@ token int /\\d+/ <<
 Start -> int << $$ = $1; >>
 EOF
         end
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_lexer_unknown_character.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -184,7 +220,7 @@ E -> B;
 B -> zero;
 B -> one;
 EOF
-        build_parser(language: language)
+        run_propane(language: language)
       end
 
       it "generates a parser that does basic math - user guide example" do
@@ -258,9 +294,9 @@ E4 -> integer << $$ = $1; >>
 E4 -> lparen E1 rparen << $$ = $2; >>
 EOF
         end
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_basic_math_grammar.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -272,7 +308,7 @@ Start -> E;
 E -> one E;
 E -> one;
 EOF
-        build_parser(language: language)
+        run_propane(language: language)
       end
 
       it "distinguishes between multiple identical rules with lookahead symbol" do
@@ -284,9 +320,9 @@ Start -> R2 b;
 R1 -> a b;
 R2 -> a b;
 EOF
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_parser_identical_rules_lookahead.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.status).to eq 0
       end
 
@@ -299,9 +335,9 @@ Start -> a R1;
 Start -> b R1;
 R1 -> b;
 EOF
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_parser_rule_from_multiple_states.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.status).to eq 0
       end
 
@@ -334,9 +370,9 @@ Abcs -> ;
 Abcs -> abc Abcs;
 EOF
         end
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_user_code.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
           "abc!",
@@ -370,9 +406,9 @@ token abc;
 Start -> abc;
 EOF
         end
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_pattern.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
           "def!",
@@ -412,9 +448,9 @@ token abc;
 Start -> abc;
 EOF
         end
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_return_token_from_pattern.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
           "def!",
@@ -470,9 +506,9 @@ string: /"/ <<
 Start -> abc string def;
 EOF
         end
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_lexer_modes.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
           "begin string mode",
@@ -509,9 +545,9 @@ A -> a << writeln("A!"); >>
 B -> b << writeln("B!"); >>
 EOF
         end
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_parser_rule_user_code.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
           "A!",
@@ -528,9 +564,9 @@ Start -> As << $$ = $1; >>
 As -> << $$ = 0u; >>
 As -> As a << $$ = $1 + 1u; >>
 EOF
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_parsing_lists.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.status).to eq 0
         expect(results.stderr).to eq ""
       end
@@ -549,7 +585,7 @@ Start -> b E d;
 E -> e;
 F -> e;
 EOF
-        results = build_parser(capture: true, language: language)
+        results = run_propane(capture: true, language: language)
         expect(results.status).to_not eq 0
         expect(results.stderr).to match %r{reduce/reduce conflict.*\(E\).*\(F\)}
       end
@@ -581,9 +617,9 @@ token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
 Start -> id;
 EOF
         end
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_lexer_match_text.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
           "Matched token is identifier_123",
@@ -614,9 +650,9 @@ Start -> word <<
 >>
 EOF
         end
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_lexer_result_value.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -629,16 +665,16 @@ drop /\\s+/;
 Start -> a num Start;
 Start -> a num;
 EOF
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_error_positions.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
 
       it "allows creating a JSON parser" do
         write_grammar(File.read("spec/json_parser.#{language}.propane"))
-        build_parser(language: language)
+        run_propane(language: language)
         compile(["spec/test_parsing_json.#{language}", "spec/json_types.#{language}"], language: language)
       end
 
@@ -650,16 +686,16 @@ token num /\\d+/;
 drop /\\s+/;
 Start -> a num;
 EOF
-        build_parser(name: "myp1", language: language)
+        run_propane(name: "myp1", language: language)
         write_grammar(<<EOF, name: "myp2")
 prefix myp2_;
 token b;
 token c;
 Start -> b c b;
 EOF
-        build_parser(name: "myp2", language: language)
+        run_propane(name: "myp2", language: language)
         compile("spec/test_multiple_parsers.#{language}", parsers: %w[myp1 myp2], language: language)
-        results = run
+        results = run_test
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -676,9 +712,9 @@ Any -> a;
 Any -> b;
 Any -> c;
 EOF
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_user_terminate_lexer.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -694,9 +730,9 @@ Any -> b Any << $terminate(4200); >>
 Any -> c Any;
 Any -> ;
 EOF
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_user_terminate.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -738,9 +774,9 @@ tokenid t;
 Start -> t;
 EOF
         end
-        build_parser(language: language)
+        run_propane(language: language)
         compile("spec/test_match_backslashes.#{language}", language: language)
-        results = run
+        results = run_test
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
@@ -765,7 +801,7 @@ Start -> ;
 Opt -> two;
 Opt -> ;
 EOF
-        build_parser(language: language)
+        run_propane(language: language)
       end
     end
   end

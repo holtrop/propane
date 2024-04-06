@@ -24,7 +24,7 @@ EOF
               log_file = args[i]
             end
           when "--version"
-            puts "propane v#{VERSION}"
+            puts "propane version #{VERSION}"
             return 0
           when "-h", "--help"
             puts USAGE
