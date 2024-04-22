@@ -63,11 +63,11 @@ class Propane
         reduce_entries =
           case ra = item_set.reduce_actions
           when Rule
-            [{token_id: @grammar.invalid_token_id, rule_id: ra.id,
+            [{token_id: @grammar.invalid_token_id, rule_id: ra.id, rule: ra,
               rule_set_id: ra.rule_set.id, n_states: ra.components.size}]
           when Hash
             ra.map do |token, rule|
-              {token_id: token.id, rule_id: rule.id,
+              {token_id: token.id, rule_id: rule.id, rule: rule,
                rule_set_id: rule.rule_set.id, n_states: rule.components.size}
             end
           else

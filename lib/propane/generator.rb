@@ -119,6 +119,9 @@ class Propane
         end
       end
       determine_possibly_empty_rulesets!(rule_sets)
+      rule_sets.each do |name, rule_set|
+        rule_set.finalize
+      end
       # Generate the lexer.
       @lexer = Lexer.new(@grammar)
       # Generate the parser.
@@ -228,11 +231,20 @@ class Propane
         end
       else
         code = code.gsub(/\$\$/) do |match|
-          case @language
-          when "c"
-            "out_token_info->pvalue.v_#{pattern.ptypename}"
-          when "d"
-            "out_token_info.pvalue.v_#{pattern.ptypename}"
+          if @grammar.ast
+            case @language
+            when "c"
+              "out_token_info->pvalue"
+            when "d"
+              "out_token_info.pvalue"
+            end
+          else
+            case @language
+            when "c"
+              "out_token_info->pvalue.v_#{pattern.ptypename}"
+            when "d"
+              "out_token_info.pvalue.v_#{pattern.ptypename}"
+            end
           end
         end
         code = code.gsub(/\$mode\(([a-zA-Z_][a-zA-Z_0-9]*)\)/) do |match|

@@ -30,6 +30,11 @@ class Propane
     #   The RuleSet that this Rule is a part of.
     attr_accessor :rule_set
 
+    # @return [Array<Integer>]
+    #   Map this rule's components to their positions in the parent RuleSet's
+    #   node field pointer array. This is used for AST construction.
+    attr_accessor :rule_set_node_field_index_map
+
     # Construct a Rule.
     #
     # @param name [String]
@@ -45,6 +50,7 @@ class Propane
     def initialize(name, components, code, ptypename, line_number)
       @name = name
       @components = components
+      @rule_set_node_field_index_map = components.map {0}
       @code = code
       @ptypename = ptypename
       @line_number = line_number
@@ -66,6 +72,17 @@ class Propane
     #   Rule represented as a String.
     def to_s
       "#{@name} -> #{@components.map(&:name).join(" ")}"
+    end
+
+    # Check whether the rule set node field index map is just a 1:1 mapping.
+    #
+    # @return [Boolean]
+    #   Boolean indicating whether the rule set node field index map is just a
+    #   1:1 mapping.
+    def flat_rule_set_node_field_index_map?
+      @rule_set_node_field_index_map.each_with_index.all? do |v, i|
+        v == i
+      end
     end
 
   end

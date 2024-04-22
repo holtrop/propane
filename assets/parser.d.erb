@@ -49,13 +49,39 @@ public enum : <%= @grammar.prefix %>token_t
 /** Code point type. */
 public alias <%= @grammar.prefix %>code_point_t = uint;
 
+<% if @grammar.ast %>
+/** Parser values type. */
+public alias <%= @grammar.prefix %>value_t = <%= @grammar.ptype %>;
+<% else %>
 /** Parser values type(s). */
 public union <%= @grammar.prefix %>value_t
 {
-<% @grammar.ptypes.each do |name, typestring| %>
+<%   @grammar.ptypes.each do |name, typestring| %>
     <%= typestring %> v_<%= name %>;
-<% end %>
+<%   end %>
 }
+<% end %>
+
+<% if @grammar.ast %>
+/** AST node types. @{ */
+public struct Token
+{
+    <%= @grammar.prefix %>token_t token;
+    <%= @grammar.prefix %>value_t pvalue;
+}
+
+<%   @parser.rule_sets.each do |name, rule_set| %>
+<%     next if name.start_with?("$") %>
+public struct <%= name %>
+{
+<%     rule_set.ast_fields.each do |name, type| %>
+    <%= type %> * <%= name %>;
+<%     end %>
+}
+
+<%   end %>
+/** @} */
+<% end %>
 
 /**
  * A structure to keep track of parser position.
@@ -112,7 +138,11 @@ public struct <%= @grammar.prefix %>context_t
     /* Parser context data. */
 
     /** Parse result value. */
+<% if @grammar.ast %>
+    Start * parse_result;
+<% else %>
     <%= @grammar.prefix %>value_t parse_result;
+<% end %>
 
     /** Unexpected token received. */
     <%= @grammar.prefix %>token_t token;
@@ -428,9 +458,12 @@ private lexer_state_id_t check_lexer_transition(uint current_state, uint code_po
  *
  * @param context
  *   Lexer/parser context structure.
- * @param[out] out_token_info
- *   The lexed token information is stored here if the return value is
- *   P_SUCCESS.
+ * @param[out] out_match_info
+ *   The longest match information is stored here if the return value is
+ *   P_SUCCESS or P_DECODE_ERROR.
+ * @param[out] out_unexpected_input_length
+ *   The unexpected input length is stored here if the return value is
+ *   P_UNEXPECTED_INPUT.
  *
  * @reval P_SUCCESS
  *   A token was successfully lexed.
@@ -714,6 +747,18 @@ private struct reduce_t
      * reduce action.
      */
     parser_state_id_t n_states;
+<% if @grammar.ast %>
+
+    /**
+     * Map of rule components to rule set child fields.
+     */
+    immutable(ushort) * rule_set_node_field_index_map;
+
+    /**
+     * Number of rule set AST node fields.
+     */
+    ushort rule_set_node_field_array_size;
+<% end %>
 }
 
 /** Parser state entry. */
@@ -745,6 +790,11 @@ private struct state_value_t
     /** Parser value from this state. */
     <%= @grammar.prefix %>value_t pvalue;
 
+<% if @grammar.ast %>
+    /** AST node. */
+    void * ast_node;
+<% end %>
+
     this(size_t state_id)
     {
         this.state_id = state_id;
@@ -758,10 +808,27 @@ private immutable shift_t[] parser_shift_table = [
 <%   end %>
 ];
 
+<% if @grammar.ast %>
+<%   @grammar.rules.each do |rule| %>
+<%     unless rule.flat_rule_set_node_field_index_map? %>
+immutable ushort[<%= rule.rule_set_node_field_index_map.size %>] r_<%= rule.name.gsub("$", "_") %><%= rule.id %>_node_field_index_map = [<%= rule.rule_set_node_field_index_map.map {|v| v.to_s}.join(", ") %>];
+<%     end %>
+<%   end %>
+<% end %>
+
 /** Parser reduce table. */
 private immutable reduce_t[] parser_reduce_table = [
 <%   @parser.reduce_table.each do |reduce| %>
-    reduce_t(<%= reduce[:token_id] %>u, <%= reduce[:rule_id] %>u, <%= reduce[:rule_set_id] %>u, <%= reduce[:n_states] %>u),
+    reduce_t(<%= reduce[:token_id] %>u, <%= reduce[:rule_id] %>u, <%= reduce[:rule_set_id] %>u, <%= reduce[:n_states] %>u
+<%     if @grammar.ast %>
+<%       if reduce[:rule].flat_rule_set_node_field_index_map? %>
+             , null
+<%       else %>
+             , &r_<%= reduce[:rule].name.gsub("$", "_") %><%= reduce[:rule].id %>_node_field_index_map[0]
+<%       end %>
+             , <%= reduce[:rule].rule_set.ast_fields.size %>
+<%     end %>
+            ),
 <%   end %>
 ];
 
@@ -772,6 +839,7 @@ private immutable parser_state_t[] parser_state_table = [
 <%   end %>
 ];
 
+<% unless @grammar.ast %>
 /**
  * Execute user code associated with a parser rule.
  *
@@ -786,18 +854,19 @@ private size_t parser_user_code(<%= @grammar.prefix %>value_t * _pvalue, uint ru
 {
     switch (rule)
     {
-<% @grammar.rules.each do |rule| %>
-<%   if rule.code %>
+<%   @grammar.rules.each do |rule| %>
+<%     if rule.code %>
     case <%= rule.id %>u: {
 <%= expand_code(rule.code, true, rule, nil) %>
     } break;
+<%     end %>
 <%   end %>
-<% end %>
     default: break;
     }
 
     return P_SUCCESS;
 }
+<% end %>
 
 /**
  * Check if the parser should shift to a new state.
@@ -871,7 +940,11 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
     <%= @grammar.prefix %>token_t token = INVALID_TOKEN_ID;
     state_value_t[] statevalues = new state_value_t[](1);
     size_t reduced_rule_set = INVALID_ID;
+<% if @grammar.ast %>
+    void * reduced_parser_node;
+<% else %>
     <%= @grammar.prefix %>value_t reduced_parser_value;
+<% end %>
     for (;;)
     {
         if (token == INVALID_TOKEN_ID)
@@ -894,7 +967,11 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
             if ((shift_state != INVALID_ID) && (token == TOKEN___EOF))
             {
                 /* Successful parse. */
+<% if @grammar.ast %>
+                context.parse_result = cast(Start *)statevalues[$-1].ast_node;
+<% else %>
                 context.parse_result = statevalues[$-1].pvalue;
+<% end %>
                 return P_SUCCESS;
             }
         }
@@ -905,15 +982,24 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
             if (reduced_rule_set == INVALID_ID)
             {
                 /* We shifted a token, mark it consumed. */
-                token = INVALID_TOKEN_ID;
+<% if @grammar.ast %>
+                Token * token_ast_node = new Token(token, token_info.pvalue);
+                statevalues[$-1].ast_node = token_ast_node;
+<% else %>
                 statevalues[$-1].pvalue = token_info.pvalue;
+<% end %>
+                token = INVALID_TOKEN_ID;
             }
             else
             {
                 /* We shifted a RuleSet. */
+<% if @grammar.ast %>
+                statevalues[$-1].ast_node = reduced_parser_node;
+<% else %>
                 statevalues[$-1].pvalue = reduced_parser_value;
                 <%= @grammar.prefix %>value_t new_parse_result;
                 reduced_parser_value = new_parse_result;
+<% end %>
                 reduced_rule_set = INVALID_ID;
             }
             continue;
@@ -923,12 +1009,42 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
         if (reduce_index != INVALID_ID)
         {
             /* We have something to reduce. */
+<% if @grammar.ast %>
+            if (parser_reduce_table[reduce_index].n_states > 0)
+            {
+                void *[] node_fields = new void *[parser_reduce_table[reduce_index].rule_set_node_field_array_size];
+                foreach (i; 0..parser_reduce_table[reduce_index].rule_set_node_field_array_size)
+                {
+                    node_fields[i] = null;
+                }
+                if (parser_reduce_table[reduce_index].rule_set_node_field_index_map is null)
+                {
+                    foreach (i; 0..parser_reduce_table[reduce_index].n_states)
+                    {
+                        node_fields[i] = statevalues[$ - parser_reduce_table[reduce_index].n_states + i].ast_node;
+                    }
+                }
+                else
+                {
+                    foreach (i; 0..parser_reduce_table[reduce_index].n_states)
+                    {
+                        node_fields[parser_reduce_table[reduce_index].rule_set_node_field_index_map[i]] = statevalues[$ - parser_reduce_table[reduce_index].n_states + i].ast_node;
+                    }
+                }
+                reduced_parser_node = node_fields.ptr;
+            }
+            else
+            {
+                reduced_parser_node = null;
+            }
+<% else %>
             <%= @grammar.prefix %>value_t reduced_parser_value2;
             if (parser_user_code(&reduced_parser_value2, parser_reduce_table[reduce_index].rule, statevalues, parser_reduce_table[reduce_index].n_states, context) == P_USER_TERMINATED)
             {
                 return P_USER_TERMINATED;
             }
             reduced_parser_value = reduced_parser_value2;
+<% end %>
             reduced_rule_set = parser_reduce_table[reduce_index].rule_set;
             statevalues.length -= parser_reduce_table[reduce_index].n_states;
             continue;
@@ -953,9 +1069,17 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
  *
  * @return Parse result value.
  */
+<% if @grammar.ast %>
+public Start * <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
+<% else %>
 public <%= start_rule_type[1] %> <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
+<% end %>
 {
+<% if @grammar.ast %>
+    return context.parse_result;
+<% else %>
     return context.parse_result.v_<%= start_rule_type[0] %>;
+<% end %>
 }
 
 /**

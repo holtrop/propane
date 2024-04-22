@@ -803,6 +803,48 @@ Opt -> ;
 EOF
         run_propane(language: language)
       end
+
+      it "generates an AST" do
+        write_grammar <<EOF
+ast;
+
+ptype int;
+
+token a << $$ = 11; >>
+token b << $$ = 22; >>
+token one /1/;
+token two /2/;
+token comma /,/ <<
+  $$ = 42;
+>>
+token lparen /\\(/;
+token rparen /\\)/;
+drop /\\s+/;
+
+Start -> Items;
+
+Items -> Item ItemsMore;
+Items -> ;
+
+ItemsMore -> comma Item ItemsMore;
+ItemsMore -> ;
+
+Item -> a;
+Item -> b;
+Item -> lparen Item rparen;
+Item -> Dual;
+
+Dual -> One Two;
+Dual -> Two One;
+One -> one;
+Two -> two;
+EOF
+        run_propane(language: language)
+        compile("spec/test_ast.#{language}", language: language)
+        results = run_test
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
     end
   end
 end

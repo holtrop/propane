@@ -5,6 +5,7 @@ class Propane
     # Reserve identifiers beginning with a double-underscore for internal use.
     IDENTIFIER_REGEX = /(?:[a-zA-Z]|_[a-zA-Z0-9])[a-zA-Z_0-9]*/
 
+    attr_reader :ast
     attr_reader :modulename
     attr_reader :patterns
     attr_reader :rules
@@ -24,6 +25,7 @@ class Propane
       @input = input.gsub("\r\n", "\n")
       @ptypes = {"default" => "void *"}
       @prefix = "p_"
+      @ast = false
       parse_grammar!
     end
 
@@ -51,6 +53,7 @@ class Propane
       if parse_white_space!
       elsif parse_comment_line!
       elsif @mode.nil? && parse_mode_label!
+      elsif parse_ast_statement!
       elsif parse_module_statement!
       elsif parse_ptype_statement!
       elsif parse_pattern_statement!
@@ -82,6 +85,12 @@ class Propane
       consume!(/#.*\n/)
     end
 
+    def parse_ast_statement!
+      if consume!(/ast\s*;/)
+        @ast = true
+      end
+    end
+
     def parse_module_statement!
       if consume!(/module\s+/)
         md = consume!(/([\w.]+)\s*/, "expected module name")
@@ -96,6 +105,9 @@ class Propane
       if consume!(/ptype\s+/)
         name = "default"
         if md = consume!(/(#{IDENTIFIER_REGEX})\s*=\s*/)
+          if @ast
+            raise Error.new("Multiple ptypes are unsupported in AST mode")
+          end
           name = md[1]
         end
         md = consume!(/([^;]+);/, "expected parser result type expression")
@@ -108,12 +120,15 @@ class Propane
         md = consume!(/(#{IDENTIFIER_REGEX})\s*/, "expected token name")
         name = md[1]
         if md = consume!(/\((#{IDENTIFIER_REGEX})\)\s*/)
+          if @ast
+            raise Error.new("Multiple ptypes are unsupported in AST mode")
+          end
           ptypename = md[1]
         end
         pattern = parse_pattern! || name
         consume!(/\s+/)
         unless code = parse_code_block!
-          consume!(/;/, "expected pattern or `;' or code block")
+          consume!(/;/, "expected `;' or code block")
         end
         token = Token.new(name, ptypename, @line_number)
         @tokens << token
@@ -129,6 +144,9 @@ class Propane
         md = consume!(/(#{IDENTIFIER_REGEX})\s*/, "expected token name")
         name = md[1]
         if md = consume!(/\((#{IDENTIFIER_REGEX})\)\s*/)
+          if @ast
+            raise Error.new("Multiple ptypes are unsupported in AST mode")
+          end
           ptypename = md[1]
         end
         consume!(/;/, "expected `;'");
@@ -156,10 +174,17 @@ class Propane
     def parse_rule_statement!
       if md = consume!(/(#{IDENTIFIER_REGEX})\s*(?:\((#{IDENTIFIER_REGEX})\))?\s*->\s*/)
         rule_name, ptypename = *md[1, 2]
+        if @ast && ptypename
+          raise Error.new("Multiple ptypes are unsupported in AST mode")
+        end
         md = consume!(/((?:#{IDENTIFIER_REGEX}\s*)*)\s*/, "expected rule component list")
         components = md[1].strip.split(/\s+/)
-        unless code = parse_code_block!
-          consume!(/;/, "expected pattern or `;' or code block")
+        if @ast
+          consume!(/;/, "expected `;'")
+        else
+          unless code = parse_code_block!
+            consume!(/;/, "expected `;' or code block")
+          end
         end
         @rules << Rule.new(rule_name, components, code, ptypename, @line_number)
         @mode = nil
@@ -171,6 +196,9 @@ class Propane
       if pattern = parse_pattern!
         consume!(/\s+/)
         if md = consume!(/\((#{IDENTIFIER_REGEX})\)\s*/)
+          if @ast
+            raise Error.new("Multiple ptypes are unsupported in AST mode")
+          end
           ptypename = md[1]
         end
         unless code = parse_code_block!

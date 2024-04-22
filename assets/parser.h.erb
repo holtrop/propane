@@ -41,13 +41,44 @@ typedef uint32_t <%= @grammar.prefix %>code_point_t;
 /** User header code blocks. */
 <%= @grammar.code_blocks.fetch("header", "") %>
 
+<% if @grammar.ast %>
+/** Parser values type. */
+typedef <%= @grammar.ptype %> <%= @grammar.prefix %>value_t;
+<% else %>
 /** Parser values type(s). */
 typedef union
 {
-<% @grammar.ptypes.each do |name, typestring| %>
+<%   @grammar.ptypes.each do |name, typestring| %>
     <%= typestring %> v_<%= name %>;
-<% end %>
+<%   end %>
 } <%= @grammar.prefix %>value_t;
+<% end %>
+
+<% if @grammar.ast %>
+/** AST node types. @{ */
+typedef struct Token
+{
+    <%= @grammar.prefix %>token_t token;
+    <%= @grammar.prefix %>value_t pvalue;
+} Token;
+
+<%   @parser.rule_sets.each do |name, rule_set| %>
+<%     next if name.start_with?("$") %>
+struct <%= name %>;
+<%   end %>
+
+<%   @parser.rule_sets.each do |name, rule_set| %>
+<%     next if name.start_with?("$") %>
+typedef struct <%= name %>
+{
+<%     rule_set.ast_fields.each do |name, type| %>
+    struct <%= type %> * <%= name %>;
+<%     end %>
+} <%= name %>;
+
+<%   end %>
+/** @} */
+<% end %>
 
 /**
  * A structure to keep track of parser position.
@@ -107,7 +138,11 @@ typedef struct
     /* Parser context data. */
 
     /** Parse result value. */
+<% if @grammar.ast %>
+    Start * parse_result;
+<% else %>
     <%= @grammar.prefix %>value_t parse_result;
+<% end %>
 
     /** Unexpected token received. */
     <%= @grammar.prefix %>token_t token;
@@ -132,7 +167,11 @@ size_t <%= @grammar.prefix %>lex(<%= @grammar.prefix %>context_t * context, <%= 
 
 size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context);
 
+<% if @grammar.ast %>
+Start * <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context);
+<% else %>
 <%= start_rule_type[1] %> <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context);
+<% end %>
 
 <%= @grammar.prefix %>position_t <%= @grammar.prefix %>position(<%= @grammar.prefix %>context_t * context);
 

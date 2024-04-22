@@ -1,5 +1,6 @@
 class Propane
 
+  # A RuleSet collects all grammar rules of the same name.
   class RuleSet
 
     # @return [Integer]
@@ -73,6 +74,42 @@ class Propane
         end
       end
       @_start_token_set
+    end
+
+    # Build the set of AST fields for this RuleSet.
+    #
+    # The keys are the field names and the values are the AST node structure
+    # names.
+    #
+    # @return [Hash]
+    #   AST fields.
+    def ast_fields
+      @_ast_fields ||=
+        begin
+          field_indexes = {}
+          fields = {}
+          @rules.each do |rule|
+            rule.components.each_with_index do |component, i|
+              if component.is_a?(Token)
+                node_name = "Token"
+              else
+                node_name = component.name
+              end
+              field_name = "p#{node_name}#{i + 1}"
+              unless field_indexes[field_name]
+                field_indexes[field_name] = fields.size
+                fields[field_name] = node_name
+              end
+              rule.rule_set_node_field_index_map[i] = field_indexes[field_name]
+            end
+          end
+          fields
+        end
+    end
+
+    # Finalize a RuleSet after adding all Rules to it.
+    def finalize
+      ast_fields
     end
 
   end
