@@ -71,8 +71,13 @@ struct <%= name %>;
 <%     next if name.start_with?("$") %>
 typedef struct <%= name %>
 {
-<%     rule_set.ast_fields.each do |name, type| %>
-    struct <%= type %> * <%= name %>;
+<%     rule_set.ast_fields.each do |fields| %>
+    union
+    {
+<%       fields.each do |field_name, type| %>
+        struct <%= type %> * <%= field_name %>;
+<%       end %>
+    };
 <%     end %>
 } <%= name %>;
 

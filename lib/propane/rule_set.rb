@@ -78,16 +78,20 @@ class Propane
 
     # Build the set of AST fields for this RuleSet.
     #
-    # The keys are the field names and the values are the AST node structure
-    # names.
+    # This is an Array of Hashes. Each entry in the Array corresponds to a
+    # field location in the AST node. The entry is a Hash. It could have one or
+    # two keys. It will always have the field name with a positional suffix as
+    # a key. It may also have the field name without the positional suffix if
+    # that field only exists in one position across all Rules in the RuleSet.
     #
-    # @return [Hash]
+    # @return [Array<Hash>]
     #   AST fields.
     def ast_fields
       @_ast_fields ||=
         begin
-          field_indexes = {}
-          fields = {}
+          field_ast_node_indexes = {}
+          field_indexes_across_all_rules = {}
+          ast_node_fields = []
           @rules.each do |rule|
             rule.components.each_with_index do |component, i|
               if component.is_a?(Token)
@@ -96,14 +100,24 @@ class Propane
                 node_name = component.name
               end
               field_name = "p#{node_name}#{i + 1}"
-              unless field_indexes[field_name]
-                field_indexes[field_name] = fields.size
-                fields[field_name] = node_name
+              unless field_ast_node_indexes[field_name]
+                field_ast_node_indexes[field_name] = ast_node_fields.size
+                ast_node_fields << {field_name => node_name}
               end
-              rule.rule_set_node_field_index_map[i] = field_indexes[field_name]
+              field_indexes_across_all_rules[node_name] ||= Set.new
+              field_indexes_across_all_rules[node_name] << field_ast_node_indexes[field_name]
+              rule.rule_set_node_field_index_map[i] = field_ast_node_indexes[field_name]
             end
           end
-          fields
+          field_indexes_across_all_rules.each do |node_name, indexes_across_all_rules|
+            if indexes_across_all_rules.size == 1
+              # If this field was only seen in one position across all rules,
+              # then add an alias to the positional field name that does not
+              # include the position.
+              ast_node_fields[indexes_across_all_rules.first]["p#{node_name}"] = node_name
+            end
+          end
+          ast_node_fields
         end
     end
 
