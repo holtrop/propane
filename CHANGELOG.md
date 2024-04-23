@@ -1,3 +1,9 @@
+## v1.3.0
+
+### New Features
+
+- Add AST generation (#22)
+
 ## v1.2.0
 
 ### New Features
