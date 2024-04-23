@@ -14,6 +14,7 @@ Propane is a LALR Parser Generator (LPG) which:
   * supports UTF-8 lexer inputs
   * generates a table-driven shift/reduce parser to parse input in linear time
   * targets C or D language outputs
+  * optionally supports automatic full AST generation
   * is MIT-licensed
   * is distributable as a standalone Ruby script
 
@@ -181,6 +182,99 @@ Assignment to the `$$` symbol will associate a parser value with the reduced
 rule.
 Parser values for the rules or tokens in the rule pattern can be accessed
 positionally with tokens `$1`, `$2`, `$3`, etc...
+
+Parser rule code blocks are not available in AST generation mode.
+In AST generation mode, a full parse tree is automatically constructed in
+memory for user code to traverse after parsing is complete.
+
+##> AST generation mode - the `ast` statement
+
+To activate AST generation mode, place the `ast` statement in your grammar file:
+
+```
+ast;
+```
+
+It is recommended to place this statement early in the grammar.
+
+In AST generation mode various aspects of propane's behavior are changed:
+
+  * Only one `ptype` is allowed.
+  * Parser user code blocks are not supported.
+  * Structure types are generated to represent the parsed tokens and rules as
+  defined in the grammar.
+  * The parse result from `p_result()` points to a `Start` structure containing
+  the entire parse tree for the input.
+
+Example AST generation grammar:
+
+```
+ast;
+
+ptype int;
+
+token a << $$ = 11; >>
+token b << $$ = 22; >>
+token one /1/;
+token two /2/;
+token comma /,/ <<
+  $$ = 42;
+>>
+token lparen /\\(/;
+token rparen /\\)/;
+drop /\\s+/;
+
+Start -> Items;
+
+Items -> Item ItemsMore;
+Items -> ;
+
+ItemsMore -> comma Item ItemsMore;
+ItemsMore -> ;
+
+Item -> a;
+Item -> b;
+Item -> lparen Item rparen;
+Item -> Dual;
+
+Dual -> One Two;
+Dual -> Two One;
+One -> one;
+Two -> two;
+```
+
+The following unit test describes the fields that will be present for an
+example parse:
+
+```
+string input = "a, ((b)), b";
+p_context_t context;
+p_context_init(&context, input);
+assert_eq(P_SUCCESS, p_parse(&context));
+Start * start = p_result(&context);
+assert(start.pItems1 !is null);
+assert(start.pItems !is null);
+Items * items = start.pItems;
+assert(items.pItem !is null);
+assert(items.pItem.pToken1 !is null);
+assert_eq(TOKEN_a, items.pItem.pToken1.token);
+assert_eq(11, items.pItem.pToken1.pvalue);
+assert(items.pItemsMore !is null);
+ItemsMore * itemsmore = items.pItemsMore;
+assert(itemsmore.pItem !is null);
+assert(itemsmore.pItem.pItem !is null);
+assert(itemsmore.pItem.pItem.pItem !is null);
+assert(itemsmore.pItem.pItem.pItem.pToken1 !is null);
+assert_eq(TOKEN_b, itemsmore.pItem.pItem.pItem.pToken1.token);
+assert_eq(22, itemsmore.pItem.pItem.pItem.pToken1.pvalue);
+assert(itemsmore.pItemsMore !is null);
+itemsmore = itemsmore.pItemsMore;
+assert(itemsmore.pItem !is null);
+assert(itemsmore.pItem.pToken1 !is null);
+assert_eq(TOKEN_b, itemsmore.pItem.pToken1.token);
+assert_eq(22, itemsmore.pItem.pToken1.pvalue);
+assert(itemsmore.pItemsMore is null);
+```
 
 ##> Specifying tokens - the `token` statement
 
@@ -442,6 +536,12 @@ In this example:
   * a reduced `Values`'s parser value has a type of `Value[]`.
   * a reduced `KeyValue`'s parser value has a type of `Value[string]`.
 
+When AST generation mode is active, the `ptype` functionality works differently.
+In this mode, only one `ptype` is used by the parser.
+Lexer user code blocks may assign a parse value to the generated `Token` node
+by assigning to `$$` within a lexer code block.
+The type of the parse value `$$` is given by the global `ptype` type.
+
 ##> Specifying a parser rule - the rule statement
 
 Rule statements create parser rules which define the grammar that will be
@@ -489,6 +589,9 @@ term's parser value, etc...
 The `$$` symbol accesses the output parser value for this rule.
 The above examples demonstrate how the parser values for the rule components
 can be used to produce the parser value for the accepted rule.
+
+Parser rule code blocks are not allowed and not used when AST generation mode
+is active.
 
 ##> Specifying the parser module name - the `module` statement
 
@@ -586,6 +689,67 @@ A pointer to this instance is passed to the generated functions.
 The `p_position_t` structure contains two fields `row` and `col`.
 These fields contain the 0-based row and column describing a parser position.
 
+### AST Node Types
+
+If AST generation mode is enabled, a structure type for each rule will be
+generated.
+The name of the structure type is given by the name of the rule.
+Additionally a structure type called `Token` is generated to represent an
+AST node which refers to a raw parser token rather than a composite rule.
+
+#### AST Node Fields
+
+A `Token` node has two fields:
+
+  * `token` which specifies which token was parsed (one of `TOKEN_*`)
+  * `pvalue` which specifies the parser value for the token. If a lexer user
+  code block assigned to `$$`, the assigned value will be stored here.
+
+The other generated AST node structures have fields generated based on the
+right hand side components specified for all rules of a given name.
+
+In this example:
+
+```
+Start -> Items;
+
+Items -> Item ItemsMore;
+Items -> ;
+```
+
+The `Start` structure will have a field called `pItems` and another field of
+the same name but with a positional suffix (`pItems1`) which both point to the
+parsed `Items` node.
+Their value will be null if the parsed `Items` rule was empty.
+
+The `Items` structure will have fields:
+
+  * `pItem` and `pItem1` which point to the parsed `Item` structure.
+  * `pItemsMore` and `pItemsMore2` which point to the parsed `ItemsMore` structure.
+
+If a rule can be empty (for example in the second `Items` rule above), then
+an instance of a pointer to that rule's generated AST node will be null if the
+parser matches the empty rule definition.
+
+The non-positional AST node field pointer will not be generated if there are
+multiple positions in which an instance of the node it points to could be
+present.
+For example, in the below rules:
+
+```
+Dual -> One Two;
+Dual -> Two One;
+```
+
+The generated `Dual` structure will contain `pOne1`, `pTwo2`, `pTwo1`, and
+`pOne2` fields.
+However, a `pOne` field and `pTwo` field will not be generated since it would
+be ambiguous which one was matched.
+
+If the first rule is matched, then `pOne1` and `pTwo2` will be non-null while
+`pTwo1` and `pOne2` will be null.
+If the second rule is matched instead, then the opposite would be the case.
+
 ##> Functions
 
 ### `p_context_init`
@@ -638,6 +802,9 @@ if (p_parse(&context) == P_SUCCESS)
     result = p_result(&context);
 }
 ```
+
+If AST generation mode is active, then the `p_result()` function returns a
+`Start *` pointing to the `Start` AST structure.
 
 ### `p_position`
 
