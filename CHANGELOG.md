@@ -1,3 +1,9 @@
+## v1.4.0
+
+### New Features
+
+- Allow user to specify AST node name prefix or suffix
+
 ## v1.3.0
 
 ### New Features
