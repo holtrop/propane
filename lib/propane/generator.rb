@@ -120,7 +120,7 @@ class Propane
       end
       determine_possibly_empty_rulesets!(rule_sets)
       rule_sets.each do |name, rule_set|
-        rule_set.finalize
+        rule_set.finalize(@grammar)
       end
       # Generate the lexer.
       @lexer = Lexer.new(@grammar)

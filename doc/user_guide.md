@@ -276,6 +276,48 @@ assert_eq(22, itemsmore.pItem.pToken1.pvalue);
 assert(itemsmore.pItemsMore is null);
 ```
 
+## `ast_prefix` and `ast_suffix` statements
+
+In AST generation mode, structure types are defined and named based on the
+rules in the grammar.
+Additionally, a structure type called `Token` is generated to hold parsed
+token information.
+
+These structure names can be modified by using the `ast_prefix` or `ast_suffix`
+statements in the grammar file.
+The field names that point to instances of the structures are not affected by
+the `ast_prefix` or `ast_suffix` values.
+
+For example, if the following two lines were added to the example above:
+
+```
+ast_prefix ABC;
+ast_suffix XYZ;
+```
+
+Then the types would be used as such instead:
+
+```
+string input = "a, ((b)), b";
+p_context_t context;
+p_context_init(&context, input);
+assert_eq(P_SUCCESS, p_parse(&context));
+ABCStartXYZ * start = p_result(&context);
+assert(start.pItems1 !is null);
+assert(start.pItems !is null);
+ABCItemsXYZ * items = start.pItems;
+assert(items.pItem !is null);
+assert(items.pItem.pToken1 !is null);
+assert_eq(TOKEN_a, items.pItem.pToken1.token);
+assert_eq(11, items.pItem.pToken1.pvalue);
+assert(items.pItemsMore !is null);
+ABCItemsMoreXYZ * itemsmore = items.pItemsMore;
+assert(itemsmore.pItem !is null);
+assert(itemsmore.pItem.pItem !is null);
+assert(itemsmore.pItem.pItem.pItem !is null);
+assert(itemsmore.pItem.pItem.pItem.pToken1 !is null);
+```
+
 ##> Specifying tokens - the `token` statement
 
 The `token` statement allows defining a lexer token and a pattern to match that

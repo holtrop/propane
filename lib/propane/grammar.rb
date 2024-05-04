@@ -6,6 +6,8 @@ class Propane
     IDENTIFIER_REGEX = /(?:[a-zA-Z]|_[a-zA-Z0-9])[a-zA-Z_0-9]*/
 
     attr_reader :ast
+    attr_reader :ast_prefix
+    attr_reader :ast_suffix
     attr_reader :modulename
     attr_reader :patterns
     attr_reader :rules
@@ -26,6 +28,8 @@ class Propane
       @ptypes = {"default" => "void *"}
       @prefix = "p_"
       @ast = false
+      @ast_prefix = ""
+      @ast_suffix = ""
       parse_grammar!
     end
 
@@ -54,6 +58,8 @@ class Propane
       elsif parse_comment_line!
       elsif @mode.nil? && parse_mode_label!
       elsif parse_ast_statement!
+      elsif parse_ast_prefix_statement!
+      elsif parse_ast_suffix_statement!
       elsif parse_module_statement!
       elsif parse_ptype_statement!
       elsif parse_pattern_statement!
@@ -88,6 +94,18 @@ class Propane
     def parse_ast_statement!
       if consume!(/ast\s*;/)
         @ast = true
+      end
+    end
+
+    def parse_ast_prefix_statement!
+      if md = consume!(/ast_prefix\s+(\w+)\s*;/)
+        @ast_prefix = md[1]
+      end
+    end
+
+    def parse_ast_suffix_statement!
+      if md = consume!(/ast_suffix\s+(\w+)\s*;/)
+        @ast_suffix = md[1]
       end
     end
 
