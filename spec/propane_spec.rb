@@ -889,6 +889,27 @@ EOF
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
+
+      it "allows specifying a different start rule" do
+        write_grammar <<EOF
+token hi;
+start Top;
+Top -> hi;
+EOF
+        run_propane(language: language)
+        compile("spec/test_start_rule.#{language}", language: language)
+      end
+
+      it "allows specifying a different start rule with AST generation" do
+        write_grammar <<EOF
+ast;
+token hi;
+start Top;
+Top -> hi;
+EOF
+        run_propane(language: language)
+        compile("spec/test_start_rule_ast.#{language}", language: language)
+      end
     end
   end
 end

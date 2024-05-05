@@ -11,6 +11,7 @@ class Propane
     attr_reader :modulename
     attr_reader :patterns
     attr_reader :rules
+    attr_reader :start_rule
     attr_reader :tokens
     attr_reader :code_blocks
     attr_reader :ptypes
@@ -18,6 +19,7 @@ class Propane
 
     def initialize(input)
       @patterns = []
+      @start_rule = "Start"
       @tokens = []
       @rules = []
       @code_blocks = {}
@@ -63,6 +65,7 @@ class Propane
       elsif parse_module_statement!
       elsif parse_ptype_statement!
       elsif parse_pattern_statement!
+      elsif parse_start_statement!
       elsif parse_token_statement!
       elsif parse_tokenid_statement!
       elsif parse_drop_statement!
@@ -225,6 +228,12 @@ class Propane
         @patterns << Pattern.new(pattern: pattern, line_number: @line_number, code: code, mode: @mode, ptypename: ptypename)
         @mode = nil
         true
+      end
+    end
+
+    def parse_start_statement!
+      if md = consume!(/start\s+(\w+)\s*;/)
+        @start_rule = md[1]
       end
     end
 

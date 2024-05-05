@@ -144,7 +144,7 @@ public struct <%= @grammar.prefix %>context_t
 
     /** Parse result value. */
 <% if @grammar.ast %>
-    <%= @grammar.ast_prefix %>Start<%= @grammar.ast_suffix %> * parse_result;
+    <%= @grammar.ast_prefix %><%= @grammar.start_rule %><%= @grammar.ast_suffix %> * parse_result;
 <% else %>
     <%= @grammar.prefix %>value_t parse_result;
 <% end %>
@@ -973,7 +973,7 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
             {
                 /* Successful parse. */
 <% if @grammar.ast %>
-                context.parse_result = cast(<%= @grammar.ast_prefix %>Start<%= @grammar.ast_suffix %> *)statevalues[$-1].ast_node;
+                context.parse_result = cast(<%= @grammar.ast_prefix %><%= @grammar.start_rule %><%= @grammar.ast_suffix %> *)statevalues[$-1].ast_node;
 <% else %>
                 context.parse_result = statevalues[$-1].pvalue;
 <% end %>
@@ -1075,7 +1075,7 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
  * @return Parse result value.
  */
 <% if @grammar.ast %>
-public <%= @grammar.ast_prefix %>Start<%= @grammar.ast_suffix %> * <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
+public <%= @grammar.ast_prefix %><%= @grammar.start_rule %><%= @grammar.ast_suffix %> * <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
 <% else %>
 public <%= start_rule_type[1] %> <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
 <% end %>

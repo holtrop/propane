@@ -66,11 +66,11 @@ class Propane
         tokens_by_name[token.name] = token
       end
       # Check for user start rule.
-      unless @grammar.rules.find {|rule| rule.name == "Start"}
-        raise Error.new("Start rule not found")
+      unless @grammar.rules.find {|rule| rule.name == @grammar.start_rule}
+        raise Error.new("Start rule `#{@grammar.start_rule}` not found")
       end
       # Add "real" start rule.
-      @grammar.rules.unshift(Rule.new("$Start", ["Start", "$EOF"], nil, nil, nil))
+      @grammar.rules.unshift(Rule.new("$Start", [@grammar.start_rule, "$EOF"], nil, nil, nil))
       rule_sets = {}
       rule_set_id = @grammar.tokens.size
       @grammar.rules.each_with_index do |rule, rule_id|
@@ -270,7 +270,7 @@ class Propane
     #   Start rule parser value type name and type string.
     def start_rule_type
       start_rule = @grammar.rules.find do |rule|
-        rule.name == "Start"
+        rule.name == @grammar.start_rule
       end
       [start_rule.ptypename, @grammar.ptypes[start_rule.ptypename]]
     end

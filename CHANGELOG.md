@@ -3,6 +3,7 @@
 ### New Features
 
 - Allow user to specify AST node name prefix or suffix
+- Allow specifying the start rule name
 
 ## v1.3.0
 

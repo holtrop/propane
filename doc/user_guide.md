@@ -203,8 +203,10 @@ In AST generation mode various aspects of propane's behavior are changed:
   * Parser user code blocks are not supported.
   * Structure types are generated to represent the parsed tokens and rules as
   defined in the grammar.
-  * The parse result from `p_result()` points to a `Start` structure containing
-  the entire parse tree for the input.
+  * The parse result from `p_result()` points to a `Start` struct containing
+  the entire parse tree for the input. If the user has changed the start rule
+  with the `start` grammar statement, the name of the start struct will be
+  given by the user-specified start rule instead of `Start`.
 
 Example AST generation grammar:
 
@@ -594,21 +596,24 @@ Rules with the same name define a rule set for that name and act as
 alternatives that the parser can accept when attempting to match a reference to
 that rule.
 
-The grammar file must define a rule with the name `Start` which will be used as
-the top-level starting rule that the parser attempts to reduce.
+The default start rule name is `Start`.
+This can be changed with the `start` statement.
+The grammar file must define a rule with the name of the start rule name which
+will be used as the top-level starting rule that the parser attempts to reduce.
 
 Example:
 
 ```
 ptype ulong;
+start Top;
 token word /[a-z]+/ << $$ = match.length; >>
-Start -> word << $$ = $1; >>
+Top -> word << $$ = $1; >>
 ```
 
-In the above example the `Start` rule is defined to match a single `word`
+In the above example the `Top` rule is defined to match a single `word`
 token.
 
-Example:
+Another example:
 
 ```
 Start -> E1 << $$ = $1; >>
@@ -622,6 +627,8 @@ E4 -> integer << $$ = $1; >>
 E4 -> lparen E1 rparen << $$ = $2; >>
 ```
 
+This example uses the default start rule name of `Start`.
+
 A parser rule has zero or more terms on the right side of its definition.
 Each of these terms is either a token name or a rule name.
 
@@ -634,6 +641,16 @@ can be used to produce the parser value for the accepted rule.
 
 Parser rule code blocks are not allowed and not used when AST generation mode
 is active.
+
+##> Specifying the parser start rule name - the `start` statement
+
+The start rule can be changed from the default of `Start` by using the `start`
+statement.
+Example:
+
+```
+start MyStartRule;
+```
 
 ##> Specifying the parser module name - the `module` statement
 
