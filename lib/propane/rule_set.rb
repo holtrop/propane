@@ -56,6 +56,14 @@ class Propane
       @could_be_empty
     end
 
+    # Return whether this is an optional RuleSet.
+    #
+    # @return [Boolean]
+    #   Whether this is an optional RuleSet.
+    def optional?
+      @name.end_with?("?")
+    end
+
     # Build the start token set for the RuleSet.
     #
     # @return [Set<Token>]
