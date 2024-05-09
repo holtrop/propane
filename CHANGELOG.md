@@ -6,6 +6,10 @@
 - Allow specifying the start rule name
 - Allow rule terms to be marked as optional
 
+### Improvements
+
+- Give a better error message when a referenced ptype has not been declared
+
 ## v1.3.0
 
 ### New Features
