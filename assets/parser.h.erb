@@ -64,11 +64,13 @@ typedef struct <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>
 
 <%   @parser.rule_sets.each do |name, rule_set| %>
 <%     next if name.start_with?("$") %>
+<%     next if rule_set.optional? %>
 struct <%= name %>;
 <%   end %>
 
 <%   @parser.rule_sets.each do |name, rule_set| %>
 <%     next if name.start_with?("$") %>
+<%     next if rule_set.optional? %>
 typedef struct <%= @grammar.ast_prefix %><%= name %><%= @grammar.ast_suffix %>
 {
 <%     rule_set.ast_fields.each do |fields| %>

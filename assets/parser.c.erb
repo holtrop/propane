@@ -622,6 +622,13 @@ typedef struct
      * Number of rule set AST node fields.
      */
     uint16_t rule_set_node_field_array_size;
+
+    /**
+     * Whether this rule was a generated optional rule that matched the
+     * optional target. In this case, propagate the matched target node up
+     * instead of making a new node for this rule.
+     */
+    bool propagate_optional_target;
 <% end %>
 } reduce_t;
 
@@ -686,6 +693,7 @@ static const reduce_t parser_reduce_table[] = {
              , &r_<%= reduce[:rule].name.gsub("$", "_") %><%= reduce[:rule].id %>_node_field_index_map[0]
 <%       end %>
              , <%= reduce[:rule].rule_set.ast_fields.size %>
+             , <%= reduce[:propagate_optional_target] %>
 <%     end %>
     },
 <%   end %>
@@ -970,7 +978,11 @@ size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context)
         {
             /* We have something to reduce. */
 <% if @grammar.ast %>
-            if (parser_reduce_table[reduce_index].n_states > 0)
+            if (parser_reduce_table[reduce_index].propagate_optional_target)
+            {
+                reduced_parser_node = state_values_stack_index(&statevalues, -1)->ast_node;
+            }
+            else if (parser_reduce_table[reduce_index].n_states > 0)
             {
                 void ** node_fields = calloc(parser_reduce_table[reduce_index].rule_set_node_field_array_size, sizeof(void *));
                 if (parser_reduce_table[reduce_index].rule_set_node_field_index_map == NULL)

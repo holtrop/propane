@@ -198,7 +198,7 @@ class Propane
         if @ast && ptypename
           raise Error.new("Multiple ptypes are unsupported in AST mode")
         end
-        md = consume!(/((?:#{IDENTIFIER_REGEX}\s*)*)\s*/, "expected rule component list")
+        md = consume!(/((?:#{IDENTIFIER_REGEX}\??\s*)*)\s*/, "expected rule component list")
         components = md[1].strip.split(/\s+/)
         if @ast
           consume!(/;/, "expected `;'")

@@ -72,6 +72,7 @@ public struct <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>
 
 <%   @parser.rule_sets.each do |name, rule_set| %>
 <%     next if name.start_with?("$") %>
+<%     next if rule_set.optional? %>
 public struct <%= @grammar.ast_prefix %><%= name %><%= @grammar.ast_suffix %>
 {
 <%     rule_set.ast_fields.each do |fields| %>
@@ -763,6 +764,13 @@ private struct reduce_t
      * Number of rule set AST node fields.
      */
     ushort rule_set_node_field_array_size;
+
+    /**
+     * Whether this rule was a generated optional rule that matched the
+     * optional target. In this case, propagate the matched target node up
+     * instead of making a new node for this rule.
+     */
+    bool propagate_optional_target;
 <% end %>
 }
 
@@ -832,6 +840,7 @@ private immutable reduce_t[] parser_reduce_table = [
              , &r_<%= reduce[:rule].name.gsub("$", "_") %><%= reduce[:rule].id %>_node_field_index_map[0]
 <%       end %>
              , <%= reduce[:rule].rule_set.ast_fields.size %>
+             , <%= reduce[:propagate_optional_target] %>
 <%     end %>
             ),
 <%   end %>
@@ -1015,7 +1024,11 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
         {
             /* We have something to reduce. */
 <% if @grammar.ast %>
-            if (parser_reduce_table[reduce_index].n_states > 0)
+            if (parser_reduce_table[reduce_index].propagate_optional_target)
+            {
+                reduced_parser_node = statevalues[$ - 1].ast_node;
+            }
+            else if (parser_reduce_table[reduce_index].n_states > 0)
             {
                 void *[] node_fields = new void *[parser_reduce_table[reduce_index].rule_set_node_field_array_size];
                 foreach (i; 0..parser_reduce_table[reduce_index].rule_set_node_field_array_size)

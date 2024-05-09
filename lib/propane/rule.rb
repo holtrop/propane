@@ -66,6 +66,14 @@ class Propane
       @components.empty?
     end
 
+    # Return whether this is an optional Rule.
+    #
+    # @return [Boolean]
+    #   Whether this is an optional Rule.
+    def optional?
+      @name.end_with?("?")
+    end
+
     # Represent the Rule as a String.
     #
     # @return [String]

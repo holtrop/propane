@@ -631,6 +631,20 @@ This example uses the default start rule name of `Start`.
 
 A parser rule has zero or more terms on the right side of its definition.
 Each of these terms is either a token name or a rule name.
+A term can be immediately followed by a `?` character to signify that it is
+optional.
+Another example:
+
+```
+token public;
+token private;
+token int;
+token ident /[a-zA-Z_][a-zA-Z_0-9]*/;
+token semicolon /;/;
+IntegerDeclaration -> Visibility? int ident semicolon;
+Visibility -> public;
+Visibility -> private;
+```
 
 In a parser rule code block, parser values for the right side terms are
 accessible as `$1` for the first term's parser value, `$2` for the second

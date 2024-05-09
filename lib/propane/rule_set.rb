@@ -56,6 +56,24 @@ class Propane
       @could_be_empty
     end
 
+    # Return whether this is an optional RuleSet.
+    #
+    # @return [Boolean]
+    #   Whether this is an optional RuleSet.
+    def optional?
+      @name.end_with?("?")
+    end
+
+    # For optional rule sets, return the underlying component that is optional.
+    def option_target
+      @rules.each do |rule|
+        if rule.components.size > 0
+          return rule.components[0]
+        end
+      end
+      raise "Optional rule target not found"
+    end
+
     # Build the start token set for the RuleSet.
     #
     # @return [Set<Token>]
@@ -102,6 +120,9 @@ class Propane
       @ast_fields = []
       @rules.each do |rule|
         rule.components.each_with_index do |component, i|
+          if component.is_a?(RuleSet) && component.optional?
+            component = component.option_target
+          end
           if component.is_a?(Token)
             node_name = "Token"
           else

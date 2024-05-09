@@ -64,11 +64,13 @@ class Propane
           case ra = item_set.reduce_actions
           when Rule
             [{token_id: @grammar.invalid_token_id, rule_id: ra.id, rule: ra,
-              rule_set_id: ra.rule_set.id, n_states: ra.components.size}]
+              rule_set_id: ra.rule_set.id, n_states: ra.components.size,
+              propagate_optional_target: ra.optional? && ra.components.size == 1}]
           when Hash
             ra.map do |token, rule|
               {token_id: token.id, rule_id: rule.id, rule: rule,
-               rule_set_id: rule.rule_set.id, n_states: rule.components.size}
+               rule_set_id: rule.rule_set.id, n_states: rule.components.size,
+               propagate_optional_target: rule.optional? && rule.components.size == 1}
             end
           else
             []

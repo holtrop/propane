@@ -910,6 +910,111 @@ EOF
         run_propane(language: language)
         compile("spec/test_start_rule_ast.#{language}", language: language)
       end
+
+      it "allows marking a rule component as optional" do
+        if language == "d"
+          write_grammar <<EOF
+<<
+import std.stdio;
+>>
+
+ptype int;
+ptype float = float;
+ptype string = string;
+
+token a (float) << $$ = 1.5; >>
+token b << $$ = 2; >>
+token c << $$ = 3; >>
+token d << $$ = 4; >>
+Start -> a? b R? <<
+  writeln("a: ", $1);
+  writeln("b: ", $2);
+  writeln("R: ", $3);
+>>
+R -> c d << $$ = "cd"; >>
+R (string) -> d c << $$ = "dc"; >>
+EOF
+        else
+          write_grammar <<EOF
+<<
+#include <stdio.h>
+>>
+
+ptype int;
+ptype float = float;
+ptype string = char *;
+
+token a (float) << $$ = 1.5; >>
+token b << $$ = 2; >>
+token c << $$ = 3; >>
+token d << $$ = 4; >>
+Start -> a? b R? <<
+  printf("a: %.1f\\n", $1);
+  printf("b: %d\\n", $2);
+  printf("R: %s\\n", $3 == NULL ? "" : $3);
+>>
+R -> c d << $$ = "cd"; >>
+R (string) -> d c << $$ = "dc"; >>
+EOF
+        end
+        run_propane(language: language)
+        compile("spec/test_optional_rule_component.#{language}", language: language)
+        results = run_test
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+        verify_lines(results.stdout, [
+          "a: 0#{language == "d" ? "" : ".0"}",
+          "b: 2",
+          "R: ",
+          "a: 1.5",
+          "b: 2",
+          "R: cd",
+          "a: 1.5",
+          "b: 2",
+          "R: dc",
+        ])
+      end
+
+      it "allows marking a rule component as optional in AST generation mode" do
+        if language == "d"
+          write_grammar <<EOF
+ast;
+
+<<
+import std.stdio;
+>>
+
+token a;
+token b;
+token c;
+token d;
+Start -> a? b R?;
+R -> c d;
+R -> d c;
+EOF
+        else
+          write_grammar <<EOF
+ast;
+
+<<
+#include <stdio.h>
+>>
+
+token a;
+token b;
+token c;
+token d;
+Start -> a? b R?;
+R -> c d;
+R -> d c;
+EOF
+        end
+        run_propane(language: language)
+        compile("spec/test_optional_rule_component_ast.#{language}", language: language)
+        results = run_test
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
     end
   end
 end

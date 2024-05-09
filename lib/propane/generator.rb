@@ -71,6 +71,9 @@ class Propane
       end
       # Add "real" start rule.
       @grammar.rules.unshift(Rule.new("$Start", [@grammar.start_rule, "$EOF"], nil, nil, nil))
+      # Generate and add rules for optional components.
+      generate_optional_component_rules!(tokens_by_name)
+      # Build rule sets.
       rule_sets = {}
       rule_set_id = @grammar.tokens.size
       @grammar.rules.each_with_index do |rule, rule_id|
@@ -126,6 +129,37 @@ class Propane
       @lexer = Lexer.new(@grammar)
       # Generate the parser.
       @parser = Parser.new(@grammar, rule_sets, @log)
+    end
+
+    # Generate and add rules for any optional components.
+    def generate_optional_component_rules!(tokens_by_name)
+      optional_rules_added = Set.new
+      @grammar.rules.each do |rule|
+        rule.components.each do |component|
+          if component =~ /^(.*)\?$/
+            c = $1
+            unless optional_rules_added.include?(component)
+              # Create two rules for the optional component: one empty and
+              # one just matching the component.
+              # We need to find the ptypename for the optional component in
+              # order to copy it to the generated rules.
+              if tokens_by_name[c]
+                # The optional component is a token.
+                ptypename = tokens_by_name[c].ptypename
+              else
+                # The optional component must be a rule, so find any instance
+                # of that rule that specifies a ptypename.
+                ptypename = @grammar.rules.reduce(nil) do |result, rule|
+                  rule.name == c && rule.ptypename ? rule.ptypename : result
+                end
+              end
+              @grammar.rules << Rule.new(component, [], nil, ptypename, rule.line_number)
+              @grammar.rules << Rule.new(component, [c], "$$ = $1;\n", ptypename, rule.line_number)
+              optional_rules_added << component
+            end
+          end
+        end
+      end
     end
 
     # Determine which grammar rules could expand to empty sequences.
