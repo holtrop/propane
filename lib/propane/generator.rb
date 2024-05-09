@@ -51,6 +51,7 @@ class Propane
       unless found_default
         raise Error.new("No patterns found for default mode")
       end
+      check_ptypes!
       # Add EOF token.
       @grammar.tokens << Token.new("$EOF", nil, nil)
       tokens_by_name = {}
@@ -129,6 +130,17 @@ class Propane
       @lexer = Lexer.new(@grammar)
       # Generate the parser.
       @parser = Parser.new(@grammar, rule_sets, @log)
+    end
+
+    # Check that any referenced ptypes have been defined.
+    def check_ptypes!
+      (@grammar.patterns + @grammar.tokens + @grammar.rules).each do |potor|
+        if potor.ptypename
+          unless @grammar.ptypes.include?(potor.ptypename)
+            raise Error.new("Error: Line #{potor.line_number}: ptype #{potor.ptypename} not declared. Declare with `ptype` statement.")
+          end
+        end
+      end
     end
 
     # Generate and add rules for any optional components.

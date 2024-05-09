@@ -148,6 +148,42 @@ EOF
     expect(results.status).to_not eq 0
   end
 
+  it "raises an error when a pattern referenced ptype has not been defined" do
+    write_grammar <<EOF
+ptype yes = int;
+/foo/ (yes) <<
+>>
+/bar/ (no) <<
+>>
+EOF
+    results = run_propane(capture: true)
+    expect(results.stderr).to match /Error: Line 4: ptype no not declared\. Declare with `ptype` statement\./
+    expect(results.status).to_not eq 0
+  end
+
+  it "raises an error when a token referenced ptype has not been defined" do
+    write_grammar <<EOF
+ptype yes = int;
+token foo (yes);
+token bar (no);
+EOF
+    results = run_propane(capture: true)
+    expect(results.stderr).to match /Error: Line 3: ptype no not declared\. Declare with `ptype` statement\./
+    expect(results.status).to_not eq 0
+  end
+
+  it "raises an error when a rule referenced ptype has not been defined" do
+    write_grammar <<EOF
+ptype yes = int;
+token xyz;
+foo (yes) -> bar;
+bar (no) -> xyz;
+EOF
+    results = run_propane(capture: true)
+    expect(results.stderr).to match /Error: Line 4: ptype no not declared\. Declare with `ptype` statement\./
+    expect(results.status).to_not eq 0
+  end
+
   %w[d c].each do |language|
 
     context "#{language.upcase} language" do
