@@ -38,6 +38,20 @@ typedef <%= get_type_for(@grammar.terminate_token_id) %> <%= @grammar.prefix %>t
 /** Code point type. */
 typedef uint32_t <%= @grammar.prefix %>code_point_t;
 
+/**
+ * A structure to keep track of input position.
+ *
+ * This is useful for reporting errors, etc...
+ */
+typedef struct
+{
+    /** Input text row (0-based). */
+    uint32_t row;
+
+    /** Input text column (0-based). */
+    uint32_t col;
+} <%= @grammar.prefix %>position_t;
+
 /** User header code blocks. */
 <%= @grammar.code_blocks.fetch("header", "") %>
 
@@ -60,6 +74,7 @@ typedef struct <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>
 {
     <%= @grammar.prefix %>token_t token;
     <%= @grammar.prefix %>value_t pvalue;
+    <%= @grammar.prefix %>position_t position;
 } <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>;
 
 <%   @parser.rule_sets.each do |name, rule_set| %>
@@ -86,20 +101,6 @@ typedef struct <%= @grammar.ast_prefix %><%= name %><%= @grammar.ast_suffix %>
 <%   end %>
 /** @} */
 <% end %>
-
-/**
- * A structure to keep track of parser position.
- *
- * This is useful for reporting errors, etc...
- */
-typedef struct
-{
-    /** Input text row (0-based). */
-    uint32_t row;
-
-    /** Input text column (0-based). */
-    uint32_t col;
-} <%= @grammar.prefix %>position_t;
 
 /** Lexed token information. */
 typedef struct

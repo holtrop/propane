@@ -1051,6 +1051,26 @@ EOF
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
+
+      it "stores the token position in the AST Token node" do
+        write_grammar <<EOF
+ast;
+
+token a;
+token b;
+token c;
+drop /\\s+/;
+Start -> T T T;
+T -> a;
+T -> b;
+T -> c;
+EOF
+        run_propane(language: language)
+        compile("spec/test_ast_token_positions.#{language}", language: language)
+        results = run_test
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
     end
   end
 end

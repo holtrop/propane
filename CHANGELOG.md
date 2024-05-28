@@ -1,3 +1,9 @@
+## v1.5.0
+
+### New Features
+
+- Track token position in AST Token node
+
 ## v1.4.0
 
 ### New Features
