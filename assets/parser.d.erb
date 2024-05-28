@@ -586,7 +586,6 @@ private size_t attempt_lex_token(<%= @grammar.prefix %>context_t * context, <%= 
     <%= @grammar.prefix %>token_info_t token_info;
     token_info.position = context.text_position;
     token_info.token = INVALID_TOKEN_ID;
-    *out_token_info = token_info; // TODO: remove
     lexer_match_info_t match_info;
     size_t unexpected_input_length;
     size_t result = find_longest_match(context, &match_info, &unexpected_input_length);
