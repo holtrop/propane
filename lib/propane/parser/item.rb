@@ -56,7 +56,7 @@ class Propane
 
       # Return the set of Items obtained by "closing" the current item.
       #
-      # If the following symbol for the current item is another Rule name, then
+      # If the next symbol for the current item is another Rule name, then
       # this method will return all Items for that Rule with a position of 0.
       # Otherwise, an empty Array is returned.
       #
@@ -81,17 +81,17 @@ class Propane
         @position == @rule.components.size
       end
 
-      # Get the following symbol for the Item.
+      # Get the next symbol for the Item.
       #
-      # That is, the symbol which follows the parse position marker in the
+      # That is, the symbol which is after the parse position marker in the
       # current Item.
       #
       # @param offset [Integer]
       #   Offset from current parse position to examine.
       #
       # @return [Token, RuleSet, nil]
-      #   Following symbol for the Item.
-      def following_symbol(offset = 0)
+      #   Next symbol for the Item.
+      def next_symbol(offset = 0)
         @rule.components[@position + offset]
       end
 
@@ -108,25 +108,25 @@ class Propane
         end
       end
 
-      # Get whether this Item is followed by the provided symbol.
+      # Get whether this Item's next symbol is the given symbol.
       #
       # @param symbol [Token, RuleSet]
       #   Symbol to query.
       #
       # @return [Boolean]
-      #   Whether this Item is followed by the provided symbol.
-      def followed_by?(symbol)
-        following_symbol == symbol
+      #   Whether this Item's next symbol is the given symbol.
+      def next_symbol?(symbol)
+        next_symbol == symbol
       end
 
-      # Get the following item for this Item.
+      # Get the next item for this Item.
       #
       # That is, the Item formed by moving the parse position marker one place
       # forward from its position in this Item.
       #
       # @return [Item]
-      #   The following item for this Item.
-      def following_item
+      #   The next item for this Item.
+      def next_item
         Item.new(@rule, @position + 1)
       end
 

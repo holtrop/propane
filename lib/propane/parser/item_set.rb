@@ -14,8 +14,8 @@ class Propane
       attr_accessor :id
 
       # @return [Hash]
-      #   Maps a following symbol to its ItemSet.
-      attr_reader :following_item_set
+      #   Maps a next symbol to its ItemSet.
+      attr_reader :next_item_set
 
       # @return [Set<ItemSet>]
       #   ItemSets leading to this item set.
@@ -31,28 +31,28 @@ class Propane
       #   Items in this ItemSet.
       def initialize(items)
         @items = Set.new(items)
-        @following_item_set = {}
+        @next_item_set = {}
         @in_sets = Set.new
         close!
       end
 
-      # Get the set of following symbols for all Items in this ItemSet.
+      # Get the set of next symbols for all Items in this ItemSet.
       #
       # @return [Set<Token, RuleSet>]
-      #   Set of following symbols for all Items in this ItemSet.
-      def following_symbols
-        Set.new(@items.map(&:following_symbol).compact)
+      #   Set of next symbols for all Items in this ItemSet.
+      def next_symbols
+        Set.new(@items.map(&:next_symbol).compact)
       end
 
-      # Build a following ItemSet for the given following symbol.
+      # Build a next ItemSet for the given next symbol.
       #
       # @param symbol [Token, RuleSet]
-      #   Following symbol to build the following ItemSet for.
+      #   Next symbol to build the next ItemSet for.
       #
       # @return [ItemSet]
-      #   Following ItemSet for the given following symbol.
-      def build_following_item_set(symbol)
-        ItemSet.new(items_followed_by(symbol).map(&:following_item))
+      #   Next ItemSet for the given next symbol.
+      def build_next_item_set(symbol)
+        ItemSet.new(items_with_next(symbol).map(&:next_item))
       end
 
       # Hash function.
@@ -137,16 +137,16 @@ class Propane
         end
       end
 
-      # Get the Items followed by the given following symbol.
+      # Get the Items with the given next symbol.
       #
       # @param symbol [Token, RuleSet]
-      #   Following symbol.
+      #   Next symbol.
       #
       # @return [Array<Item>]
-      #   Items followed by the given following symbol.
-      def items_followed_by(symbol)
+      #   Items with the given next symbol.
+      def items_with_next(symbol)
         @items.select do |item|
-          item.followed_by?(symbol)
+          item.next_symbol?(symbol)
         end
       end
 

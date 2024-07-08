@@ -23,10 +23,10 @@ class Propane
           item_set.id = @item_sets.size
           @item_sets << item_set
           @item_sets_set[item_set] = item_set
-          item_set.following_symbols.each do |following_symbol|
-            unless following_symbol.name == "$EOF"
-              following_set = item_set.build_following_item_set(following_symbol)
-              eval_item_sets << following_set
+          item_set.next_symbols.each do |next_symbol|
+            unless next_symbol.name == "$EOF"
+              next_item_set = item_set.build_next_item_set(next_symbol)
+              eval_item_sets << next_item_set
             end
           end
         end
@@ -48,15 +48,15 @@ class Propane
       @shift_table = []
       @reduce_table = []
       @item_sets.each do |item_set|
-        shift_entries = item_set.following_symbols.map do |following_symbol|
+        shift_entries = item_set.next_symbols.map do |next_symbol|
           state_id =
-            if following_symbol.name == "$EOF"
+            if next_symbol.name == "$EOF"
               0
             else
-              item_set.following_item_set[following_symbol].id
+              item_set.next_item_set[next_symbol].id
             end
           {
-            symbol_id: following_symbol.id,
+            symbol_id: next_symbol.id,
             state_id: state_id,
           }
         end
@@ -87,11 +87,11 @@ class Propane
     end
 
     def process_item_set(item_set)
-      item_set.following_symbols.each do |following_symbol|
-        unless following_symbol.name == "$EOF"
-          following_set = @item_sets_set[item_set.build_following_item_set(following_symbol)]
-          item_set.following_item_set[following_symbol] = following_set
-          following_set.in_sets << item_set
+      item_set.next_symbols.each do |next_symbol|
+        unless next_symbol.name == "$EOF"
+          next_item_set = @item_sets_set[item_set.build_next_item_set(next_symbol)]
+          item_set.next_item_set[next_symbol] = next_item_set
+          next_item_set.in_sets << item_set
         end
       end
     end
@@ -183,9 +183,9 @@ class Propane
         # tokens to form the lookahead token set.
         item_sets.each do |item_set|
           item_set.items.each do |item|
-            if item.following_symbol == rule_set
+            if item.next_symbol == rule_set
               (1..).each do |offset|
-                case symbol = item.following_symbol(offset)
+                case symbol = item.next_symbol(offset)
                 when nil
                   rule_set = item.rule.rule_set
                   unless checked_rule_sets.include?(rule_set)
@@ -242,8 +242,8 @@ class Propane
         @log.puts
         @log.puts "  Incoming states: #{incoming_ids.join(", ")}"
         @log.puts "  Outgoing states:"
-        item_set.following_item_set.each do |following_symbol, following_item_set|
-          @log.puts "    #{following_symbol.name} => #{following_item_set.id}"
+        item_set.next_item_set.each do |next_symbol, next_item_set|
+          @log.puts "    #{next_symbol.name} => #{next_item_set.id}"
         end
         @log.puts
         @log.puts "  Reduce actions:"
