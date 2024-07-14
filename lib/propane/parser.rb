@@ -62,13 +62,12 @@ class Propane
           }
         end
         reduce_entries =
-          case ra = item_set.reduce_actions
-          when Rule
-            [{token_id: @grammar.invalid_token_id, rule_id: ra.id, rule: ra,
-              rule_set_id: ra.rule_set.id, n_states: ra.components.size,
-              propagate_optional_target: ra.optional? && ra.components.size == 1}]
-          when Hash
-            ra.map do |token, rule|
+          if rule = item_set.reduce_rule
+            [{token_id: @grammar.invalid_token_id, rule_id: rule.id, rule: rule,
+              rule_set_id: rule.rule_set.id, n_states: rule.components.size,
+              propagate_optional_target: rule.optional? && rule.components.size == 1}]
+          elsif reduce_actions = item_set.reduce_actions
+            reduce_actions.map do |token, rule|
               {token_id: token.id, rule_id: rule.id, rule: rule,
                rule_set_id: rule.rule_set.id, n_states: rule.components.size,
                propagate_optional_target: rule.optional? && rule.components.size == 1}
@@ -111,10 +110,8 @@ class Propane
     # @param item_set [ItemSet]
     #   ItemSet (parser state)
     #
-    # @return [nil, Rule, Hash]
+    # @return [nil, Hash]
     #   If no reduce actions are possible for the given item set, nil.
-    #   If only one reduce action is possible for the given item set, the Rule
-    #   to reduce.
     #   Otherwise, a mapping of lookahead Tokens to the Rules to reduce.
     def build_reduce_actions_for_item_set(item_set)
       # To build the reduce actions, we start by looking at any
@@ -123,15 +120,15 @@ class Propane
       # reduction in the current ItemSet.
       reduce_rules = Set.new(item_set.items.select(&:complete?).map(&:rule))
 
-      # If there are no rules to reduce for this ItemSet, we're done here.
-      return nil if reduce_rules.size == 0
+      if reduce_rules.size == 1
+        item_set.reduce_rule = reduce_rules.first
+      end
 
-      # If there is exactly one rule to reduce for this ItemSet, then do not
-      # figure out the lookaheads; just reduce it.
-      return reduce_rules.first if reduce_rules.size == 1
-
-      # Otherwise, we have more than one possible rule to reduce.
-      build_lookahead_reduce_actions_for_item_set(item_set)
+      if reduce_rules.size == 0
+        nil
+      else
+        build_lookahead_reduce_actions_for_item_set(item_set)
+      end
     end
 
     # Build the reduce actions for a single item set (parser state).
@@ -305,10 +302,9 @@ class Propane
         end
         @log.puts
         @log.puts "  Reduce actions:"
-        case item_set.reduce_actions
-        when Rule
-          @log.puts "    * => rule #{item_set.reduce_actions.id}, rule set #{@rule_sets[item_set.reduce_actions.name].id} (#{item_set.reduce_actions.name})"
-        when Hash
+        if item_set.reduce_rule
+          @log.puts "    * => rule #{item_set.reduce_rule.id}, rule set #{@rule_sets[item_set.reduce_rule.name].id} (#{item_set.reduce_rule.name})"
+        elsif item_set.reduce_actions
           item_set.reduce_actions.each do |token, rule|
             @log.puts "    lookahead #{token.name} => #{rule.name} (#{rule.id}), rule set ##{rule.rule_set.id}"
           end

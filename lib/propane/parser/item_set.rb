@@ -21,8 +21,13 @@ class Propane
       #   ItemSets leading to this item set.
       attr_reader :in_sets
 
-      # @return [nil, Rule, Hash]
-      #   Reduce actions, mapping lookahead tokens to rules.
+      # @return [nil, Rule]
+      #   Rule to reduce if there is only one possibility.
+      attr_accessor :reduce_rule
+
+      # @return [nil, Hash]
+      #   Reduce actions, mapping lookahead tokens to rules, if there is
+      #   more than one rule that could be reduced.
       attr_accessor :reduce_actions
 
       # @return [Set<Token>]
