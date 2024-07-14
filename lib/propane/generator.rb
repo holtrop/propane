@@ -2,7 +2,7 @@ class Propane
 
   class Generator
 
-    def initialize(grammar, output_file, log_file)
+    def initialize(grammar, output_file, log_file, options)
       @grammar = grammar
       @output_file = output_file
       if log_file
@@ -16,6 +16,7 @@ class Propane
         else
           "d"
         end
+      @options = options
       process_grammar!
     end
 
@@ -129,7 +130,7 @@ class Propane
       # Generate the lexer.
       @lexer = Lexer.new(@grammar)
       # Generate the parser.
-      @parser = Parser.new(@grammar, rule_sets, @log)
+      @parser = Parser.new(@grammar, rule_sets, @log, @options)
     end
 
     # Check that any referenced ptypes have been defined.

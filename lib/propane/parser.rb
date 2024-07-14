@@ -7,13 +7,14 @@ class Propane
     attr_reader :reduce_table
     attr_reader :rule_sets
 
-    def initialize(grammar, rule_sets, log)
+    def initialize(grammar, rule_sets, log, options)
       @grammar = grammar
       @rule_sets = rule_sets
       @log = log
       @item_sets = []
       @item_sets_set = {}
-      @sr_conflicts = Set.new
+      @warnings = Set.new
+      @options = options
       start_item = Item.new(grammar.rules.first, 0)
       eval_item_sets = Set[ItemSet.new([start_item])]
 
@@ -41,6 +42,9 @@ class Propane
       build_follow_sets!
       build_tables!
       write_log!
+      if @warnings.size > 0 && @options[:warnings_as_errors]
+        raise Error.new("Fatal errors (-w):\n" + @warnings.join("\n"))
+      end
     end
 
     private
@@ -65,7 +69,7 @@ class Propane
         if item_set.reduce_actions
           shift_entries.each do |shift_entry|
             if item_set.reduce_actions.include?(shift_entry[:symbol])
-              @sr_conflicts << [shift_entry[:symbol], item_set.reduce_actions[shift_entry[:symbol]]]
+              @warnings << "Shift/Reduce conflict between token #{shift_entry[:symbol].name} and rule #{item_set.reduce_actions[shift_entry[:symbol]].name}"
             end
           end
         end
@@ -318,11 +322,11 @@ class Propane
           end
         end
       end
-      if @sr_conflicts.size > 0
+      if @warnings.size > 0
         @log.puts
-        @log.puts "Shift/Reduce Conflicts:"
-        @sr_conflicts.each do |sr_conflict|
-          @log.puts "  Shift/Reduce conflict between #{sr_conflict[0].name} and #{sr_conflict[1].name}"
+        @log.puts "Warnings:"
+        @warnings.each do |warning|
+          @log.puts "  #{warning}"
         end
       end
     end

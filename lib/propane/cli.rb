@@ -4,15 +4,21 @@ class Propane
     USAGE = <<EOF
 Usage: #{$0} [options] <input-file> <output-file>
 Options:
-  --log LOG   Write log file
-  --version   Show program version and exit
-  -h, --help  Show this usage and exit
+  --log LOG   Write log file. This will show all parser states and their
+              associated shifts and reduces. It can be helpful when
+              debugging a grammar.
+  --version   Show program version and exit.
+  -h, --help  Show this usage and exit.
+  -w          Treat warnings as errors. This option will treat shift/reduce
+              conflicts as fatal errors and will print them to stderr in
+              addition to the log file.
 EOF
 
     class << self
 
       def run(args)
         params = []
+        options = {}
         log_file = nil
         i = 0
         while i < args.size
@@ -29,6 +35,8 @@ EOF
           when "-h", "--help"
             puts USAGE
             return 0
+          when "-w"
+            options[:warnings_as_errors] = true
           when /^-/
             $stderr.puts "Error: unknown option #{arg}"
             return 1
@@ -45,7 +53,7 @@ EOF
           $stderr.puts "Error: cannot read #{params[0]}"
           return 2
         end
-        Propane.run(*params, log_file)
+        Propane.run(*params, log_file, options)
       end
 
     end

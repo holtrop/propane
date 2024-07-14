@@ -54,6 +54,7 @@ EOF
     else
       command += %W[spec/run/testparser#{options[:name]}.propane spec/run/testparser#{options[:name]}.#{options[:language]} --log spec/run/testparser#{options[:name]}.log]
     end
+    command += (options[:extra_args] || [])
     if (options[:capture])
       stdout, stderr, status = Open3.capture3(*command)
       Results.new(stdout, stderr, status)
@@ -195,7 +196,21 @@ EOF
     results = run_propane(capture: true)
     expect(results.stderr).to eq ""
     expect(results.status).to eq 0
-    expect(File.binread("spec/run/testparser.log")).to match %r{Shift/Reduce conflict between b and As2}
+    expect(File.binread("spec/run/testparser.log")).to match %r{Shift/Reduce conflict between token b and rule As2}
+  end
+
+  it "errors on shift/reduce conflicts with -w" do
+    write_grammar <<EOF
+token a;
+token b;
+Start -> As? b?;
+As -> a As2?;
+As2 -> b a As2?;
+EOF
+    results = run_propane(extra_args: %w[-w], capture: true)
+    expect(results.stderr).to match %r{Fatal errors \(-w\).*Shift/Reduce conflict between token b and rule As2}m
+    expect(results.status).to_not eq 0
+    expect(File.binread("spec/run/testparser.log")).to match %r{Shift/Reduce conflict between token b and rule As2}
   end
 
   %w[d c].each do |language|
