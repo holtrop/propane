@@ -37,6 +37,7 @@ class Propane
       end
 
       build_reduce_actions!
+      build_follow_sets!
       write_log!
       build_tables!
     end
@@ -130,6 +131,18 @@ class Propane
       return reduce_rules.first if reduce_rules.size == 1
 
       # Otherwise, we have more than one possible rule to reduce.
+      build_lookahead_reduce_actions_for_item_set(item_set)
+    end
+
+    # Build the reduce actions for a single item set (parser state).
+    #
+    # @param item_set [ItemSet]
+    #   ItemSet (parser state)
+    #
+    # @return [Hash]
+    #   Mapping of lookahead Tokens to the Rules to reduce.
+    def build_lookahead_reduce_actions_for_item_set(item_set)
+      reduce_rules = Set.new(item_set.items.select(&:complete?).map(&:rule))
 
       # We will be looking for all possible tokens that can follow instances of
       # these rules. Rather than looking through the entire grammar for the
@@ -207,6 +220,51 @@ class Propane
         end
       end
       lookahead_tokens
+    end
+
+    # Build the follow sets for each ItemSet.
+    #
+    # @return [void]
+    def build_follow_sets!
+      @item_sets.each do |item_set|
+        item_set.follow_set = build_follow_set_for_item_set(item_set)
+      end
+    end
+
+    # Build the follow set for the given ItemSet.
+    #
+    # @param item_set [ItemSet]
+    #   The ItemSet to build the follow set for.
+    #
+    # @return [Set]
+    #   Follow set for the given ItemSet.
+    def build_follow_set_for_item_set(item_set)
+      follow_set = Set.new
+      rule_sets_to_check_after = Set.new
+      item_set.items.each do |item|
+        (1..).each do |offset|
+          case symbol = item.next_symbol(offset)
+          when nil
+            rule_sets_to_check_after << item.rule.rule_set
+            break
+          when Token
+            follow_set << symbol
+            break
+          when RuleSet
+            follow_set += symbol.start_token_set
+            unless symbol.could_be_empty?
+              break
+            end
+          end
+        end
+      end
+      reduce_lookaheads = build_lookahead_reduce_actions_for_item_set(item_set)
+      reduce_lookaheads.each do |token, rule_set|
+        if rule_sets_to_check_after.include?(rule_set)
+          follow_set << token
+        end
+      end
+      follow_set
     end
 
     def write_log!
