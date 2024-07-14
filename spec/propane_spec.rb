@@ -184,6 +184,20 @@ EOF
     expect(results.status).to_not eq 0
   end
 
+  it "warns on shift/reduce conflicts" do
+    write_grammar <<EOF
+token a;
+token b;
+Start -> As? b?;
+As -> a As2?;
+As2 -> b a As2?;
+EOF
+    results = run_propane(capture: true)
+    expect(results.stderr).to eq ""
+    expect(results.status).to eq 0
+    expect(File.binread("spec/run/testparser.log")).to match %r{Shift/Reduce conflict between b and As2}
+  end
+
   %w[d c].each do |language|
 
     context "#{language.upcase} language" do

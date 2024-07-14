@@ -669,7 +669,7 @@ typedef struct
 /** Parser shift table. */
 static const shift_t parser_shift_table[] = {
 <%   @parser.shift_table.each do |shift| %>
-    {<%= shift[:symbol_id] %>u, <%= shift[:state_id] %>u},
+    {<%= shift[:symbol].id %>u, <%= shift[:state_id] %>u},
 <%   end %>
 };
 

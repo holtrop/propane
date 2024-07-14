@@ -817,7 +817,7 @@ private struct state_value_t
 /** Parser shift table. */
 private immutable shift_t[] parser_shift_table = [
 <%   @parser.shift_table.each do |shift| %>
-    shift_t(<%= shift[:symbol_id] %>u, <%= shift[:state_id] %>u),
+    shift_t(<%= shift[:symbol].id %>u, <%= shift[:state_id] %>u),
 <%   end %>
 ];
 

@@ -13,6 +13,7 @@ class Propane
       @log = log
       @item_sets = []
       @item_sets_set = {}
+      @sr_conflicts = Set.new
       start_item = Item.new(grammar.rules.first, 0)
       eval_item_sets = Set[ItemSet.new([start_item])]
 
@@ -38,8 +39,8 @@ class Propane
 
       build_reduce_actions!
       build_follow_sets!
-      write_log!
       build_tables!
+      write_log!
     end
 
     private
@@ -57,9 +58,16 @@ class Propane
               item_set.next_item_set[next_symbol].id
             end
           {
-            symbol_id: next_symbol.id,
+            symbol: next_symbol,
             state_id: state_id,
           }
+        end
+        if item_set.reduce_actions
+          shift_entries.each do |shift_entry|
+            if item_set.reduce_actions.include?(shift_entry[:symbol])
+              @sr_conflicts << [shift_entry[:symbol], item_set.reduce_actions[shift_entry[:symbol]]]
+            end
+          end
         end
         reduce_entries =
           if rule = item_set.reduce_rule
@@ -308,6 +316,13 @@ class Propane
           item_set.reduce_actions.each do |token, rule|
             @log.puts "    lookahead #{token.name} => #{rule.name} (#{rule.id}), rule set ##{rule.rule_set.id}"
           end
+        end
+      end
+      if @sr_conflicts.size > 0
+        @log.puts
+        @log.puts "Shift/Reduce Conflicts:"
+        @sr_conflicts.each do |sr_conflict|
+          @log.puts "  Shift/Reduce conflict between #{sr_conflict[0].name} and #{sr_conflict[1].name}"
         end
       end
     end
