@@ -68,8 +68,10 @@ class Propane
         end
         if item_set.reduce_actions
           shift_entries.each do |shift_entry|
-            if item_set.reduce_actions.include?(shift_entry[:symbol])
-              @warnings << "Shift/Reduce conflict between token #{shift_entry[:symbol].name} and rule #{item_set.reduce_actions[shift_entry[:symbol]].name}"
+            token = shift_entry[:symbol]
+            if item_set.reduce_actions.include?(token)
+              rule = item_set.reduce_actions[token]
+              @warnings << "Shift/Reduce conflict (state #{item_set.id}) between token #{token.name} and rule #{rule.name} (defined on line #{rule.line_number})"
             end
           end
         end
@@ -163,7 +165,7 @@ class Propane
         lookahead_tokens_for_rule = build_lookahead_tokens_to_reduce(reduce_rule, item_sets)
         lookahead_tokens_for_rule.each do |lookahead_token|
           if existing_reduce_rule = reduce_actions[lookahead_token]
-            raise Error.new("Error: reduce/reduce conflict between rule #{existing_reduce_rule.id} (#{existing_reduce_rule.name}) and rule #{reduce_rule.id} (#{reduce_rule.name})")
+            raise Error.new("Error: reduce/reduce conflict (state #{item_set.id}) between rule #{existing_reduce_rule.name}##{existing_reduce_rule.id} (defined on line #{existing_reduce_rule.line_number}) and rule #{reduce_rule.name}##{reduce_rule.id} (defined on line #{reduce_rule.line_number})")
           end
           reduce_actions[lookahead_token] = reduce_rule
         end

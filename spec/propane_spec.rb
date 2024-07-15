@@ -196,7 +196,7 @@ EOF
     results = run_propane(capture: true)
     expect(results.stderr).to eq ""
     expect(results.status).to eq 0
-    expect(File.binread("spec/run/testparser.log")).to match %r{Shift/Reduce conflict between token b and rule As2}
+    expect(File.binread("spec/run/testparser.log")).to match %r{Shift/Reduce conflict \(state \d+\) between token b and rule As2\? \(defined on line 4\)}
   end
 
   it "errors on shift/reduce conflicts with -w" do
@@ -208,9 +208,9 @@ As -> a As2?;
 As2 -> b a As2?;
 EOF
     results = run_propane(extra_args: %w[-w], capture: true)
-    expect(results.stderr).to match %r{Fatal errors \(-w\).*Shift/Reduce conflict between token b and rule As2}m
+    expect(results.stderr).to match %r{Shift/Reduce conflict \(state \d+\) between token b and rule As2\? \(defined on line 4\)}m
     expect(results.status).to_not eq 0
-    expect(File.binread("spec/run/testparser.log")).to match %r{Shift/Reduce conflict between token b and rule As2}
+    expect(File.binread("spec/run/testparser.log")).to match %r{Shift/Reduce conflict \(state \d+\) between token b and rule As2\? \(defined on line 4\)}
   end
 
   %w[d c].each do |language|
@@ -652,7 +652,7 @@ F -> e;
 EOF
         results = run_propane(capture: true, language: language)
         expect(results.status).to_not eq 0
-        expect(results.stderr).to match %r{reduce/reduce conflict.*\(E\).*\(F\)}
+        expect(results.stderr).to match %r{Error: reduce/reduce conflict \(state \d+\) between rule E#\d+ \(defined on line 10\) and rule F#\d+ \(defined on line 11\)}
       end
 
       it "provides matched text to user code blocks" do
