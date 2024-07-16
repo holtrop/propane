@@ -1086,13 +1086,13 @@ EOF
 ast;
 
 token a;
-token b;
-token c;
+token bb;
+token ccc;
 drop /\\s+/;
 Start -> T T T;
 T -> a;
-T -> b;
-T -> c;
+T -> bb;
+T -> ccc;
 EOF
         run_propane(language: language)
         compile("spec/test_ast_token_positions.#{language}", language: language)

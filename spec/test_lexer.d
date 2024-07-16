@@ -47,23 +47,23 @@ unittest
     p_context_t context;
     p_context_init(&context, input);
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == p_token_info_t(p_position_t(0, 0), 1, TOKEN_int));
+    assert(token_info == p_token_info_t(p_position_t(0, 0), p_position_t(0, 0), 1, TOKEN_int));
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == p_token_info_t(p_position_t(0, 2), 1, TOKEN_plus));
+    assert(token_info == p_token_info_t(p_position_t(0, 2), p_position_t(0, 2), 1, TOKEN_plus));
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == p_token_info_t(p_position_t(0, 4), 1, TOKEN_int));
+    assert(token_info == p_token_info_t(p_position_t(0, 4), p_position_t(0, 4), 1, TOKEN_int));
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == p_token_info_t(p_position_t(0, 6), 1, TOKEN_times));
+    assert(token_info == p_token_info_t(p_position_t(0, 6), p_position_t(0, 6), 1, TOKEN_times));
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == p_token_info_t(p_position_t(1, 0), 3, TOKEN_int));
+    assert(token_info == p_token_info_t(p_position_t(1, 0), p_position_t(1, 2), 3, TOKEN_int));
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == p_token_info_t(p_position_t(1, 4), 1, TOKEN_plus));
+    assert(token_info == p_token_info_t(p_position_t(1, 4), p_position_t(1, 4), 1, TOKEN_plus));
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == p_token_info_t(p_position_t(1, 6), 3, TOKEN_int));
+    assert(token_info == p_token_info_t(p_position_t(1, 6), p_position_t(1, 8), 3, TOKEN_int));
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == p_token_info_t(p_position_t(1, 9), 0, TOKEN___EOF));
+    assert(token_info == p_token_info_t(p_position_t(1, 9), p_position_t(1, 9), 0, TOKEN___EOF));
 
     p_context_init(&context, "");
     assert(p_lex(&context, &token_info) == P_SUCCESS);
-    assert(token_info == p_token_info_t(p_position_t(0, 0), 0, TOKEN___EOF));
+    assert(token_info == p_token_info_t(p_position_t(0, 0), p_position_t(0, 0), 0, TOKEN___EOF));
 }

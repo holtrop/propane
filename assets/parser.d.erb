@@ -83,6 +83,7 @@ public struct <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>
     <%= @grammar.prefix %>token_t token;
     <%= @grammar.prefix %>value_t pvalue;
     <%= @grammar.prefix %>position_t position;
+    <%= @grammar.prefix %>position_t end_position;
 }
 
 <%   @parser.rule_sets.each do |name, rule_set| %>
@@ -107,8 +108,11 @@ public struct <%= @grammar.ast_prefix %><%= name %><%= @grammar.ast_suffix %>
 /** Lexed token information. */
 public struct <%= @grammar.prefix %>token_info_t
 {
-    /** Text position where the token was found. */
+    /** Text position of first code point in token. */
     <%= @grammar.prefix %>position_t position;
+
+    /** Text position of last code point in token. */
+    <%= @grammar.prefix %>position_t end_position;
 
     /** Number of input bytes used by the token. */
     size_t length;
@@ -373,7 +377,10 @@ private struct lexer_match_info_t
     /** Number of bytes of input text used to match. */
     size_t length;
 
-    /** Input text position delta. */
+    /** Input text position delta to end of token. */
+    <%= @grammar.prefix %>position_t end_delta_position;
+
+    /** Input text position delta to next code point after token end. */
     <%= @grammar.prefix %>position_t delta_position;
 
     /** Accepting lexer state from the match. */
@@ -501,6 +508,7 @@ private size_t find_longest_match(<%= @grammar.prefix %>context_t * context,
             if (transition_state != INVALID_LEXER_STATE_ID)
             {
                 attempt_match.length += code_point_length;
+                attempt_match.end_delta_position = attempt_match.delta_position;
                 if (code_point == '\n')
                 {
                     attempt_match.delta_position.row++;
@@ -633,11 +641,22 @@ private size_t attempt_lex_token(<%= @grammar.prefix %>context_t * context, <%= 
         }
         token_info.token = token_to_accept;
         token_info.length = match_info.length;
+        if (match_info.end_delta_position.row != 0u)
+        {
+            token_info.end_position.row = token_info.position.row + match_info.end_delta_position.row;
+            token_info.end_position.col = match_info.end_delta_position.col;
+        }
+        else
+        {
+            token_info.end_position.row = token_info.position.row;
+            token_info.end_position.col = token_info.position.col + match_info.end_delta_position.col;
+        }
         *out_token_info = token_info;
         return P_SUCCESS;
 
     case P_EOF:
         token_info.token = TOKEN___EOF;
+        token_info.end_position = token_info.position;
         *out_token_info = token_info;
         return P_SUCCESS;
 
@@ -997,7 +1016,7 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
             {
                 /* We shifted a token, mark it consumed. */
 <% if @grammar.ast %>
-                <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %> * token_ast_node = new <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>(token, token_info.pvalue, token_info.position);
+                <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %> * token_ast_node = new <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>(token, token_info.pvalue, token_info.position, token_info.end_position);
                 statevalues[$-1].ast_node = token_ast_node;
 <% else %>
                 statevalues[$-1].pvalue = token_info.pvalue;

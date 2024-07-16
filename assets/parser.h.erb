@@ -75,6 +75,7 @@ typedef struct <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>
     <%= @grammar.prefix %>token_t token;
     <%= @grammar.prefix %>value_t pvalue;
     <%= @grammar.prefix %>position_t position;
+    <%= @grammar.prefix %>position_t end_position;
 } <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>;
 
 <%   @parser.rule_sets.each do |name, rule_set| %>
@@ -105,8 +106,11 @@ typedef struct <%= @grammar.ast_prefix %><%= name %><%= @grammar.ast_suffix %>
 /** Lexed token information. */
 typedef struct
 {
-    /** Text position where the token was found. */
+    /** Text position of first code point in token. */
     <%= @grammar.prefix %>position_t position;
+
+    /** Text position of last code point in token. */
+    <%= @grammar.prefix %>position_t end_position;
 
     /** Number of input bytes used by the token. */
     size_t length;
