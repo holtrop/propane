@@ -52,6 +52,12 @@ typedef struct
     uint32_t col;
 } <%= @grammar.prefix %>position_t;
 
+/** Invalid position value. */
+#define INVALID_POSITION (<%= @grammar.prefix %>position_t){0xFFFFFFFFu, 0xFFFFFFFFu}
+
+/** Return whether the position is valid. */
+#define <%= @grammar.prefix %>position_valid(p) ((p).row != 0xFFFFFFFFu)
+
 /** User header code blocks. */
 <%= @grammar.code_blocks.fetch("header", "") %>
 
@@ -72,10 +78,11 @@ typedef union
 /** AST node types. @{ */
 typedef struct <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>
 {
-    <%= @grammar.prefix %>token_t token;
-    <%= @grammar.prefix %>value_t pvalue;
+    /* ASTNode fields must be present in the same order here. */
     <%= @grammar.prefix %>position_t position;
     <%= @grammar.prefix %>position_t end_position;
+    <%= @grammar.prefix %>token_t token;
+    <%= @grammar.prefix %>value_t pvalue;
 } <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>;
 
 <%   @parser.rule_sets.each do |name, rule_set| %>

@@ -63,6 +63,15 @@ public struct <%= @grammar.prefix %>position_t
 
     /** Input text column (0-based). */
     uint col;
+
+    /** Invalid position value. */
+    enum INVALID = <%= @grammar.prefix %>position_t(0xFFFF_FFFF, 0xFFFF_FFFF);
+
+    /** Return whether the position is valid. */
+    public @property bool valid()
+    {
+        return row != 0xFFFF_FFFFu;
+    }
 }
 
 <% if @grammar.ast %>
@@ -79,21 +88,22 @@ public union <%= @grammar.prefix %>value_t
 <% end %>
 
 <% if @grammar.ast %>
-/** AST node types. @{ */
-public struct <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>
-{
-    <%= @grammar.prefix %>token_t token;
-    <%= @grammar.prefix %>value_t pvalue;
-    <%= @grammar.prefix %>position_t position;
-    <%= @grammar.prefix %>position_t end_position;
-}
-
 /** Common AST node structure. */
 private struct ASTNode
 {
     <%= @grammar.prefix %>position_t position;
     <%= @grammar.prefix %>position_t end_position;
     void *[0] fields;
+}
+
+/** AST node types. @{ */
+public struct <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>
+{
+    /* ASTNode fields must be present in the same order here. */
+    <%= @grammar.prefix %>position_t position;
+    <%= @grammar.prefix %>position_t end_position;
+    <%= @grammar.prefix %>token_t token;
+    <%= @grammar.prefix %>value_t pvalue;
 }
 
 <%   @parser.rule_sets.each do |name, rule_set| %>
@@ -1028,7 +1038,7 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
             {
                 /* We shifted a token, mark it consumed. */
 <% if @grammar.ast %>
-                <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %> * token_ast_node = new <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>(token, token_info.pvalue, token_info.position, token_info.end_position);
+                <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %> * token_ast_node = new <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>(token_info.position, token_info.end_position, token, token_info.pvalue);
                 statevalues[$-1].ast_node = token_ast_node;
 <% else %>
                 statevalues[$-1].pvalue = token_info.pvalue;
@@ -1063,6 +1073,8 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
             {
                 size_t n_fields = parser_reduce_table[reduce_index].rule_set_node_field_array_size;
                 ASTNode * node = cast(ASTNode *)malloc(ASTNode.sizeof + n_fields * (void *).sizeof);
+                node.position = <%= @grammar.prefix %>position_t.INVALID;
+                node.end_position = <%= @grammar.prefix %>position_t.INVALID;
                 foreach (i; 0..n_fields)
                 {
                     node.fields[i] = null;
@@ -1079,6 +1091,20 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
                     foreach (i; 0..parser_reduce_table[reduce_index].n_states)
                     {
                         node.fields[parser_reduce_table[reduce_index].rule_set_node_field_index_map[i]] = statevalues[$ - parser_reduce_table[reduce_index].n_states + i].ast_node;
+                    }
+                }
+                bool position_found = false;
+                foreach (i; 0..n_fields)
+                {
+                    ASTNode * child = cast(ASTNode *)node.fields[i];
+                    if (child && child.position.valid)
+                    {
+                        if (!position_found)
+                        {
+                            node.position = child.position;
+                            position_found = true;
+                        }
+                        node.end_position = child.end_position;
                     }
                 }
                 reduced_parser_node = node;
