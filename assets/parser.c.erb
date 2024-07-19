@@ -681,6 +681,14 @@ typedef struct
 <% end %>
 } state_value_t;
 
+/** Common AST node structure. */
+typedef struct
+{
+    <%= @grammar.prefix %>position_t position;
+    <%= @grammar.prefix %>position_t end_position;
+    void * fields[];
+} ASTNode;
+
 /** Parser shift table. */
 static const shift_t parser_shift_table[] = {
 <%   @parser.shift_table.each do |shift| %>
@@ -1000,22 +1008,27 @@ size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context)
             }
             else if (parser_reduce_table[reduce_index].n_states > 0)
             {
-                void ** node_fields = calloc(parser_reduce_table[reduce_index].rule_set_node_field_array_size, sizeof(void *));
+                size_t n_fields = parser_reduce_table[reduce_index].rule_set_node_field_array_size;
+                ASTNode * node = (ASTNode *)malloc(sizeof(ASTNode) + n_fields * sizeof(void *));
+                for (size_t i = 0; i < n_fields; i++)
+                {
+                    node->fields[i] = NULL;
+                }
                 if (parser_reduce_table[reduce_index].rule_set_node_field_index_map == NULL)
                 {
                     for (size_t i = 0; i < parser_reduce_table[reduce_index].n_states; i++)
                     {
-                        node_fields[i] = state_values_stack_index(&statevalues, -(int)parser_reduce_table[reduce_index].n_states + (int)i)->ast_node;
+                        node->fields[i] = state_values_stack_index(&statevalues, -(int)parser_reduce_table[reduce_index].n_states + (int)i)->ast_node;
                     }
                 }
                 else
                 {
                     for (size_t i = 0; i < parser_reduce_table[reduce_index].n_states; i++)
                     {
-                        node_fields[parser_reduce_table[reduce_index].rule_set_node_field_index_map[i]] = state_values_stack_index(&statevalues, -(int)parser_reduce_table[reduce_index].n_states + (int)i)->ast_node;
+                        node->fields[parser_reduce_table[reduce_index].rule_set_node_field_index_map[i]] = state_values_stack_index(&statevalues, -(int)parser_reduce_table[reduce_index].n_states + (int)i)->ast_node;
                     }
                 }
-                reduced_parser_node = node_fields;
+                reduced_parser_node = node;
             }
             else
             {

@@ -8,6 +8,8 @@
 module <%= @grammar.modulename %>;
 <% end %>
 
+import core.stdc.stdlib : malloc;
+
 /**************************************************************************
  * User code blocks
  *************************************************************************/
@@ -86,11 +88,21 @@ public struct <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>
     <%= @grammar.prefix %>position_t end_position;
 }
 
+/** Common AST node structure. */
+private struct ASTNode
+{
+    <%= @grammar.prefix %>position_t position;
+    <%= @grammar.prefix %>position_t end_position;
+    void *[0] fields;
+}
+
 <%   @parser.rule_sets.each do |name, rule_set| %>
 <%     next if name.start_with?("$") %>
 <%     next if rule_set.optional? %>
 public struct <%= @grammar.ast_prefix %><%= name %><%= @grammar.ast_suffix %>
 {
+    <%= @grammar.prefix %>position_t position;
+    <%= @grammar.prefix %>position_t end_position;
 <%     rule_set.ast_fields.each do |fields| %>
     union
     {
@@ -1049,26 +1061,27 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
             }
             else if (parser_reduce_table[reduce_index].n_states > 0)
             {
-                void *[] node_fields = new void *[parser_reduce_table[reduce_index].rule_set_node_field_array_size];
-                foreach (i; 0..parser_reduce_table[reduce_index].rule_set_node_field_array_size)
+                size_t n_fields = parser_reduce_table[reduce_index].rule_set_node_field_array_size;
+                ASTNode * node = cast(ASTNode *)malloc(ASTNode.sizeof + n_fields * (void *).sizeof);
+                foreach (i; 0..n_fields)
                 {
-                    node_fields[i] = null;
+                    node.fields[i] = null;
                 }
                 if (parser_reduce_table[reduce_index].rule_set_node_field_index_map is null)
                 {
                     foreach (i; 0..parser_reduce_table[reduce_index].n_states)
                     {
-                        node_fields[i] = statevalues[$ - parser_reduce_table[reduce_index].n_states + i].ast_node;
+                        node.fields[i] = statevalues[$ - parser_reduce_table[reduce_index].n_states + i].ast_node;
                     }
                 }
                 else
                 {
                     foreach (i; 0..parser_reduce_table[reduce_index].n_states)
                     {
-                        node_fields[parser_reduce_table[reduce_index].rule_set_node_field_index_map[i]] = statevalues[$ - parser_reduce_table[reduce_index].n_states + i].ast_node;
+                        node.fields[parser_reduce_table[reduce_index].rule_set_node_field_index_map[i]] = statevalues[$ - parser_reduce_table[reduce_index].n_states + i].ast_node;
                     }
                 }
-                reduced_parser_node = node_fields.ptr;
+                reduced_parser_node = node;
             }
             else
             {

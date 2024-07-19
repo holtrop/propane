@@ -89,6 +89,8 @@ struct <%= name %>;
 <%     next if rule_set.optional? %>
 typedef struct <%= @grammar.ast_prefix %><%= name %><%= @grammar.ast_suffix %>
 {
+    <%= @grammar.prefix %>position_t position;
+    <%= @grammar.prefix %>position_t end_position;
 <%     rule_set.ast_fields.each do |fields| %>
     union
     {
