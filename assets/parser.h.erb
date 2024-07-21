@@ -52,9 +52,6 @@ typedef struct
     uint32_t col;
 } <%= @grammar.prefix %>position_t;
 
-/** Invalid position value. */
-#define INVALID_POSITION (<%= @grammar.prefix %>position_t){0xFFFFFFFFu, 0xFFFFFFFFu}
-
 /** Return whether the position is valid. */
 #define <%= @grammar.prefix %>position_valid(p) ((p).row != 0xFFFFFFFFu)
 

@@ -566,6 +566,9 @@ size_t <%= @grammar.prefix %>lex(<%= @grammar.prefix %>context_t * context, <%= 
  * Parser
  *************************************************************************/
 
+/** Invalid position value. */
+#define INVALID_POSITION (<%= @grammar.prefix %>position_t){0xFFFFFFFFu, 0xFFFFFFFFu}
+
 /** Reduce ID type. */
 typedef <%= get_type_for(@parser.reduce_table.size) %> reduce_id_t;
 
