@@ -1081,7 +1081,7 @@ EOF
         expect(results.status).to eq 0
       end
 
-      it "stores the token position in the AST Token node" do
+      it "stores token and rule positions in AST nodes" do
         write_grammar <<EOF
 ast;
 
@@ -1096,6 +1096,26 @@ T -> c;
 EOF
         run_propane(language: language)
         compile("spec/test_ast_token_positions.#{language}", language: language)
+        results = run_test
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
+      it "stores invalid positions for empty rule matches" do
+        write_grammar <<EOF
+ast;
+
+token a;
+token bb;
+token c /c(.|\\n)*c/;
+drop /\\s+/;
+Start -> T Start;
+Start -> ;
+T -> a A;
+A -> bb? c?;
+EOF
+        run_propane(language: language)
+        compile("spec/test_ast_invalid_positions.#{language}", language: language)
         results = run_test
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
