@@ -15,6 +15,7 @@ Propane is a LALR Parser Generator (LPG) which:
   * generates a table-driven shift/reduce parser to parse input in linear time
   * targets C or D language outputs
   * optionally supports automatic full AST generation
+  * tracks input text start and end positions for all matched tokens/rules
   * is MIT-licensed
   * is distributable as a standalone Ruby script
 
@@ -35,9 +36,14 @@ Propane is typically invoked from the command-line as `./propane`.
 
     Usage: ./propane [options] <input-file> <output-file>
     Options:
-      --log LOG   Write log file
-      --version   Show program version and exit
-      -h, --help  Show this usage and exit
+      -h, --help  Show this usage and exit.
+      --log LOG   Write log file. This will show all parser states and their
+                  associated shifts and reduces. It can be helpful when
+                  debugging a grammar.
+      --version   Show program version and exit.
+      -w          Treat warnings as errors. This option will treat shift/reduce
+                  conflicts as fatal errors and will print them to stderr in
+                  addition to the log file.
 
 The user must specify the path to a Propane input grammar file and a path to an
 output file.
@@ -502,7 +508,7 @@ tokenid str;
   mystringvalue = "";
   $mode(string);
 >>
-string: /[^"]+/ << mystringvalue += match; >>
+string: /[^"]+/ << mystringvalue ~= match; >>
 string: /"/ <<
   $mode(default);
   return $token(str);
@@ -762,6 +768,13 @@ A pointer to this instance is passed to the generated functions.
 The `p_position_t` structure contains two fields `row` and `col`.
 These fields contain the 0-based row and column describing a parser position.
 
+For D targets, the `p_position_t` structure can be checked for validity by
+querying the `valid` property.
+
+For C targets, the `p_position_t` structure can be checked for validity by
+calling `p_position_valid(pos)` where `pos` is a `p_position_t` structure
+instance.
+
 ### AST Node Types
 
 If AST generation mode is enabled, a structure type for each rule will be
@@ -772,13 +785,26 @@ AST node which refers to a raw parser token rather than a composite rule.
 
 #### AST Node Fields
 
-A `Token` node has two fields:
+All AST nodes have a `position` field specifying the text position of the
+beginning of the matched token or rule, and an `end_position` field specifying
+the text position of the end of the matched token or rule.
+Each of these fields are instances of the `p_position_t` structure.
+
+A `Token` node will always have a valid `position` and `end_position`.
+A rule node may not have valid positions if the rule allows for an empty match.
+In this case the `position` structure should be checked for validity before
+using it.
+For C targets this can be accomplished with
+`if (p_position_valid(node->position))` and for D targets this can be
+accomplished with `if (node.position.valid)`.
+
+A `Token` node has the following additional fields:
 
   * `token` which specifies which token was parsed (one of `TOKEN_*`)
   * `pvalue` which specifies the parser value for the token. If a lexer user
   code block assigned to `$$`, the assigned value will be stored here.
 
-The other generated AST node structures have fields generated based on the
+AST node structures for rules contain generated fields based on the
 right hand side components specified for all rules of a given name.
 
 In this example:
@@ -802,7 +828,7 @@ The `Items` structure will have fields:
 
 If a rule can be empty (for example in the second `Items` rule above), then
 an instance of a pointer to that rule's generated AST node will be null if the
-parser matches the empty rule definition.
+parser matches the empty rule pattern.
 
 The non-positional AST node field pointer will not be generated if there are
 multiple positions in which an instance of the node it points to could be
@@ -858,6 +884,24 @@ p_context_t context;
 p_context_init(&context, input, input_length);
 size_t result = p_parse(&context);
 ```
+
+### `p_position_valid`
+
+The `p_position_valid()` function is only generated for C targets.
+it is used to determine whether or not a `p_position_t` structure is valid.
+
+Example:
+
+```
+if (p_position_valid(node->position))
+{
+    ....
+}
+```
+
+For D targets, rather than using `p_position_valid()`, the `valid` property
+function of the `p_position_t` structure can be queried
+(e.g. `if (node.position.valid)`).
 
 ### `p_result`
 

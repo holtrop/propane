@@ -4,11 +4,11 @@ class Propane
     USAGE = <<EOF
 Usage: #{$0} [options] <input-file> <output-file>
 Options:
+  -h, --help  Show this usage and exit.
   --log LOG   Write log file. This will show all parser states and their
               associated shifts and reduces. It can be helpful when
               debugging a grammar.
   --version   Show program version and exit.
-  -h, --help  Show this usage and exit.
   -w          Treat warnings as errors. This option will treat shift/reduce
               conflicts as fatal errors and will print them to stderr in
               addition to the log file.
