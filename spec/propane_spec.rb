@@ -213,6 +213,42 @@ EOF
     expect(File.binread("spec/run/testparser.log")).to match %r{Shift/Reduce conflict \(state \d+\) between token b and rule As2\? \(defined on line 4\)}
   end
 
+  it "errors on duplicate field aliases in a rule" do
+    write_grammar <<EOF
+token a;
+token b;
+Start -> a:foo b:foo;
+EOF
+    results = run_propane(extra_args: %w[-w], capture: true)
+    expect(results.stderr).to match %r{Error: duplicate field alias `foo` for rule Start defined on line 3}
+    expect(results.status).to_not eq 0
+  end
+
+  it "errors when an alias is in different positions for different rules in a rule set when AST mode is enabled" do
+    write_grammar <<EOF
+ast;
+token a;
+token b;
+Start -> a:foo b;
+Start -> b b:foo;
+EOF
+    results = run_propane(extra_args: %w[-w], capture: true)
+    expect(results.stderr).to match %r{Error: conflicting AST node field positions for alias `foo`}
+    expect(results.status).to_not eq 0
+  end
+
+  it "does not error when an alias is in different positions for different rules in a rule set when AST mode is not enabled" do
+    write_grammar <<EOF
+token a;
+token b;
+Start -> a:foo b;
+Start -> b b:foo;
+EOF
+    results = run_propane(extra_args: %w[-w], capture: true)
+    expect(results.stderr).to eq ""
+    expect(results.status).to eq 0
+  end
+
   %w[d c].each do |language|
 
     context "#{language.upcase} language" do
@@ -1119,6 +1155,70 @@ EOF
         results = run_test
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
+      end
+
+      it "allows specifying field aliases in AST mode" do
+        write_grammar <<EOF
+ast;
+
+token a;
+token b;
+token c;
+drop /\\s+/;
+Start -> T:first T:second T:third;
+T -> a;
+T -> b;
+T -> c;
+EOF
+        run_propane(language: language)
+        compile("spec/test_ast_field_aliases.#{language}", language: language)
+        results = run_test
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
+      it "allows specifying field aliases when AST mode is not enabled" do
+        if language == "d"
+          write_grammar <<EOF
+<<
+import std.stdio;
+>>
+ptype string;
+token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
+  $$ = match;
+>>
+drop /\\s+/;
+Start -> id:first id:second <<
+  writeln("first is ", ${first});
+  writeln("second is ", ${second});
+>>
+EOF
+        else
+          write_grammar <<EOF
+<<
+#include <stdio.h>
+#include <string.h>
+>>
+ptype char const *;
+token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
+  char * s = malloc(match_length + 1);
+  strncpy(s, (char const *)match, match_length);
+  s[match_length] = 0;
+  $$ = s;
+>>
+drop /\\s+/;
+Start -> id:first id:second <<
+  printf("first is %s\\n", ${first});
+  printf("second is %s\\n", ${second});
+>>
+EOF
+        end
+        run_propane(language: language)
+        compile("spec/test_field_aliases.#{language}", language: language)
+        results = run_test
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+        expect(results.stdout).to match /first is foo1.*second is bar2/m
       end
     end
   end

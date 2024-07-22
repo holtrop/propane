@@ -100,7 +100,9 @@ class Propane
 
     # Finalize a RuleSet after adding all Rules to it.
     def finalize(grammar)
-      build_ast_fields(grammar)
+      if grammar.ast
+        build_ast_fields(grammar)
+      end
     end
 
     private
@@ -146,6 +148,18 @@ class Propane
           # include the position.
           @ast_fields[indexes_across_all_rules.first]["p#{node_name}"] =
             "#{grammar.ast_prefix}#{node_name}#{grammar.ast_suffix}"
+        end
+      end
+      # Now merge in the field aliases as given by the user in the
+      # grammar.
+      field_aliases = {}
+      @rules.each do |rule|
+        rule.aliases.each do |alias_name, index|
+          if field_aliases[alias_name] && field_aliases[alias_name] != index
+            raise Error.new("Error: conflicting AST node field positions for alias `#{alias_name}`")
+          end
+          field_aliases[alias_name] = index
+          @ast_fields[index][alias_name] = @ast_fields[index].first[1]
         end
       end
     end

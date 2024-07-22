@@ -276,6 +276,19 @@ class Propane
             "statevalues[$-1-n_states+#{index}].pvalue.v_#{rule.components[index - 1].ptypename}"
           end
         end
+        code = code.gsub(/\$\{(\w+)\}/) do |match|
+          aliasname = $1
+          if index = rule.aliases[aliasname]
+            case @language
+            when "c"
+              "state_values_stack_index(statevalues, -(int)n_states + #{index})->pvalue.v_#{rule.components[index].ptypename}"
+            when "d"
+              "statevalues[$-n_states+#{index}].pvalue.v_#{rule.components[index].ptypename}"
+            end
+          else
+            raise Error.new("Field alias '#{aliasname}' not found")
+          end
+        end
       else
         code = code.gsub(/\$\$/) do |match|
           if @grammar.ast

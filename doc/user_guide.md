@@ -234,15 +234,15 @@ drop /\\s+/;
 
 Start -> Items;
 
-Items -> Item ItemsMore;
+Items -> Item:item ItemsMore;
 Items -> ;
 
-ItemsMore -> comma Item ItemsMore;
+ItemsMore -> comma Item:item ItemsMore;
 ItemsMore -> ;
 
 Item -> a;
 Item -> b;
-Item -> lparen Item rparen;
+Item -> lparen Item:item rparen;
 Item -> Dual;
 
 Dual -> One Two;
@@ -263,24 +263,24 @@ Start * start = p_result(&context);
 assert(start.pItems1 !is null);
 assert(start.pItems !is null);
 Items * items = start.pItems;
-assert(items.pItem !is null);
-assert(items.pItem.pToken1 !is null);
-assert_eq(TOKEN_a, items.pItem.pToken1.token);
-assert_eq(11, items.pItem.pToken1.pvalue);
+assert(items.item !is null);
+assert(items.item.pToken1 !is null);
+assert_eq(TOKEN_a, items.item.pToken1.token);
+assert_eq(11, items.item.pToken1.pvalue);
 assert(items.pItemsMore !is null);
 ItemsMore * itemsmore = items.pItemsMore;
-assert(itemsmore.pItem !is null);
-assert(itemsmore.pItem.pItem !is null);
-assert(itemsmore.pItem.pItem.pItem !is null);
-assert(itemsmore.pItem.pItem.pItem.pToken1 !is null);
-assert_eq(TOKEN_b, itemsmore.pItem.pItem.pItem.pToken1.token);
-assert_eq(22, itemsmore.pItem.pItem.pItem.pToken1.pvalue);
+assert(itemsmore.item !is null);
+assert(itemsmore.item.item !is null);
+assert(itemsmore.item.item.item !is null);
+assert(itemsmore.item.item.item.pToken1 !is null);
+assert_eq(TOKEN_b, itemsmore.item.item.item.pToken1.token);
+assert_eq(22, itemsmore.item.item.item.pToken1.pvalue);
 assert(itemsmore.pItemsMore !is null);
 itemsmore = itemsmore.pItemsMore;
-assert(itemsmore.pItem !is null);
-assert(itemsmore.pItem.pToken1 !is null);
-assert_eq(TOKEN_b, itemsmore.pItem.pToken1.token);
-assert_eq(22, itemsmore.pItem.pToken1.pvalue);
+assert(itemsmore.item !is null);
+assert(itemsmore.item.pToken1 !is null);
+assert_eq(TOKEN_b, itemsmore.item.pToken1.token);
+assert_eq(22, itemsmore.item.pToken1.pvalue);
 assert(itemsmore.pItemsMore is null);
 ```
 
@@ -607,6 +607,10 @@ This can be changed with the `start` statement.
 The grammar file must define a rule with the name of the start rule name which
 will be used as the top-level starting rule that the parser attempts to reduce.
 
+Rule statements are composed of the name of the rule, a `->` token, the fields
+defining the rule pattern that must be matched, and a terminating semicolon or
+user code block.
+
 Example:
 
 ```
@@ -635,9 +639,13 @@ E4 -> lparen E1 rparen << $$ = $2; >>
 
 This example uses the default start rule name of `Start`.
 
-A parser rule has zero or more terms on the right side of its definition.
-Each of these terms is either a token name or a rule name.
-A term can be immediately followed by a `?` character to signify that it is
+A parser rule has zero or more fields on the right side of its definition.
+Each of these fields is either a token name or a rule name.
+A field can optionally be followed by a `:` and then a field alias name.
+If present, the field alias name is used to refer to the field value in user
+code blocks, or if AST mode is active, the field alias name is used as the
+field name in the generated AST node structure.
+A field can be immediately followed by a `?` character to signify that it is
 optional.
 Another example:
 
@@ -647,14 +655,16 @@ token private;
 token int;
 token ident /[a-zA-Z_][a-zA-Z_0-9]*/;
 token semicolon /;/;
-IntegerDeclaration -> Visibility? int ident semicolon;
+IntegerDeclaration -> Visibility? int ident:name semicolon;
 Visibility -> public;
 Visibility -> private;
 ```
 
-In a parser rule code block, parser values for the right side terms are
-accessible as `$1` for the first term's parser value, `$2` for the second
-term's parser value, etc...
+In a parser rule code block, parser values for the right side fields are
+accessible as `$1` for the first field's parser value, `$2` for the second
+field's parser value, etc...
+For the `IntegerDeclaration` rule, the third field value can also be referred
+to as `${name}`.
 The `$$` symbol accesses the output parser value for this rule.
 The above examples demonstrate how the parser values for the rule components
 can be used to produce the parser value for the accepted rule.
@@ -848,6 +858,19 @@ be ambiguous which one was matched.
 If the first rule is matched, then `pOne1` and `pTwo2` will be non-null while
 `pTwo1` and `pOne2` will be null.
 If the second rule is matched instead, then the opposite would be the case.
+
+If a field alias is present in a rule definition, an additional field will be
+generated in the AST node with the field alias name.
+For example:
+
+```
+Exp -> Exp:left plus ExpB:right;
+```
+
+In the generated `Exp` structure, the fields `pExp`, `pExp1`, and `left` will
+all point to the same child node (an instance of the `Exp` structure), and the
+fields `pExpB`, `pExpB3`, and `right` will all point to the same child node
+(an instance of the `ExpB` structure).
 
 ##> Functions
 

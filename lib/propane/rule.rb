@@ -6,6 +6,10 @@ class Propane
     #   Rule components.
     attr_reader :components
 
+    # @return [Hash]
+    #   Field aliases.
+    attr_reader :aliases
+
     # @return [String]
     #   User code associated with the rule.
     attr_reader :code
@@ -49,7 +53,19 @@ class Propane
     #   Line number where the rule was defined in the input grammar.
     def initialize(name, components, code, ptypename, line_number)
       @name = name
-      @components = components
+      @aliases = {}
+      @components = components.each_with_index.map do |component, i|
+        if component =~ /(\S+):(\S+)/
+          c, aliasname = $1, $2
+          if @aliases[aliasname]
+            raise Error.new("Error: duplicate field alias `#{aliasname}` for rule #{name} defined on line #{line_number}")
+          end
+          @aliases[aliasname] = i
+          c
+        else
+          component
+        end
+      end
       @rule_set_node_field_index_map = components.map {0}
       @code = code
       @ptypename = ptypename
