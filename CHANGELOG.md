@@ -2,7 +2,14 @@
 
 ### New Features
 
-- Track token position in AST Token node
+- Track start and end text positions for tokens and rules in AST node structures (#27)
+- Add warnings for shift/reduce conflicts to log file (#25)
+- Add -w command line switch to treat warnings as errors and output to stderr (#26)
+- Add rule field aliases (#24)
+
+### Improvements
+
+- Show line numbers of rules on conflict (#23)
 
 ## v1.4.0
 
