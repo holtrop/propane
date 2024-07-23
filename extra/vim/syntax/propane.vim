@@ -17,6 +17,9 @@ syn region propaneTarget matchgroup=propaneDelimiter start="<<" end=">>$" contai
 
 syn match propaneComment "#.*"
 syn match propaneOperator "->"
+syn match propaneFieldAlias ":[a-zA-Z0-9_]\+" contains=propaneFieldOperator
+syn match propaneFieldOperator ":" contained
+syn match propaneOperator "?"
 syn keyword propaneKeyword ast ast_prefix ast_suffix drop module prefix ptype start token tokenid
 
 syn region propaneRegex start="/" end="/" skip="\\/"
@@ -25,4 +28,6 @@ hi def link propaneComment Comment
 hi def link propaneKeyword Keyword
 hi def link propaneRegex String
 hi def link propaneOperator Operator
+hi def link propaneFieldOperator Operator
 hi def link propaneDelimiter Delimiter
+hi def link propaneFieldAlias Identifier
