@@ -30,10 +30,6 @@ class Propane
       #   more than one rule that could be reduced.
       attr_accessor :reduce_actions
 
-      # @return [Set<Token>]
-      #   Follow set for the ItemSet.
-      attr_accessor :follow_set
-
       # Build an ItemSet.
       #
       # @param items [Array<Item>]
