@@ -46,7 +46,7 @@ class Propane
       # @return [Set<Token, RuleSet>]
       #   Set of next symbols for all Items in this ItemSet.
       def next_symbols
-        Set.new(@items.map(&:next_symbol).compact)
+        @_next_symbols ||= Set.new(@items.map(&:next_symbol).compact)
       end
 
       # Build a next ItemSet for the given next symbol.
