@@ -140,20 +140,20 @@ class Propane
       if reduce_rules.size == 0
         nil
       else
-        build_lookahead_reduce_actions_for_item_set(item_set)
+        build_lookahead_reduce_actions_for_item_set(reduce_rules, item_set)
       end
     end
 
     # Build the reduce actions for a single item set (parser state).
     #
+    # @param reduce_rules [Set<Rule>]
+    #   Rules to look for lookahead tokens after.
     # @param item_set [ItemSet]
     #   ItemSet (parser state)
     #
     # @return [Hash]
     #   Mapping of lookahead Tokens to the Rules to reduce.
-    def build_lookahead_reduce_actions_for_item_set(item_set)
-      reduce_rules = Set.new(item_set.items.select(&:complete?).map(&:rule))
-
+    def build_lookahead_reduce_actions_for_item_set(reduce_rules, item_set)
       # We will be looking for all possible tokens that can follow instances of
       # these rules. Rather than looking through the entire grammar for the
       # possible following tokens, we will only look in the item sets leading
