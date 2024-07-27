@@ -1,3 +1,9 @@
+## v1.5.1
+
+### Improvements
+
+- Improve performance (#28)
+
 ## v1.5.0
 
 ### New Features
