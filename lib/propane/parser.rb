@@ -65,10 +65,10 @@ class Propane
             state_id: state_id,
           }
         end
-        if item_set.reduce_actions
+        unless item_set.reduce_rules.empty?
           shift_entries.each do |shift_entry|
             token = shift_entry[:symbol]
-            if item_set.reduce_actions.include?(token)
+            if get_lookahead_reduce_actions_for_item_set(item_set).include?(token)
               rule = item_set.reduce_actions[token]
               @warnings << "Shift/Reduce conflict (state #{item_set.id}) between token #{token.name} and rule #{rule.name} (defined on line #{rule.line_number})"
             end
@@ -114,7 +114,7 @@ class Propane
     # @return [void]
     def build_reduce_actions!
       @item_sets.each do |item_set|
-        item_set.reduce_actions = build_reduce_actions_for_item_set(item_set)
+        build_reduce_actions_for_item_set(item_set)
       end
     end
 
@@ -123,44 +123,51 @@ class Propane
     # @param item_set [ItemSet]
     #   ItemSet (parser state)
     #
-    # @return [nil, Hash]
-    #   If no reduce actions are possible for the given item set, nil.
-    #   Otherwise, a mapping of lookahead Tokens to the Rules to reduce.
+    # @return [void]
     def build_reduce_actions_for_item_set(item_set)
       # To build the reduce actions, we start by looking at any
       # "complete" items, i.e., items where the parse position is at the
       # end of a rule. These are the only rules that are candidates for
       # reduction in the current ItemSet.
-      reduce_rules = Set.new(item_set.items.select(&:complete?).map(&:rule))
+      item_set.reduce_rules = Set.new(item_set.items.select(&:complete?).map(&:rule))
 
-      if reduce_rules.size == 1
-        item_set.reduce_rule = reduce_rules.first
+      if item_set.reduce_rules.size == 1
+        item_set.reduce_rule = item_set.reduce_rules.first
       end
 
-      if reduce_rules.size == 0
-        nil
-      else
-        build_lookahead_reduce_actions_for_item_set(reduce_rules, item_set)
+      if item_set.reduce_rules.size > 1
+        # Force item_set.reduce_actions to be built to store the lookahead
+        # tokens for the possible reduce rules if there is more than one.
+        get_lookahead_reduce_actions_for_item_set(item_set)
       end
     end
 
-    # Build the reduce actions for a single item set (parser state).
+    # Get the reduce actions for a single item set (parser state).
     #
-    # @param reduce_rules [Set<Rule>]
-    #   Rules to look for lookahead tokens after.
     # @param item_set [ItemSet]
     #   ItemSet (parser state)
     #
     # @return [Hash]
     #   Mapping of lookahead Tokens to the Rules to reduce.
-    def build_lookahead_reduce_actions_for_item_set(reduce_rules, item_set)
+    def get_lookahead_reduce_actions_for_item_set(item_set)
+      item_set.reduce_actions ||= build_lookahead_reduce_actions_for_item_set(item_set)
+    end
+
+    # Build the reduce actions for a single item set (parser state).
+    #
+    # @param item_set [ItemSet]
+    #   ItemSet (parser state)
+    #
+    # @return [Hash]
+    #   Mapping of lookahead Tokens to the Rules to reduce.
+    def build_lookahead_reduce_actions_for_item_set(item_set)
       # We will be looking for all possible tokens that can follow instances of
       # these rules. Rather than looking through the entire grammar for the
       # possible following tokens, we will only look in the item sets leading
       # up to this one. This restriction gives us a more precise lookahead set,
       # and allows us to parse LALR grammars.
       item_sets = Set[item_set] + item_set.leading_item_sets
-      reduce_rules.reduce({}) do |reduce_actions, reduce_rule|
+      item_set.reduce_rules.reduce({}) do |reduce_actions, reduce_rule|
         lookahead_tokens_for_rule = build_lookahead_tokens_to_reduce(reduce_rule, item_sets)
         lookahead_tokens_for_rule.each do |lookahead_token|
           if existing_reduce_rule = reduce_actions[lookahead_token]

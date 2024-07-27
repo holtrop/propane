@@ -2,7 +2,7 @@ class Propane
   class Parser
 
     # Represent a parser "item set", which is a set of possible items that the
-    # parser could currently be parsing.
+    # parser could currently be parsing. This is equivalent to a parser state.
     class ItemSet
 
       # @return [Set<Item>]
@@ -24,6 +24,10 @@ class Propane
       # @return [nil, Rule]
       #   Rule to reduce if there is only one possibility.
       attr_accessor :reduce_rule
+
+      # @return [Set<Rule>]
+      #   Set of rules that could be reduced in this parser state.
+      attr_accessor :reduce_rules
 
       # @return [nil, Hash]
       #   Reduce actions, mapping lookahead tokens to rules, if there is
