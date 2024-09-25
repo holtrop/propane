@@ -1,3 +1,19 @@
+## v2.0.0
+
+### Improvements
+
+- Log conflicting rules on reduce/reduce conflict (#31)
+- Use 1-based row and column values for position values (#30)
+
+### Fixes
+
+- Fix named optional rules (#29)
+
+### Upgrading
+
+- Adjust all uses of p_position_t row and col values to expect 1-based instead
+of 0-based values.
+
 ## v1.5.1
 
 ### Improvements
