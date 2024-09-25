@@ -1118,6 +1118,47 @@ EOF
         expect(results.status).to eq 0
       end
 
+      it "allows naming an optional rule component in AST generation mode" do
+        if language == "d"
+          write_grammar <<EOF
+ast;
+
+<<
+import std.stdio;
+>>
+
+token a;
+token b;
+token c;
+token d;
+Start -> a?:a b R?:r;
+R -> c d;
+R -> d c;
+EOF
+        else
+          write_grammar <<EOF
+ast;
+
+<<
+#include <stdio.h>
+>>
+
+token a;
+token b;
+token c;
+token d;
+Start -> a?:a b R?:r;
+R -> c d;
+R -> d c;
+EOF
+        end
+        run_propane(language: language)
+        compile("spec/test_named_optional_rule_component_ast.#{language}", language: language)
+        results = run_test
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
       it "stores token and rule positions in AST nodes" do
         write_grammar <<EOF
 ast;

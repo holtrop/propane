@@ -641,13 +641,14 @@ This example uses the default start rule name of `Start`.
 
 A parser rule has zero or more fields on the right side of its definition.
 Each of these fields is either a token name or a rule name.
+A field can be immediately followed by a `?` character to signify that it is
+optional.
 A field can optionally be followed by a `:` and then a field alias name.
 If present, the field alias name is used to refer to the field value in user
 code blocks, or if AST mode is active, the field alias name is used as the
 field name in the generated AST node structure.
-A field can be immediately followed by a `?` character to signify that it is
-optional.
-Another example:
+An optional and named field must use the format `field?:name`.
+Example:
 
 ```
 token public;
@@ -655,7 +656,7 @@ token private;
 token int;
 token ident /[a-zA-Z_][a-zA-Z_0-9]*/;
 token semicolon /;/;
-IntegerDeclaration -> Visibility? int ident:name semicolon;
+IntegerDeclaration -> Visibility?:visibility int ident:name semicolon;
 Visibility -> public;
 Visibility -> private;
 ```
@@ -663,7 +664,7 @@ Visibility -> private;
 In a parser rule code block, parser values for the right side fields are
 accessible as `$1` for the first field's parser value, `$2` for the second
 field's parser value, etc...
-For the `IntegerDeclaration` rule, the third field value can also be referred
+For the `IntegerDeclaration` rule, the first field value can also be referred to as `${visibility}` and the third field value can also be referred
 to as `${name}`.
 The `$$` symbol accesses the output parser value for this rule.
 The above examples demonstrate how the parser values for the rule components
