@@ -53,7 +53,7 @@ typedef struct
 } <%= @grammar.prefix %>position_t;
 
 /** Return whether the position is valid. */
-#define <%= @grammar.prefix %>position_valid(p) ((p).row != 0xFFFFFFFFu)
+#define <%= @grammar.prefix %>position_valid(p) ((p).row != 0u)
 
 /** User header code blocks. */
 <%= @grammar.code_blocks.fetch("header", "") %>

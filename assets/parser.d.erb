@@ -65,12 +65,12 @@ public struct <%= @grammar.prefix %>position_t
     uint col;
 
     /** Invalid position value. */
-    enum INVALID = <%= @grammar.prefix %>position_t(0xFFFF_FFFF, 0xFFFF_FFFF);
+    enum INVALID = <%= @grammar.prefix %>position_t(0u, 0u);
 
     /** Return whether the position is valid. */
     public @property bool valid()
     {
-        return row != 0xFFFF_FFFFu;
+        return row != 0u;
     }
 }
 
@@ -235,6 +235,8 @@ public void <%= @grammar.prefix %>context_init(<%= @grammar.prefix %>context_t *
 
     /* Lexer initialization. */
     newcontext.input = input;
+    newcontext.text_position.row = 1u;
+    newcontext.text_position.col = 1u;
     newcontext.mode = <%= @lexer.mode_id("default") %>;
 
     /* Copy to the user's context structure. */
@@ -534,7 +536,7 @@ private size_t find_longest_match(<%= @grammar.prefix %>context_t * context,
                 if (code_point == '\n')
                 {
                     attempt_match.delta_position.row++;
-                    attempt_match.delta_position.col = 0u;
+                    attempt_match.delta_position.col = 1u;
                 }
                 else
                 {

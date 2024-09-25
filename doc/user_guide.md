@@ -777,7 +777,7 @@ A pointer to this instance is passed to the generated functions.
 ### `p_position_t`
 
 The `p_position_t` structure contains two fields `row` and `col`.
-These fields contain the 0-based row and column describing a parser position.
+These fields contain the 1-based row and column describing a parser position.
 
 For D targets, the `p_position_t` structure can be checked for validity by
 querying the `valid` property.

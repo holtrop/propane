@@ -8,8 +8,8 @@ int main()
     p_context_t context;
     p_context_init(&context, (uint8_t const *)input, strlen(input));
     assert(p_parse(&context) == P_UNEXPECTED_TOKEN);
-    assert(p_position(&context).row == 0);
-    assert(p_position(&context).col == 1);
+    assert(p_position(&context).row == 1);
+    assert(p_position(&context).col == 2);
     assert(context.token == TOKEN___EOF);
 
     input = "a b";

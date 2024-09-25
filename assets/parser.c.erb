@@ -60,6 +60,8 @@ void <%= @grammar.prefix %>context_init(<%= @grammar.prefix %>context_t * contex
     /* Lexer initialization. */
     newcontext.input = input;
     newcontext.input_length = input_length;
+    newcontext.text_position.row = 1u;
+    newcontext.text_position.col = 1u;
     newcontext.mode = <%= @lexer.mode_id("default") %>;
 
     /* Copy to the user's context structure. */
@@ -365,7 +367,7 @@ static size_t find_longest_match(<%= @grammar.prefix %>context_t * context,
                 if (code_point == '\n')
                 {
                     attempt_match.delta_position.row++;
-                    attempt_match.delta_position.col = 0u;
+                    attempt_match.delta_position.col = 1u;
                 }
                 else
                 {
@@ -567,7 +569,7 @@ size_t <%= @grammar.prefix %>lex(<%= @grammar.prefix %>context_t * context, <%= 
  *************************************************************************/
 
 /** Invalid position value. */
-#define INVALID_POSITION (<%= @grammar.prefix %>position_t){0xFFFFFFFFu, 0xFFFFFFFFu}
+#define INVALID_POSITION (<%= @grammar.prefix %>position_t){0u, 0u}
 
 /** Reduce ID type. */
 typedef <%= get_type_for(@parser.reduce_table.size) %> reduce_id_t;
