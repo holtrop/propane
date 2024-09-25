@@ -14,6 +14,7 @@ class Propane
       @item_sets = []
       @item_sets_set = {}
       @warnings = Set.new
+      @errors = Set.new
       @options = options
       start_item = Item.new(grammar.rules.first, 0)
       eval_item_sets = Set[ItemSet.new([start_item])]
@@ -41,8 +42,18 @@ class Propane
       build_reduce_actions!
       build_tables!
       write_log!
+      errormessage = ""
+      if @errors.size > 0
+        errormessage += @errors.join("\n")
+      end
       if @warnings.size > 0 && @options[:warnings_as_errors]
-        raise Error.new("Fatal errors (-w):\n" + @warnings.join("\n"))
+        if errormessage != ""
+          errormessage += "\n"
+        end
+        errormessage += "Fatal errors (-w):\n" + @warnings.join("\n")
+      end
+      if errormessage != ""
+        raise Error.new(errormessage)
       end
     end
 
@@ -171,7 +182,7 @@ class Propane
         lookahead_tokens_for_rule = build_lookahead_tokens_to_reduce(reduce_rule, item_sets)
         lookahead_tokens_for_rule.each do |lookahead_token|
           if existing_reduce_rule = reduce_actions[lookahead_token]
-            raise Error.new("Error: reduce/reduce conflict (state #{item_set.id}) between rule #{existing_reduce_rule.name}##{existing_reduce_rule.id} (defined on line #{existing_reduce_rule.line_number}) and rule #{reduce_rule.name}##{reduce_rule.id} (defined on line #{reduce_rule.line_number})")
+            @errors << "Error: reduce/reduce conflict (state #{item_set.id}) between rule #{existing_reduce_rule.name}##{existing_reduce_rule.id} (defined on line #{existing_reduce_rule.line_number}) and rule #{reduce_rule.name}##{reduce_rule.id} (defined on line #{reduce_rule.line_number}) for lookahead token #{lookahead_token}"
           end
           reduce_actions[lookahead_token] = reduce_rule
         end

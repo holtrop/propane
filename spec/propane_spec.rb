@@ -689,6 +689,7 @@ EOF
         results = run_propane(capture: true, language: language)
         expect(results.status).to_not eq 0
         expect(results.stderr).to match %r{Error: reduce/reduce conflict \(state \d+\) between rule E#\d+ \(defined on line 10\) and rule F#\d+ \(defined on line 11\)}
+        expect(File.binread("spec/run/testparser.log")).to match %r{Reduce.actions:}
       end
 
       it "provides matched text to user code blocks" do
