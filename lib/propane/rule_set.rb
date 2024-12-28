@@ -156,7 +156,7 @@ class Propane
       @rules.each do |rule|
         rule.aliases.each do |alias_name, index|
           if field_aliases[alias_name] && field_aliases[alias_name] != index
-            raise Error.new("Error: conflicting AST node field positions for alias `#{alias_name}`")
+            raise Error.new("Error: conflicting AST node field positions for alias `#{alias_name}` in rule #{rule.name} defined on line #{rule.line_number}")
           end
           field_aliases[alias_name] = index
           @ast_fields[index][alias_name] = @ast_fields[index].first[1]
