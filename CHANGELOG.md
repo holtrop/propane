@@ -1,3 +1,9 @@
+## v2.1.0
+
+### Improvements
+
+- Report rule name and line number for conflicting AST node field positions errors (#32)
+
 ## v2.0.0
 
 ### Improvements
