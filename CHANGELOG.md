@@ -1,3 +1,9 @@
+## v2.1.1
+
+### Fixes
+
+- Field aliases for AST node fields could alias incorrect field when multiple rule alternatives present for one rule set (#33)
+
 ## v2.1.0
 
 ### Improvements
