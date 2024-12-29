@@ -119,6 +119,8 @@ class Propane
     def build_ast_fields(grammar)
       field_ast_node_indexes = {}
       field_indexes_across_all_rules = {}
+      # Stores the index into @ast_fields by field alias name.
+      field_aliases = {}
       @ast_fields = []
       @rules.each do |rule|
         rule.components.each_with_index do |component, i|
@@ -136,6 +138,16 @@ class Propane
             field_ast_node_indexes[field_name] = @ast_fields.size
             @ast_fields << {field_name => struct_name}
           end
+          rule.aliases.each do |alias_name, index|
+            if index == i
+              alias_ast_fields_index = field_ast_node_indexes[field_name]
+              if field_aliases[alias_name] && field_aliases[alias_name] != alias_ast_fields_index
+                raise Error.new("Error: conflicting AST node field positions for alias `#{alias_name}` in rule #{rule.name} defined on line #{rule.line_number}")
+              end
+              field_aliases[alias_name] = alias_ast_fields_index
+              @ast_fields[alias_ast_fields_index][alias_name] = @ast_fields[alias_ast_fields_index].first[1]
+            end
+          end
           field_indexes_across_all_rules[node_name] ||= Set.new
           field_indexes_across_all_rules[node_name] << field_ast_node_indexes[field_name]
           rule.rule_set_node_field_index_map[i] = field_ast_node_indexes[field_name]
@@ -148,18 +160,6 @@ class Propane
           # include the position.
           @ast_fields[indexes_across_all_rules.first]["p#{node_name}"] =
             "#{grammar.ast_prefix}#{node_name}#{grammar.ast_suffix}"
-        end
-      end
-      # Now merge in the field aliases as given by the user in the
-      # grammar.
-      field_aliases = {}
-      @rules.each do |rule|
-        rule.aliases.each do |alias_name, index|
-          if field_aliases[alias_name] && field_aliases[alias_name] != index
-            raise Error.new("Error: conflicting AST node field positions for alias `#{alias_name}` in rule #{rule.name} defined on line #{rule.line_number}")
-          end
-          field_aliases[alias_name] = index
-          @ast_fields[index][alias_name] = @ast_fields[index].first[1]
         end
       end
     end
