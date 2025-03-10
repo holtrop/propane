@@ -762,9 +762,15 @@ Propane generates the following result code constants:
 * `P_EOF`: The lexer reached the end of the input string.
 * `P_USER_TERMINATED`: A parser user code block has requested to terminate the parser.
 
-Result codes are returned by the functions `p_decode_input()`, `p_lex()`, and `p_parse()`.
+Result codes are returned by the functions `p_decode_code_point()`, `p_lex()`, and `p_parse()`.
 
 ##> Types
+
+### `p_code_point_t`
+
+The `p_code_point_t` type is aliased to a 32-bit unsigned integer.
+It is used to store decoded code points from the input text and perform
+lexing based on the grammar's lexer patterns.
 
 ### `p_context_t`
 
@@ -997,6 +1003,26 @@ if (p_parse(&context) == P_UNEXPECTED_TOKEN)
 {
     p_token_t unexpected_token = p_token(&context);
 }
+```
+
+### `p_decode_code_point`
+
+The `p_decode_code_point()` function can be used to decode code points from a
+UTF-8 string.
+It does not require a lexer/parser context structure and can be used as a
+standalone UTF-8 decoder or from within a lexer or parser user code block.
+
+D Example:
+
+```
+size_t result;
+p_code_point_t code_point;
+ubyte code_point_length;
+
+result = p_decode_code_point("\xf0\x9f\xa7\xa1", &code_point, &code_point_length);
+assert(result == P_SUCCESS);
+assert(code_point == 0x1F9E1u);
+assert(code_point_length == 4u);
 ```
 
 ##> Data
