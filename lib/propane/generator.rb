@@ -43,8 +43,8 @@ class Propane
       # Assign default pattern mode to patterns without a mode assigned.
       found_default = false
       @grammar.patterns.each do |pattern|
-        if pattern.mode.nil?
-          pattern.mode = "default"
+        if pattern.modes.empty?
+          pattern.modes << "default"
           found_default = true
         end
         pattern.ptypename ||= "default"

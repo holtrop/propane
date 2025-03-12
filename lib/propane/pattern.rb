@@ -26,9 +26,9 @@ class Propane
     #   Regex NFA for matching the pattern.
     attr_reader :nfa
 
-    # @return [String, nil]
-    #   Lexer mode for this pattern.
-    attr_accessor :mode
+    # @return [Set]
+    #   Lexer modes for this pattern.
+    attr_accessor :modes
 
     # @return [String, nil]
     #   Parser value type name.
@@ -46,14 +46,14 @@ class Propane
     #   Token to be returned by this pattern.
     # @option options [Integer, nil] :line_number
     #   Line number where the token was defined in the input grammar.
-    # @option options [String, nil] :mode
-    #   Lexer mode for this pattern.
+    # @option options [String, nil] :modes
+    #   Lexer modes for this pattern.
     def initialize(options)
       @code = options[:code]
       @pattern = options[:pattern]
       @token = options[:token]
       @line_number = options[:line_number]
-      @mode = options[:mode]
+      @modes = options[:modes]
       @ptypename = options[:ptypename]
       regex = Regex.new(@pattern)
       regex.nfa.end_state.accepts = self

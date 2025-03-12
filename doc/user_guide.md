@@ -536,6 +536,28 @@ It also returns the `str` token now that the token is complete.
 Note that the token name `str` above could have been `string` instead - the
 namespace for token names is distinct from the namespace for lexer modes.
 
+Multiple modes can be specified for a token or pattern or drop statement.
+For example, if the grammar wanted to only recognize an identifier following
+a `.` token and not other keywords, it could switch to an `identonly` mode
+when matching a `.`
+The `ident` token pattern will be matched in either the `default` or
+`identonly` mode.
+
+```
+ptype char;
+token abc;
+token def;
+default, identonly: token ident /[a-z]+/ <<
+  $$ = match[0];
+  $mode(default);
+  return $token(ident);
+>>
+token dot /\\./ <<
+  $mode(identonly);
+>>
+default, identonly: drop /\\s+/;
+```
+
 ##> Specifying parser value types - the `ptype` statement
 
 The `ptype` statement is used to define parser value type(s).

@@ -621,6 +621,62 @@ EOF
         ])
       end
 
+      it "multiple lexer modes may apply to a pattern" do
+        case language
+        when "c"
+          write_grammar <<EOF
+<<
+#include <stdio.h>
+>>
+ptype char;
+token abc;
+token def;
+default, identonly: token ident /[a-z]+/ <<
+  $$ = match[0];
+  $mode(default);
+  return $token(ident);
+>>
+token dot /\\./ <<
+  $mode(identonly);
+>>
+default, identonly: drop /\\s+/;
+Start -> abc dot ident <<
+  printf("ident: %c\\n", $3);
+>>
+EOF
+        when "d"
+          write_grammar <<EOF
+<<
+import std.stdio;
+>>
+ptype char;
+token abc;
+token def;
+default, identonly: token ident /[a-z]+/ <<
+  $$ = match[0];
+  $mode(default);
+>>
+token dot /\\./ <<
+  $mode(identonly);
+>>
+default, identonly: drop /\\s+/;
+Start -> abc dot ident <<
+  writeln("ident: ", $3);
+>>
+EOF
+        end
+        run_propane(language: language)
+        compile("spec/test_lexer_multiple_modes.#{language}", language: language)
+        results = run_test
+        expect(results.status).to eq 0
+        verify_lines(results.stdout, [
+          "ident: d",
+          "pass1",
+          "ident: a",
+          "pass2",
+        ])
+      end
+
       it "executes user code associated with a parser rule" do
         case language
         when "c"

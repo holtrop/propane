@@ -25,7 +25,7 @@ class Propane
       @code_blocks = {}
       @line_number = 1
       @next_line_number = @line_number
-      @mode = nil
+      @modeline = nil
       @input = input.gsub("\r\n", "\n")
       @ptypes = {"default" => "void *"}
       @prefix = "p_"
@@ -58,7 +58,7 @@ class Propane
     def parse_statement!
       if parse_white_space!
       elsif parse_comment_line!
-      elsif @mode.nil? && parse_mode_label!
+      elsif @modeline.nil? && parse_mode_label!
       elsif parse_ast_statement!
       elsif parse_ast_prefix_statement!
       elsif parse_ast_suffix_statement!
@@ -81,8 +81,8 @@ class Propane
     end
 
     def parse_mode_label!
-      if md = consume!(/(#{IDENTIFIER_REGEX})\s*:/)
-        @mode = md[1]
+      if md = consume!(/(#{IDENTIFIER_REGEX}(?:\s*,\s*#{IDENTIFIER_REGEX})*)\s*:/)
+        @modeline = md[1]
       end
     end
 
@@ -117,7 +117,7 @@ class Propane
         md = consume!(/([\w.]+)\s*/, "expected module name")
         @modulename = md[1]
         consume!(/;/, "expected `;'")
-        @mode = nil
+        @modeline = nil
         true
       end
     end
@@ -153,9 +153,9 @@ class Propane
         end
         token = Token.new(name, ptypename, @line_number)
         @tokens << token
-        pattern = Pattern.new(pattern: pattern, token: token, line_number: @line_number, code: code, mode: @mode, ptypename: ptypename)
+        pattern = Pattern.new(pattern: pattern, token: token, line_number: @line_number, code: code, modes: get_modes_from_modeline, ptypename: ptypename)
         @patterns << pattern
-        @mode = nil
+        @modeline = nil
         true
       end
     end
@@ -173,7 +173,7 @@ class Propane
         consume!(/;/, "expected `;'");
         token = Token.new(name, ptypename, @line_number)
         @tokens << token
-        @mode = nil
+        @modeline = nil
         true
       end
     end
@@ -186,8 +186,8 @@ class Propane
         end
         consume!(/\s+/)
         consume!(/;/, "expected `;'")
-        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, mode: @mode)
-        @mode = nil
+        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, modes: get_modes_from_modeline)
+        @modeline = nil
         true
       end
     end
@@ -208,7 +208,7 @@ class Propane
           end
         end
         @rules << Rule.new(rule_name, components, code, ptypename, @line_number)
-        @mode = nil
+        @modeline = nil
         true
       end
     end
@@ -225,8 +225,8 @@ class Propane
         unless code = parse_code_block!
           raise Error.new("Line #{@line_number}: expected code block to follow pattern")
         end
-        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, code: code, mode: @mode, ptypename: ptypename)
-        @mode = nil
+        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, code: code, modes: get_modes_from_modeline, ptypename: ptypename)
+        @modeline = nil
         true
       end
     end
@@ -247,7 +247,7 @@ class Propane
         else
           @code_blocks[name] = code
         end
-        @mode = nil
+        @modeline = nil
         true
       end
     end
@@ -312,6 +312,14 @@ class Propane
         raise Error.new("Line #{@line_number}: Error: #{error_message}")
       else
         false
+      end
+    end
+
+    def get_modes_from_modeline
+      if @modeline
+        Set[*@modeline.split(",").map(&:strip)]
+      else
+        Set.new
       end
     end
 

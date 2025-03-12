@@ -26,8 +26,14 @@ class Propane
     private
 
     def build_tables!
-      @modes = @grammar.patterns.group_by do |pattern|
-        pattern.mode
+      modenames = @grammar.patterns.reduce(Set.new) do |result, pattern|
+        result + pattern.modes
+      end
+      @modes = modenames.reduce({}) do |result, modename|
+        result[modename] = @grammar.patterns.select do |pattern|
+          pattern.modes.include?(modename)
+        end
+        result
       end.transform_values do |patterns|
         {dfa: DFA.new(patterns)}
       end

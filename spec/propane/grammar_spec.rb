@@ -151,30 +151,30 @@ EOF
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
       expect(o).to_not be_nil
-      expect(o.mode).to be_nil
+      expect(o.modes).to be_empty
 
       o = grammar.tokens.find {|token| token.name == "b"}
       expect(o).to_not be_nil
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
       expect(o).to_not be_nil
-      expect(o.mode).to eq "m1"
+      expect(o.modes).to eq Set["m1"]
 
       o = grammar.patterns.find {|pattern| pattern.pattern == "foo"}
       expect(o).to_not be_nil
-      expect(o.mode).to be_nil
+      expect(o.modes).to be_empty
 
       o = grammar.patterns.find {|pattern| pattern.pattern == "bar"}
       expect(o).to_not be_nil
-      expect(o.mode).to eq "m2"
+      expect(o.modes).to eq Set["m2"]
 
       o = grammar.patterns.find {|pattern| pattern.pattern == "q"}
       expect(o).to_not be_nil
-      expect(o.mode).to be_nil
+      expect(o.modes).to be_empty
 
       o = grammar.patterns.find {|pattern| pattern.pattern == "r"}
       expect(o).to_not be_nil
-      expect(o.mode).to eq "m3"
+      expect(o.modes).to eq Set["m3"]
     end
 
     it "allows assigning ptypes to tokens and rules" do
