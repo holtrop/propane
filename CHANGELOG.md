@@ -1,3 +1,10 @@
+## v2.2.0
+
+### Improvements
+
+- Allow multiple lexer modes to be specified for a lexer pattern (#35)
+- Document p_decode_code_point() API function (#34)
+
 ## v2.1.1
 
 ### Fixes
