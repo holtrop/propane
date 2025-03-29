@@ -3,20 +3,20 @@ GEM
   specs:
     base64 (0.2.0)
     date (3.4.1)
-    diff-lcs (1.5.1)
+    diff-lcs (1.6.1)
     docile (1.4.1)
-    psych (5.2.2)
+    psych (5.2.3)
       date
       stringio
     rake (13.2.1)
-    rdoc (6.10.0)
+    rdoc (6.13.1)
       psych (>= 4.0.0)
-    redcarpet (3.6.0)
+    redcarpet (3.6.1)
     rspec (3.13.0)
       rspec-core (~> 3.13.0)
       rspec-expectations (~> 3.13.0)
       rspec-mocks (~> 3.13.0)
-    rspec-core (3.13.2)
+    rspec-core (3.13.3)
       rspec-support (~> 3.13.0)
     rspec-expectations (3.13.3)
       diff-lcs (>= 1.2.0, < 2.0)
@@ -31,7 +31,7 @@ GEM
       simplecov_json_formatter (~> 0.1)
     simplecov-html (0.13.1)
     simplecov_json_formatter (0.1.4)
-    stringio (3.1.2)
+    stringio (3.1.6)
     syntax (1.2.2)
 
 PLATFORMS
