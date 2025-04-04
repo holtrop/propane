@@ -92,7 +92,7 @@ class Propane
               propagate_optional_target: rule.optional? && rule.components.size == 1}]
           elsif reduce_actions = item_set.reduce_actions
             reduce_actions.map do |token, rule|
-              {token_id: token.id, rule_id: rule.id, rule: rule,
+              {token: token, token_id: token.id, rule_id: rule.id, rule: rule,
                rule_set_id: rule.rule_set.id, n_states: rule.components.size,
                propagate_optional_target: rule.optional? && rule.components.size == 1}
             end

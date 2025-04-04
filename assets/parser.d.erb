@@ -875,17 +875,22 @@ immutable ushort[<%= rule.rule_set_node_field_index_map.size %>] r_<%= rule.name
 /** Parser reduce table. */
 private immutable reduce_t[] parser_reduce_table = [
 <%   @parser.reduce_table.each do |reduce| %>
-    reduce_t(<%= reduce[:token_id] %>u, <%= reduce[:rule_id] %>u, <%= reduce[:rule_set_id] %>u, <%= reduce[:n_states] %>u
+    reduce_t(
+        <%= reduce[:token_id] %>u, /* Token: <%= reduce[:token] ? reduce[:token].name : "(any)" %> */
+        <%= reduce[:rule_id] %>u, /* Rule ID */
+        <%= reduce[:rule_set_id] %>u, /* Rule set ID (<%= reduce[:rule].rule_set.name %>) */
 <%     if @grammar.ast %>
+        <%= reduce[:n_states] %>u, /* Number of states */
 <%       if reduce[:rule].flat_rule_set_node_field_index_map? %>
-             , null
+        null, /* No rule set node field index map (flat map) */
 <%       else %>
-             , &r_<%= reduce[:rule].name.gsub("$", "_") %><%= reduce[:rule].id %>_node_field_index_map[0]
+        &r_<%= reduce[:rule].name.gsub("$", "_") %><%= reduce[:rule].id %>_node_field_index_map[0], /* Rule set node field index map */
 <%       end %>
-             , <%= reduce[:rule].rule_set.ast_fields.size %>
-             , <%= reduce[:propagate_optional_target] %>
+        <%= reduce[:rule].rule_set.ast_fields.size %>, /* Number of AST fields */
+        <%= reduce[:propagate_optional_target] %>), /* Propagate optional target? */
+<%     else %>
+        <%= reduce[:n_states] %>u), /* Number of states */
 <%     end %>
-            ),
 <%   end %>
 ];
 
