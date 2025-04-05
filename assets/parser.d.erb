@@ -8,6 +8,7 @@
 module <%= @grammar.modulename %>;
 <% end %>
 
+import core.memory;
 import core.stdc.stdlib : malloc;
 
 /**************************************************************************
@@ -1079,7 +1080,9 @@ public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * cont
             else if (parser_reduce_table[reduce_index].n_states > 0)
             {
                 size_t n_fields = parser_reduce_table[reduce_index].rule_set_node_field_array_size;
-                ASTNode * node = cast(ASTNode *)malloc(ASTNode.sizeof + n_fields * (void *).sizeof);
+                size_t node_size = ASTNode.sizeof + n_fields * (void *).sizeof;
+                ASTNode * node = cast(ASTNode *)malloc(node_size);
+                GC.addRange(node, node_size);
                 node.position = <%= @grammar.prefix %>position_t.INVALID;
                 node.end_position = <%= @grammar.prefix %>position_t.INVALID;
                 foreach (i; 0..n_fields)

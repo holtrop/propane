@@ -74,7 +74,7 @@ EOF
     when "c"
       result = system(*%w[gcc -Wall -o spec/run/testparser -Ispec -Ispec/run], *parsers, *test_files, "spec/testutils.c", "-lm")
     when "d"
-      result = system(*%w[ldc2 --unittest -of spec/run/testparser -Ispec], *parsers, *test_files, "spec/testutils.d")
+      result = system(*%w[ldc2 -g --unittest -of spec/run/testparser -Ispec], *parsers, *test_files, "spec/testutils.d")
     end
     expect(result).to be_truthy
   end
@@ -1390,6 +1390,15 @@ EOF
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
         expect(results.stdout).to match /first is foo1.*second is bar2/m
+      end
+
+      it "does not free memory allocated for AST nodes" do
+        write_grammar(File.read("spec/ast_node_memory_remains.#{language}.propane"))
+        run_propane(language: language)
+        compile("spec/test_ast_node_memory_remains.#{language}", language: language)
+        results = run_test
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
       end
     end
   end

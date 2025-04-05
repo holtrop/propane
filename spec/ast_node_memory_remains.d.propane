@@ -1,0 +1,177 @@
+ast;
+ast_prefix P;
+
+<<
+import std.bigint;
+
+private string stringvalue;
+
+union TokenVal
+{
+    BigInt bi;
+    string s;
+    double dou;
+}
+>>
+
+ptype TokenVal;
+
+# Keywords.
+token byte;
+token def;
+token int;
+token long;
+token module;
+token return;
+token short;
+token size_t;
+token ssize_t;
+token ubyte;
+token uint;
+token ulong;
+token ushort;
+
+# Symbols.
+token arrow /->/;
+token comma /,/;
+token lbrace /\{/;
+token lparen /\(/;
+token rbrace /\}/;
+token rparen /\)/;
+token semicolon /;/;
+
+# Integer literals.
+token hex_int_l /0[xX][0-9a-fA-F][0-9a-fA-F_]*/ <<
+  $$.bi = BigInt(match[0..3]);
+  foreach (c; match[3..$])
+  {
+    if (('0' <= c) && (c <= '9'))
+    {
+      $$.bi *= 0x10;
+      $$.bi += (c - '0');
+    }
+    if (('a' <= c) && (c <= 'f'))
+    {
+      $$.bi *= 0x10;
+      $$.bi += (c - 'a' + 10);
+    }
+    if (('A' <= c) && (c <= 'F'))
+    {
+      $$.bi *= 0x10;
+      $$.bi += (c - 'A' + 10);
+    }
+  }
+>>
+
+# Identifier.
+token ident /\$?[a-zA-Z_][a-zA-Z_0-9]*\??/ <<
+  if (match[0] == '$')
+  {
+    $$.s = match[1..$];
+  }
+  else
+  {
+    $$.s = match;
+  }
+  $mode(default);
+  return $token(ident);
+>>
+
+# Comments.
+drop /#.*/;
+
+# Whitespace.
+drop /[ \r\n]*/;
+
+start Module;
+
+# Assignment operators - right associative
+Expression -> Expression_Or:exp0;
+
+# Logical OR operator - left associative
+Expression_Or -> Expression_And:exp0;
+
+# Logical AND operator - left associative
+Expression_And -> Expression_Comp:exp0;
+
+# Equality operators - left associative
+Expression_Comp -> Expression_Relational:exp0;
+
+# Relational operators - left associative
+Expression_Relational -> Expression_REMatch:exp0;
+
+# Regular expression - left associative
+Expression_REMatch -> Expression_BinOr:exp0;
+
+# Binary OR operator - left associative
+Expression_BinOr -> Expression_Xor:exp0;
+
+# Binary XOR operator - left associative
+Expression_Xor -> Expression_BinAnd:exp0;
+
+# Binary AND operator - left associative
+Expression_BinAnd -> Expression_BitShift:exp0;
+
+# Bit shift operators - left associative
+Expression_BitShift -> Expression_Plus:exp0;
+
+# Add/subtract operators - left associative
+Expression_Plus -> Expression_Mul:exp0;
+
+# Multiplication/divide/modulus operators - left associative
+Expression_Mul -> Expression_Range:exp0;
+
+# Range construction operators - left associative
+Expression_Range -> Expression_UnaryPrefix:exp0;
+
+# Unary prefix operators
+Expression_UnaryPrefix -> Expression_Dot:exp0;
+
+# Postfix operators
+Expression_Dot -> Expression_Ident:exp0;
+Expression_Dot -> Expression_Dot:exp1 lparen rparen;
+
+# Literals, identifiers, and parenthesized expressions
+Expression_Ident -> Literal;
+Expression_Ident -> ident;
+
+FunctionDefinition -> def ident:name lparen FunctionParameterList?:parameters rparen FunctionReturnType?:returntype lbrace Statements rbrace;
+
+FunctionParameterList -> ident:name Type:type FunctionParameterListMore?:more;
+FunctionParameterListMore -> comma ident:name Type:type FunctionParameterListMore?:more;
+
+FunctionReturnType -> arrow Type;
+
+Literal -> LiteralInteger;
+LiteralInteger -> hex_int_l;
+
+Module -> ModuleStatement? ModuleItems;
+
+ModuleItem -> FunctionDefinition;
+
+ModuleItems -> ;
+ModuleItems -> ModuleItems ModuleItem;
+
+ModulePath -> ident;
+
+ModuleStatement -> module ModulePath semicolon;
+
+ReturnStatement -> return Expression?:exp0 semicolon;
+
+Statements -> ;
+Statements -> Statements Statement;
+Statement -> Expression semicolon;
+Statement -> ReturnStatement;
+
+Type -> TypeBase;
+
+TypeBase -> byte;
+TypeBase -> ubyte;
+TypeBase -> short;
+TypeBase -> ushort;
+TypeBase -> int;
+TypeBase -> uint;
+TypeBase -> long;
+TypeBase -> ulong;
+TypeBase -> size_t;
+TypeBase -> ssize_t;
