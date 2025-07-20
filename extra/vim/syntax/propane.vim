@@ -22,7 +22,7 @@ syn match propaneFieldOperator ":" contained
 syn match propaneOperator "?"
 syn keyword propaneKeyword ast ast_prefix ast_suffix drop module prefix ptype start token tokenid
 
-syn region propaneRegex start="/" end="/" skip="\\/"
+syn region propaneRegex start="/" end="/" skip="\v\\\\|\\/"
 
 hi def link propaneComment Comment
 hi def link propaneKeyword Keyword
