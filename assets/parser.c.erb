@@ -359,6 +359,7 @@ static size_t find_longest_match(<%= @grammar.prefix %>context_t * context,
         switch (result)
         {
         case P_SUCCESS:
+            {
             lexer_state_id_t transition_state = check_lexer_transition(current_state, code_point);
             if (transition_state != INVALID_LEXER_STATE_ID)
             {
@@ -389,6 +390,7 @@ static size_t find_longest_match(<%= @grammar.prefix %>context_t * context,
             {
                 *out_unexpected_input_length = attempt_match.length + code_point_length;
                 return P_UNEXPECTED_INPUT;
+            }
             }
             break;
 
@@ -456,6 +458,7 @@ static size_t attempt_lex_token(<%= @grammar.prefix %>context_t * context, <%= @
     switch (result)
     {
     case P_SUCCESS:
+        {
         <%= @grammar.prefix %>token_t token_to_accept = match_info.accepting_state->token;
         if (match_info.accepting_state->code_id != INVALID_USER_CODE_ID)
         {
@@ -507,6 +510,7 @@ static size_t attempt_lex_token(<%= @grammar.prefix %>context_t * context, <%= @
             token_info.end_position.col = token_info.position.col + match_info.end_delta_position.col;
         }
         *out_token_info = token_info;
+        }
         return P_SUCCESS;
 
     case P_EOF:
