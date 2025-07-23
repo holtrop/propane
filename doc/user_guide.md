@@ -67,10 +67,10 @@ import std.math;
 ptype ulong;
 
 # A few basic arithmetic operators.
-token plus /\\+/;
-token times /\\*/;
-token power /\\*\\*/;
-token integer /\\d+/ <<
+token plus /\+/;
+token times /\*/;
+token power /\*\*/;
+token integer /\d+/ <<
   ulong v;
   foreach (c; match)
   {
@@ -79,10 +79,10 @@ token integer /\\d+/ <<
   }
   $$ = v;
 >>
-token lparen /\\(/;
-token rparen /\\)/;
+token lparen /\(/;
+token rparen /\)/;
 # Drop whitespace.
-drop /\\s+/;
+drop /\s+/;
 
 Start -> E1 << $$ = $1; >>
 E1 -> E2 << $$ = $1; >>
@@ -155,7 +155,7 @@ Example:
 ```
 ptype ulong;
 
-token integer /\\d+/ <<
+token integer /\d+/ <<
   ulong v;
   foreach (c; match)
   {
@@ -228,9 +228,9 @@ token two /2/;
 token comma /,/ <<
   $$ = 42;
 >>
-token lparen /\\(/;
-token rparen /\\)/;
-drop /\\s+/;
+token lparen /\(/;
+token rparen /\)/;
+drop /\s+/;
 
 Start -> Items;
 
@@ -552,10 +552,10 @@ default, identonly: token ident /[a-z]+/ <<
   $mode(default);
   return $token(ident);
 >>
-token dot /\\./ <<
+token dot /\./ <<
   $mode(identonly);
 >>
-default, identonly: drop /\\s+/;
+default, identonly: drop /\s+/;
 ```
 
 ##> Specifying parser value types - the `ptype` statement
