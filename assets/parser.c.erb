@@ -55,7 +55,8 @@ const char * <%= @grammar.prefix %>token_names[] = {
 void <%= @grammar.prefix %>context_init(<%= @grammar.prefix %>context_t * context, uint8_t const * input, size_t input_length)
 {
     /* New default-initialized context structure. */
-    <%= @grammar.prefix %>context_t newcontext = {0};
+    <%= @grammar.prefix %>context_t newcontext;
+    memset(&newcontext, 0, sizeof(newcontext));
 
     /* Lexer initialization. */
     newcontext.input = input;
@@ -344,8 +345,10 @@ static lexer_state_id_t check_lexer_transition(uint32_t current_state, uint32_t 
 static size_t find_longest_match(<%= @grammar.prefix %>context_t * context,
     lexer_match_info_t * out_match_info, size_t * out_unexpected_input_length)
 {
-    lexer_match_info_t longest_match = {0};
-    lexer_match_info_t attempt_match = {0};
+    lexer_match_info_t longest_match;
+    memset(&longest_match, 0, sizeof(longest_match));
+    lexer_match_info_t attempt_match;
+    memset(&attempt_match, 0, sizeof(attempt_match));
     *out_match_info = longest_match;
     uint32_t current_state = lexer_mode_table[context->mode].state_table_offset;
     for (;;)
@@ -449,7 +452,8 @@ static size_t find_longest_match(<%= @grammar.prefix %>context_t * context,
  */
 static size_t attempt_lex_token(<%= @grammar.prefix %>context_t * context, <%= @grammar.prefix %>token_info_t * out_token_info)
 {
-    <%= @grammar.prefix %>token_info_t token_info = {0};
+    <%= @grammar.prefix %>token_info_t token_info;
+    memset(&token_info, 0, sizeof(token_info));
     token_info.position = context->text_position;
     token_info.token = INVALID_TOKEN_ID;
     lexer_match_info_t match_info;
@@ -1003,7 +1007,8 @@ size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context)
                 state_values_stack_index(&statevalues, -1)->ast_node = reduced_parser_node;
 <% else %>
                 state_values_stack_index(&statevalues, -1)->pvalue = reduced_parser_value;
-                <%= @grammar.prefix %>value_t new_parse_result = {0};
+                <%= @grammar.prefix %>value_t new_parse_result;
+                memset(&new_parse_result, 0, sizeof(new_parse_result));
                 reduced_parser_value = new_parse_result;
 <% end %>
                 reduced_rule_set = INVALID_ID;
@@ -1065,7 +1070,8 @@ size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context)
                 reduced_parser_node = NULL;
             }
 <% else %>
-            <%= @grammar.prefix %>value_t reduced_parser_value2 = {0};
+            <%= @grammar.prefix %>value_t reduced_parser_value2;
+            memset(&reduced_parser_value2, 0, sizeof(reduced_parser_value2));
             if (parser_user_code(&reduced_parser_value2, parser_reduce_table[reduce_index].rule, &statevalues, parser_reduce_table[reduce_index].n_states, context) == P_USER_TERMINATED)
             {
                 return P_USER_TERMINATED;
