@@ -128,4 +128,13 @@ EOF
 token semicolon /;/;
 EOF
   end
+
+  it "matches a negated character class" do
+    expected = [
+      ["pattern", "/abc/"],
+    ]
+    expect(run(<<EOF, "/abc/")).to eq expected
+token pattern /\\/[^\\s]*\\//;
+EOF
+  end
 end

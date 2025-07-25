@@ -189,6 +189,23 @@ class Propane
       expect(ccu[0].first).to eq "x".ord
     end
 
+    it "parses a negated character class with inner character classes" do
+      regex = Regex.new("[^x\\sz]")
+      expect(regex.unit).to be_a Regex::AlternatesUnit
+      expect(regex.unit.alternates.size).to eq 1
+      expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
+      seq_unit = regex.unit.alternates[0]
+      expect(seq_unit.size).to eq 1
+      expect(seq_unit[0]).to be_a Regex::CharacterClassUnit
+      ccu = seq_unit[0]
+      expect(ccu.negate).to be_truthy
+      expect(ccu.size).to eq 8
+      expect(ccu[0]).to be_a Regex::CharacterRangeUnit
+      expect(ccu[0].first).to eq "x".ord
+      expect(ccu[1].first).to eq " ".ord
+      expect(ccu[7].first).to eq "z".ord
+    end
+
     it "parses - as a plain character at beginning of a character class" do
       regex = Regex.new("[-9]")
       expect(regex.unit).to be_a Regex::AlternatesUnit

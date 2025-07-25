@@ -92,11 +92,8 @@ class Propane
         @units = []
         @negate = false
       end
-      def initialize
-        @units = []
-      end
-      def method_missing(*args)
-        @units.__send__(*args)
+      def method_missing(*args, &block)
+        @units.__send__(*args, &block)
       end
       def <<(thing)
         if thing.is_a?(CharacterClassUnit)
