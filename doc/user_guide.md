@@ -432,7 +432,7 @@ A regular expression begins and ends with a `/` character.
 Example:
 
 ```
-/#.*$/
+/#.*/
 ```
 
 Regular expressions can include many special characters:
