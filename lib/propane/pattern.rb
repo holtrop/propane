@@ -55,7 +55,7 @@ class Propane
       @line_number = options[:line_number]
       @modes = options[:modes]
       @ptypename = options[:ptypename]
-      regex = Regex.new(@pattern)
+      regex = Regex.new(@pattern, @line_number)
       regex.nfa.end_state.accepts = self
       @nfa = regex.nfa
     end

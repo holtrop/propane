@@ -4,12 +4,13 @@ class Propane
     attr_reader :unit
     attr_reader :nfa
 
-    def initialize(pattern)
+    def initialize(pattern, line_number)
       @pattern = pattern.dup
+      @line_number = line_number
       @unit = parse_alternates
       @nfa = @unit.to_nfa
       if @pattern != ""
-        raise Error.new(%[Unexpected "#{@pattern}" in pattern])
+        raise Error.new(%[Line #{@line_number}: unexpected "#{@pattern}" in pattern])
       end
     end
 
@@ -41,7 +42,7 @@ class Propane
             mu = MultiplicityUnit.new(last_unit, min_count, max_count)
             au.replace_last!(mu)
           else
-            raise Error.new("#{c} follows nothing")
+            raise Error.new("Line #{@line_number}: #{c} follows nothing")
           end
         when "|"
           au.new_alternate!
@@ -59,7 +60,7 @@ class Propane
     def parse_group
       au = parse_alternates
       if @pattern[0] != ")"
-        raise Error.new("Unterminated group in pattern")
+        raise Error.new("Line #{@line_number}: unterminated group in pattern")
       end
       @pattern.slice!(0)
       au
@@ -70,7 +71,7 @@ class Propane
       index = 0
       loop do
         if @pattern == ""
-          raise Error.new("Unterminated character class")
+          raise Error.new("Line #{@line_number}: unterminated character class")
         end
         c = @pattern.slice!(0)
         if c == "]"
@@ -84,13 +85,13 @@ class Propane
         elsif c == "-" && @pattern[0] != "]"
           begin_cu = ccu.last_unit
           unless begin_cu.is_a?(CharacterRangeUnit) && begin_cu.code_point_range.size == 1
-            raise Error.new("Character range must be between single characters")
+            raise Error.new("Line #{@line_number}: character range must be between single characters")
           end
           if @pattern[0] == "\\"
             @pattern.slice!(0)
             end_cu = parse_backslash
             unless end_cu.is_a?(CharacterRangeUnit) && end_cu.code_point_range.size == 1
-              raise Error.new("Character range must be between single characters")
+              raise Error.new("Line #{@line_number}: character range must be between single characters")
             end
             max_code_point = end_cu.code_point
           else
@@ -116,7 +117,7 @@ class Propane
         elsif max_count.to_s != ""
           max_count = max_count.to_i
           if max_count < min_count
-            raise Error.new("Maximum repetition count cannot be less than minimum repetition count")
+            raise Error.new("Line #{@line_number}: maximum repetition count cannot be less than minimum repetition count")
           end
         else
           max_count = nil
@@ -124,13 +125,13 @@ class Propane
         @pattern = pattern
         [min_count, max_count]
       else
-        raise Error.new("Unexpected match count at #{@pattern}")
+        raise Error.new("Line #{@line_number}: unexpected match count following {")
       end
     end
 
     def parse_backslash
       if @pattern == ""
-        raise Error.new("Error: unfollowed \\")
+        raise Error.new("Line #{@line_number}: error: unfollowed \\")
       else
         c = @pattern.slice!(0)
         case c

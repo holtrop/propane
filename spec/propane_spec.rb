@@ -249,6 +249,18 @@ EOF
     expect(results.status).to eq 0
   end
 
+  it "shows error line number for unmatched left curly brace" do
+    write_grammar <<EOF
+# Line 1
+# Line 2
+token a /a{/;
+Start -> a;
+EOF
+    results = run_propane(capture: true)
+    expect(results.stderr).to match /Line 3: unexpected match count following \{/
+    expect(results.status).to_not eq 0
+  end
+
   %w[d c].each do |language|
 
     context "#{language.upcase} language" do

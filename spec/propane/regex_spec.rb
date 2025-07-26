@@ -2,14 +2,14 @@ class Propane
   RSpec.describe Regex do
 
     it "parses an empty expression" do
-      regex = Regex.new("")
+      regex = Regex.new("", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0].size).to eq 0
     end
 
     it "parses a single character unit expression" do
-      regex = Regex.new("a")
+      regex = Regex.new("a", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -19,7 +19,7 @@ class Propane
     end
 
     it "parses a group with a single character unit expression" do
-      regex = Regex.new("(a)")
+      regex = Regex.new("(a)", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -33,7 +33,7 @@ class Propane
     end
 
     it "parses a *" do
-      regex = Regex.new("a*")
+      regex = Regex.new("a*", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -47,7 +47,7 @@ class Propane
     end
 
     it "parses a +" do
-      regex = Regex.new("a+")
+      regex = Regex.new("a+", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -61,7 +61,7 @@ class Propane
     end
 
     it "parses a ?" do
-      regex = Regex.new("a?")
+      regex = Regex.new("a?", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -75,7 +75,7 @@ class Propane
     end
 
     it "parses a multiplicity count" do
-      regex = Regex.new("a{5}")
+      regex = Regex.new("a{5}", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -89,7 +89,7 @@ class Propane
     end
 
     it "parses a minimum-only multiplicity count" do
-      regex = Regex.new("a{5,}")
+      regex = Regex.new("a{5,}", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -103,7 +103,7 @@ class Propane
     end
 
     it "parses a minimum and maximum multiplicity count" do
-      regex = Regex.new("a{5,8}")
+      regex = Regex.new("a{5,8}", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -118,7 +118,7 @@ class Propane
     end
 
     it "parses an escaped *" do
-      regex = Regex.new("a\\*")
+      regex = Regex.new("a\\*", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -131,7 +131,7 @@ class Propane
     end
 
     it "parses an escaped +" do
-      regex = Regex.new("a\\+")
+      regex = Regex.new("a\\+", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -144,7 +144,7 @@ class Propane
     end
 
     it "parses an escaped \\" do
-      regex = Regex.new("\\\\d")
+      regex = Regex.new("\\\\d", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -157,7 +157,7 @@ class Propane
     end
 
     it "parses a character class" do
-      regex = Regex.new("[a-z_]")
+      regex = Regex.new("[a-z_]", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -175,7 +175,7 @@ class Propane
     end
 
     it "parses a negated character class" do
-      regex = Regex.new("[^xyz]")
+      regex = Regex.new("[^xyz]", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -207,7 +207,7 @@ class Propane
     end
 
     it "parses - as a plain character at beginning of a character class" do
-      regex = Regex.new("[-9]")
+      regex = Regex.new("[-9]", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -221,7 +221,7 @@ class Propane
     end
 
     it "parses - as a plain character at end of a character class" do
-      regex = Regex.new("[0-]")
+      regex = Regex.new("[0-]", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -237,7 +237,7 @@ class Propane
     end
 
     it "parses - as a plain character at beginning of a negated character class" do
-      regex = Regex.new("[^-9]")
+      regex = Regex.new("[^-9]", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -252,7 +252,7 @@ class Propane
     end
 
     it "parses . as a plain character in a character class" do
-      regex = Regex.new("[.]")
+      regex = Regex.new("[.]", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -267,7 +267,7 @@ class Propane
     end
 
     it "parses - as a plain character when escaped in middle of character class" do
-      regex = Regex.new("[0\\-9]")
+      regex = Regex.new("[0\\-9]", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -286,7 +286,7 @@ class Propane
     end
 
     it "parses alternates" do
-      regex = Regex.new("ab|c")
+      regex = Regex.new("ab|c", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 2
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -296,7 +296,7 @@ class Propane
     end
 
     it "parses a ." do
-      regex = Regex.new("a.b")
+      regex = Regex.new("a.b", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
@@ -307,7 +307,7 @@ class Propane
     end
 
     it "parses something complex" do
-      regex = Regex.new("(a|)*|[^^]|\\|v|[x-y]+")
+      regex = Regex.new("(a|)*|[^^]|\\|v|[x-y]+", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 4
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
