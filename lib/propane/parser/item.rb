@@ -22,6 +22,7 @@ class Propane
       def initialize(rule, position)
         @rule = rule
         @position = position
+        @_hash = [@rule, @position].hash
       end
 
       # Hash function.
@@ -29,7 +30,7 @@ class Propane
       # @return [Integer]
       #   Hash code.
       def hash
-        [@rule, @position].hash
+        @_hash
       end
 
       # Compare Item objects.
