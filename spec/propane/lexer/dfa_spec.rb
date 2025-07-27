@@ -189,4 +189,11 @@ EOF
 token t /[^%\\W]+/;
 EOF
   end
+
+  it "\\s matches a newline" do
+    expected = [["s", "\n"]]
+    expect(run(<<EOF, "\n")).to eq expected
+token s /\\s/;
+EOF
+  end
 end
