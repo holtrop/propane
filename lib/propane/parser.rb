@@ -64,24 +64,13 @@ class Propane
       @shift_table = []
       @reduce_table = []
       @item_sets.each do |item_set|
-        shift_entries = item_set.next_symbols.map do |next_symbol|
-          state_id =
-            if next_symbol.name == "$EOF"
-              0
-            else
-              item_set.next_item_set[next_symbol].id
-            end
-          {
-            symbol: next_symbol,
-            state_id: state_id,
-          }
-        end
         unless item_set.reduce_rules.empty?
-          shift_entries.each do |shift_entry|
+          item_set.shift_entries.each do |shift_entry|
             token = shift_entry[:symbol]
-            if get_lookahead_reduce_actions_for_item_set(item_set).include?(token)
-              rule = item_set.reduce_actions[token]
-              @warnings << "Shift/Reduce conflict (state #{item_set.id}) between token #{token.name} and rule #{rule.name} (defined on line #{rule.line_number})"
+            if item_set.reduce_actions
+              if rule = item_set.reduce_actions[token]
+                @warnings << "Shift/Reduce conflict (state #{item_set.id}) between token #{token.name} and rule #{rule.name} (defined on line #{rule.line_number})"
+              end
             end
           end
         end
@@ -101,11 +90,11 @@ class Propane
           end
         @state_table << {
           shift_index: @shift_table.size,
-          n_shifts: shift_entries.size,
+          n_shifts: item_set.shift_entries.size,
           reduce_index: @reduce_table.size,
           n_reduces: reduce_entries.size,
         }
-        @shift_table += shift_entries
+        @shift_table += item_set.shift_entries
         @reduce_table += reduce_entries
       end
     end
@@ -125,7 +114,36 @@ class Propane
     # @return [void]
     def build_reduce_actions!
       @item_sets.each do |item_set|
+        build_shift_entries(item_set)
         build_reduce_actions_for_item_set(item_set)
+        if item_set.reduce_rules.size > 1 ||
+          (item_set.reduce_rules.size > 0 && item_set.shift_entries.size > 0)
+          # We need lookahead reduce actions if:
+          # 1) There is more than one possible rule to reduce. In this case the
+          #    lookahead token can help choose which rule to reduce.
+          # 2) There is at least one shift action and one reduce action for
+          #    this item set. In this case the lookahead reduce actions are
+          #    needed to test for a Shift/Reduce conflict.
+          build_lookahead_reduce_actions_for_item_set(item_set)
+        end
+      end
+    end
+
+    # Build the shift entries for a single item set.
+    #
+    # @return [void]
+    def build_shift_entries(item_set)
+      item_set.shift_entries = item_set.next_symbols.map do |next_symbol|
+        state_id =
+          if next_symbol.name == "$EOF"
+            0
+          else
+            item_set.next_item_set[next_symbol].id
+          end
+        {
+          symbol: next_symbol,
+          state_id: state_id,
+        }
       end
     end
 
@@ -145,23 +163,6 @@ class Propane
       if item_set.reduce_rules.size == 1
         item_set.reduce_rule = item_set.reduce_rules.first
       end
-
-      if item_set.reduce_rules.size > 1
-        # Force item_set.reduce_actions to be built to store the lookahead
-        # tokens for the possible reduce rules if there is more than one.
-        get_lookahead_reduce_actions_for_item_set(item_set)
-      end
-    end
-
-    # Get the reduce actions for a single item set (parser state).
-    #
-    # @param item_set [ItemSet]
-    #   ItemSet (parser state)
-    #
-    # @return [Hash]
-    #   Mapping of lookahead Tokens to the Rules to reduce.
-    def get_lookahead_reduce_actions_for_item_set(item_set)
-      item_set.reduce_actions ||= build_lookahead_reduce_actions_for_item_set(item_set)
     end
 
     # Build the reduce actions for a single item set (parser state).
@@ -178,7 +179,7 @@ class Propane
       # up to this one. This restriction gives us a more precise lookahead set,
       # and allows us to parse LALR grammars.
       item_sets = Set[item_set] + item_set.leading_item_sets
-      item_set.reduce_rules.reduce({}) do |reduce_actions, reduce_rule|
+      item_set.reduce_actions = item_set.reduce_rules.reduce({}) do |reduce_actions, reduce_rule|
         lookahead_tokens_for_rule = build_lookahead_tokens_to_reduce(reduce_rule, item_sets)
         lookahead_tokens_for_rule.each do |lookahead_token|
           if existing_reduce_rule = reduce_actions[lookahead_token]

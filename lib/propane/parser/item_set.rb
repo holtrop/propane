@@ -34,6 +34,10 @@ class Propane
       #   more than one rule that could be reduced.
       attr_accessor :reduce_actions
 
+      # @return [Array<Hash>]
+      #   Shift table entries.
+      attr_accessor :shift_entries
+
       # Build an ItemSet.
       #
       # @param items [Array<Item>]
