@@ -1,3 +1,25 @@
+## v2.3.0
+
+### New Features
+
+- Add \D, \S, \w, \W special character classes
+
+### Improvements
+
+- Include line numbers for pattern errors
+
+### Fixes
+
+- Fix a couple clang warnings for C backend
+- Fix C backend not fully initializing pvalues when multiple ptypes are used with different sizes.
+- Fix some user guide examples
+
+## v2.2.1
+
+### Fixes
+
+- Fix GC issue for D backend when AST is enabled (#36)
+
 ## v2.2.0
 
 ### Improvements
