@@ -137,4 +137,56 @@ EOF
 token pattern /\\/[^\\s]*\\//;
 EOF
   end
+
+  it "matches special character classes " do
+    expected = [
+      ["a", "abc123_FOO"],
+    ]
+    expect(run(<<EOF, "abc123_FOO")).to eq expected
+token a /\\w+/;
+EOF
+    expected = [
+      ["b", "FROG*%$#"],
+    ]
+    expect(run(<<EOF, "FROG*%$#")).to eq expected
+token b /FROG\\D{1,4}/;
+EOF
+    expected = [
+      ["c", "$883366"],
+    ]
+    expect(run(<<EOF, "$883366")).to eq expected
+token c /$\\d+/;
+EOF
+    expected = [
+      ["d", "^&$@"],
+    ]
+    expect(run(<<EOF, "^&$@")).to eq expected
+token d /^\\W+/;
+EOF
+    expected = [
+      ["a", "abc123_FOO"],
+      [nil, " "],
+      ["b", "FROG*%$#"],
+      [nil, " "],
+      ["c", "$883366"],
+      [nil, " "],
+      ["d", "^&$@"],
+    ]
+    expect(run(<<EOF, "abc123_FOO FROG*%$# $883366 ^&$@")).to eq expected
+token a /\\w+/;
+token b /FROG\\D{1,4}/;
+token c /$\\d+/;
+token d /^\\W+/;
+drop /\\s+/;
+EOF
+  end
+
+  it "matches a negated character class with a nested inner negated character class" do
+    expected = [
+      ["t", "$&*"],
+    ]
+    expect(run(<<EOF, "$&*")).to eq expected
+token t /[^%\\W]+/;
+EOF
+  end
 end

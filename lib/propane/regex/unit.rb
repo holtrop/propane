@@ -97,8 +97,14 @@ class Propane
       end
       def <<(thing)
         if thing.is_a?(CharacterClassUnit)
-          thing.each do |ccu_unit|
-            @units << ccu_unit
+          if thing.negate
+            CodePointRange.invert_ranges(thing.map(&:code_point_range)).each do |cpr|
+              CharacterRangeUnit.new(cpr.first, cpr.last)
+            end
+          else
+            thing.each do |ccu_unit|
+              @units << ccu_unit
+            end
           end
         else
           @units << thing

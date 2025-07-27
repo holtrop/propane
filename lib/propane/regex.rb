@@ -141,6 +141,11 @@ class Propane
           CharacterRangeUnit.new("\b")
         when "d"
           CharacterRangeUnit.new("0", "9")
+        when "D"
+          ccu = CharacterClassUnit.new
+          ccu << CharacterRangeUnit.new("0", "9")
+          ccu.negate = true
+          ccu
         when "f"
           CharacterRangeUnit.new("\f")
         when "n"
@@ -156,10 +161,35 @@ class Propane
           ccu << CharacterRangeUnit.new("\f")
           ccu << CharacterRangeUnit.new("\v")
           ccu
+        when "S"
+          ccu = CharacterClassUnit.new
+          ccu << CharacterRangeUnit.new(" ")
+          ccu << CharacterRangeUnit.new("\t")
+          ccu << CharacterRangeUnit.new("\r")
+          ccu << CharacterRangeUnit.new("\n")
+          ccu << CharacterRangeUnit.new("\f")
+          ccu << CharacterRangeUnit.new("\v")
+          ccu.negate = true
+          ccu
         when "t"
           CharacterRangeUnit.new("\t")
         when "v"
           CharacterRangeUnit.new("\v")
+        when "w"
+          ccu = CharacterClassUnit.new
+          ccu << CharacterRangeUnit.new("_")
+          ccu << CharacterRangeUnit.new("0", "9")
+          ccu << CharacterRangeUnit.new("a", "z")
+          ccu << CharacterRangeUnit.new("A", "Z")
+          ccu
+        when "W"
+          ccu = CharacterClassUnit.new
+          ccu << CharacterRangeUnit.new("_")
+          ccu << CharacterRangeUnit.new("0", "9")
+          ccu << CharacterRangeUnit.new("a", "z")
+          ccu << CharacterRangeUnit.new("A", "Z")
+          ccu.negate = true
+          ccu
         else
           CharacterRangeUnit.new(c)
         end

@@ -190,7 +190,7 @@ class Propane
     end
 
     it "parses a negated character class with inner character classes" do
-      regex = Regex.new("[^x\\sz]")
+      regex = Regex.new("[^x\\sz]", 1)
       expect(regex.unit).to be_a Regex::AlternatesUnit
       expect(regex.unit.alternates.size).to eq 1
       expect(regex.unit.alternates[0]).to be_a Regex::SequenceUnit
