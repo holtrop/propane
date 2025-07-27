@@ -231,6 +231,7 @@ class Propane
                   rule_set = item.rule.rule_set
                   unless checked_rule_sets.include?(rule_set)
                     rule_sets_to_check_after << rule_set
+                    checked_rule_sets << rule_set
                   end
                   break
                 when Token
