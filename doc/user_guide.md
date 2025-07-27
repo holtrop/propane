@@ -435,7 +435,7 @@ Example:
 /#.*/
 ```
 
-Regular expressions can include many special characters:
+Regular expressions can include many special characters/sequences:
 
   * The `.` character matches any input character other than a newline.
   * The `*` character matches any number of the previous regex element.
@@ -447,14 +447,17 @@ Regular expressions can include many special characters:
   * The `\` character escapes the following character and changes its meaning:
     * The `\a` sequence matches an ASCII bell character (0x07).
     * The `\b` sequence matches an ASCII backspace character (0x08).
-    * The `\d` sequence matches any character `0` through `9`.
+    * The `\d` sequence is shorthand for the `[0-9]` character class.
+    * The `\D` sequence matches every code point not matched by `\d`.
     * The `\f` sequence matches an ASCII form feed character (0x0C).
     * The `\n` sequence matches an ASCII new line character (0x0A).
     * The `\r` sequence matches an ASCII carriage return character (0x0D).
-    * The `\s` sequence matches a space, horizontal tab `\t`, carriage return
-    `\r`, a form feed `\f`, or a vertical tab `\v` character.
+    * The `\s` sequence is shorthand for the `[ \t\r\n\f\v]` character class.
+    * The `\S` sequence matches every code point not matched by `\s`.
     * The `\t` sequence matches an ASCII tab character (0x09).
     * The `\v` sequence matches an ASCII vertical tab character (0x0B).
+    * The `\w` sequence is shorthand for the `[a-zA-Z0-9_]` character class.
+    * The `\W` sequence matches every code point not matched by `\w`.
     * Any other character matches itself.
   * The `|` character creates an alternate match.
 
