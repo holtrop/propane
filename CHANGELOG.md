@@ -8,6 +8,7 @@
 
 - Include line numbers for pattern errors
 - Improve performance in a few places
+- Parallelize parser table generation on Linux hosts
 
 ### Fixes
 
