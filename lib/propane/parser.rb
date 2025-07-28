@@ -116,15 +116,88 @@ class Propane
       @item_sets.each do |item_set|
         build_shift_entries(item_set)
         build_reduce_actions_for_item_set(item_set)
-        if item_set.reduce_rules.size > 1 ||
+      end
+      item_sets_to_process = @item_sets.select do |item_set|
+        # We need lookahead reduce actions if:
+        # 1) There is more than one possible rule to reduce. In this case the
+        #    lookahead token can help choose which rule to reduce.
+        # 2) There is at least one shift action and one reduce action for
+        #    this item set. In this case the lookahead reduce actions are
+        #    needed to test for a Shift/Reduce conflict.
+        item_set.reduce_rules.size > 1 ||
           (item_set.reduce_rules.size > 0 && item_set.shift_entries.size > 0)
-          # We need lookahead reduce actions if:
-          # 1) There is more than one possible rule to reduce. In this case the
-          #    lookahead token can help choose which rule to reduce.
-          # 2) There is at least one shift action and one reduce action for
-          #    this item set. In this case the lookahead reduce actions are
-          #    needed to test for a Shift/Reduce conflict.
-          build_lookahead_reduce_actions_for_item_set(item_set)
+      end
+      if RbConfig::CONFIG["host_os"] =~ /linux/
+        item_sets_by_id = {}
+        item_sets_to_process.each do |item_set|
+          item_sets_by_id[item_set.object_id] = item_set
+        end
+        tokens_by_id = {}
+        @grammar.tokens.each do |token|
+          tokens_by_id[token.object_id] = token
+        end
+        rules_by_id = {}
+        @grammar.rules.each do |rule|
+          rules_by_id[rule.object_id] = rule
+        end
+        n_threads = Util.determine_n_threads
+        semaphore = Mutex.new
+        queue = Queue.new
+        threads = {}
+        n_threads.times do
+          piper, pipew = IO.pipe
+          thread = Thread.new do
+            loop do
+              item_set = nil
+              semaphore.synchronize do
+                item_set = item_sets_to_process.slice!(0)
+              end
+              break if item_set.nil?
+              fork do
+                piper.close
+                build_lookahead_reduce_actions_for_item_set(item_set, pipew)
+              end
+            end
+            queue.push(Thread.current)
+          end
+          threads[thread] = [piper, pipew]
+        end
+        until threads.empty?
+          thread = queue.pop
+          piper, pipew = threads[thread]
+          pipew.close
+          thread_txt = piper.read
+          thread_txt.each_line do |line|
+            if line.start_with?("RA,")
+              parts = line.split(",")
+              item_set_id, token_id, rule_id = parts[1..3].map(&:to_i)
+              item_set = item_sets_by_id[item_set_id]
+              unless item_set
+                raise "Internal error: could not find item set from thread"
+              end
+              token = tokens_by_id[token_id]
+              unless item_set
+                raise "Internal error: could not find token from thread"
+              end
+              rule = rules_by_id[rule_id]
+              unless item_set
+                raise "Internal error: could not find rule from thread"
+              end
+              item_set.reduce_actions ||= {}
+              item_set.reduce_actions[token] = rule
+            elsif line.start_with?("Error: ")
+              @errors << line.chomp
+            else
+              raise "Internal error: unhandled thread line #{line}"
+            end
+          end
+          thread.join
+          threads.delete(thread)
+        end
+      else
+        # Fall back to single threaded algorithm.
+        item_sets_to_process.each do |item_set|
+          item_set.reduce_actions = build_lookahead_reduce_actions_for_item_set(item_set)
         end
       end
     end
@@ -169,23 +242,28 @@ class Propane
     #
     # @param item_set [ItemSet]
     #   ItemSet (parser state)
+    # @param fh [File]
+    #   Output file handle for multiprocessing mode.
     #
     # @return [Hash]
     #   Mapping of lookahead Tokens to the Rules to reduce.
-    def build_lookahead_reduce_actions_for_item_set(item_set)
+    def build_lookahead_reduce_actions_for_item_set(item_set, fh = nil)
       # We will be looking for all possible tokens that can follow instances of
       # these rules. Rather than looking through the entire grammar for the
       # possible following tokens, we will only look in the item sets leading
       # up to this one. This restriction gives us a more precise lookahead set,
       # and allows us to parse LALR grammars.
       item_sets = Set[item_set] + item_set.leading_item_sets
-      item_set.reduce_actions = item_set.reduce_rules.reduce({}) do |reduce_actions, reduce_rule|
+      item_set.reduce_rules.reduce({}) do |reduce_actions, reduce_rule|
         lookahead_tokens_for_rule = build_lookahead_tokens_to_reduce(reduce_rule, item_sets)
         lookahead_tokens_for_rule.each do |lookahead_token|
           if existing_reduce_rule = reduce_actions[lookahead_token]
-            @errors << "Error: reduce/reduce conflict (state #{item_set.id}) between rule #{existing_reduce_rule.name}##{existing_reduce_rule.id} (defined on line #{existing_reduce_rule.line_number}) and rule #{reduce_rule.name}##{reduce_rule.id} (defined on line #{reduce_rule.line_number}) for lookahead token #{lookahead_token}"
+            error = "Error: reduce/reduce conflict (state #{item_set.id}) between rule #{existing_reduce_rule.name}##{existing_reduce_rule.id} (defined on line #{existing_reduce_rule.line_number}) and rule #{reduce_rule.name}##{reduce_rule.id} (defined on line #{reduce_rule.line_number}) for lookahead token #{lookahead_token}"
+            @errors << error
+            fh.puts(error) if fh
           end
           reduce_actions[lookahead_token] = reduce_rule
+          fh.puts "RA,#{item_set.object_id},#{lookahead_token.object_id},#{reduce_rule.object_id}" if fh
         end
         reduce_actions
       end
