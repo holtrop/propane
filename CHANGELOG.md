@@ -9,6 +9,7 @@
 - Include line numbers for pattern errors
 - Improve performance in a few places
 - Parallelize parser table generation on Linux hosts
+- Add github workflow to run unit tests
 
 ### Fixes
 

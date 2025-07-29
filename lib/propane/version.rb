@@ -1,3 +1,3 @@
 class Propane
-  VERSION = "2.2.1"
+  VERSION = "2.3.0"
 end
