@@ -751,7 +751,7 @@ Some example uses of this functionality could be to:
 
   * Detect integer overflow when lexing an integer literal constant.
   * Detect and report an error as soon as possible during parsing before continuing to parse any more of the input.
-  * Determine whether parsing should stop and instead be performed using a different parser version.
+  * Determine whether parsing should stop and instead be retried using a different parser version.
 
 To terminate parsing from a lexer or parser user code block, use the
 `$terminate(code)` function, passing an integer expression argument.
@@ -787,7 +787,7 @@ Propane generates the following result code constants:
 * `P_EOF`: The lexer reached the end of the input string.
 * `P_USER_TERMINATED`: A parser user code block has requested to terminate the parser.
 
-Result codes are returned by the functions `p_decode_code_point()`, `p_lex()`, and `p_parse()`.
+Result codes are returned by the API functions `p_decode_code_point()`, `p_lex()`, and `p_parse()`.
 
 ##> Types
 
@@ -807,7 +807,7 @@ A pointer to this instance is passed to the generated functions.
 
 ### `p_position_t`
 
-The `p_position_t` structure contains two fields `row` and `col`.
+The `p_position_t` structure contains two fields: `row` and `col`.
 These fields contain the 1-based row and column describing a parser position.
 
 For D targets, the `p_position_t` structure can be checked for validity by
@@ -816,6 +816,16 @@ querying the `valid` property.
 For C targets, the `p_position_t` structure can be checked for validity by
 calling `p_position_valid(pos)` where `pos` is a `p_position_t` structure
 instance.
+
+### `p_token_info_t`
+
+The `p_token_info_t` structure contains the following fields:
+
+* `position` (`p_position_t`) holds the text position of the first code point in the token.
+* `end_position` (`p_position_t`) holds the text position of the last code point in the token.
+* `length` (`size_t`) holds the number of input bytes used by the token.
+* `token` (`p_token_t`) holds the token ID of the lexed token
+* `pvalue` (`p_value_t`) holds the parser value associated with the token.
 
 ### AST Node Types
 
@@ -925,6 +935,44 @@ D example:
 ```
 p_context_t context;
 p_context_init(&context, input);
+```
+
+### `p_lex`
+
+The `p_lex()` function is the main entry point to the lexer.
+It is normally called automatically by the generated parser to retrieve the
+next input token for the parser and does not need to be called by the user.
+However, the user may initialize a context and call `p_lex()` to use the
+generated lexer in a standalone mode.
+
+Example:
+
+```
+p_context_t context;
+p_context_init(&context, input, input_length);
+p_token_info_t token_info;
+size_t result = p_lex(&context, &token_info);
+switch (result)
+{
+case P_DECODE_ERROR:
+    /* UTF-8 decode error */
+    break;
+case P_UNEXPECTED_INPUT:
+    /* Input text does not match any lexer pattern. */
+    break;
+case P_USER_TERMINATED:
+    /* Lexer user code block requested to terminate the lexer. */
+    break;
+case P_SUCCESS:
+    /*
+     * token_info.position holds the text position of the first code point in the token.
+     * token_info.end_position holds the text position of the last code point in the token.
+     * token_info.length holds the number of input bytes used by the token.
+     * token_info.token holds the token ID of the lexed token
+     * token_info.pvalue holds the parser value associated with the token.
+     */
+    break;
+}
 ```
 
 ### `p_parse`
