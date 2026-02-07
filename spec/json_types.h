@@ -11,6 +11,12 @@
 #define JSON_FALSE 5u
 #define JSON_NULL 6u
 
+typedef struct JSONObjectEntry_s
+{
+    char const * name;
+    struct JSONValue_s * value;
+} JSONObjectEntry;
+
 typedef struct JSONValue_s
 {
     size_t id;
@@ -19,11 +25,7 @@ typedef struct JSONValue_s
         struct
         {
             size_t size;
-            struct
-            {
-                char const * name;
-                struct JSONValue_s * value;
-            } * entries;
+            JSONObjectEntry * entries;
         } object;
         struct
         {

@@ -120,11 +120,11 @@ string: /\\t/ <<
 >>
 string: /\\u[0-9a-fA-F]{4}/ <<
   /* Not actually going to encode the code point for this example... */
-  char s[] = {'{', match[2], match[3], match[4], match[5], '}', 0};
+  char s[] = {'{', (char)match[2], (char)match[3], (char)match[4], (char)match[5], '}', 0};
   str_append(&string_value, s);
 >>
 string: /[^\\]/ <<
-  char s[] = {match[0], 0};
+  char s[] = {(char)match[0], 0};
   str_append(&string_value, s);
 >>
 Start -> Value <<

@@ -65,17 +65,26 @@ EOF
   end
 
   def compile(test_files, options = {})
-    test_files = Array(test_files)
+    test_files = Array(test_files).map do |test_file|
+      if !File.exist?(test_file) && test_file.end_with?(".cpp")
+        test_file.sub(%r{\.cpp$}, ".c")
+      else
+        test_file
+      end
+    end
     options[:parsers] ||= [""]
     parsers = options[:parsers].map do |name|
       "spec/run/testparser#{name}.#{options[:language]}"
     end
     case options[:language]
     when "c"
-      result = system(*%w[gcc -Wall -o spec/run/testparser -Ispec -Ispec/run], *parsers, *test_files, "spec/testutils.c", "-lm")
+      command = [*%w[gcc -Wall -o spec/run/testparser -Ispec -Ispec/run], *parsers, *test_files, "spec/testutils.c", "-lm"]
+    when "cpp"
+      command = [*%w[g++ -x c++ -Wall -o spec/run/testparser -Ispec -Ispec/run], *parsers, *test_files, "spec/testutils.c", "-lm"]
     when "d"
-      result = system(*%w[ldc2 -g --unittest -of spec/run/testparser -Ispec], *parsers, *test_files, "spec/testutils.d")
+      command = [*%w[ldc2 -g --unittest -of spec/run/testparser -Ispec], *parsers, *test_files, "spec/testutils.d"]
     end
+    result = system(*command)
     expect(result).to be_truthy
   end
 
@@ -261,7 +270,7 @@ EOF
     expect(results.status).to_not eq 0
   end
 
-  %w[d c].each do |language|
+  %w[d c cpp].each do |language|
 
     context "#{language.upcase} language" do
 
@@ -284,7 +293,7 @@ EOF
 
       it "detects a lexer error when an unknown character is seen" do
         case language
-        when "c"
+        when "c", "cpp"
           write_grammar <<EOF
 ptype int;
 token int /\\d+/ <<
@@ -338,7 +347,7 @@ EOF
 
       it "generates a parser that does basic math - user guide example" do
         case language
-        when "c"
+        when "c", "cpp"
           write_grammar <<EOF
 <<
 #include <math.h>
@@ -456,7 +465,7 @@ EOF
 
       it "executes user code when matching lexer token" do
         case language
-        when "c"
+        when "c", "cpp"
           write_grammar <<EOF
 <<
 #include <stdio.h>
@@ -498,7 +507,7 @@ EOF
 
       it "supports a pattern statement" do
         case language
-        when "c"
+        when "c", "cpp"
           write_grammar <<EOF
 <<
 #include <stdio.h>
@@ -534,7 +543,7 @@ EOF
 
       it "supports returning tokens from pattern code blocks" do
         case language
-        when "c"
+        when "c", "cpp"
           write_grammar <<EOF
 <<
 #include <stdio.h>
@@ -574,7 +583,7 @@ EOF
 
       it "supports lexer modes" do
         case language
-        when "c"
+        when "c", "cpp"
           write_grammar <<EOF
 <<
 #include <stdio.h>
@@ -635,7 +644,7 @@ EOF
 
       it "multiple lexer modes may apply to a pattern" do
         case language
-        when "c"
+        when "c", "cpp"
           write_grammar <<EOF
 <<
 #include <stdio.h>
@@ -691,7 +700,7 @@ EOF
 
       it "executes user code associated with a parser rule" do
         case language
-        when "c"
+        when "c", "cpp"
           write_grammar <<EOF
 <<
 #include <stdio.h>
@@ -727,7 +736,7 @@ EOF
 
       it "parses lists" do
         write_grammar <<EOF
-ptype #{language == "c" ? "uint32_t" : "uint"};
+ptype #{language == "d" ? "uint" : "uint32_t"};
 token a;
 Start -> As << $$ = $1; >>
 As -> << $$ = 0u; >>
@@ -762,14 +771,14 @@ EOF
 
       it "provides matched text to user code blocks" do
         case language
-        when "c"
+        when "c", "cpp"
           write_grammar <<EOF
 <<
 #include <stdio.h>
 #include <stdlib.h>
 >>
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
-  char * t = malloc(match_length + 1);
+  char * t = (char *)malloc(match_length + 1);
   strncpy(t, (char *)match, match_length);
   printf("Matched token is %s\\n", t);
   free(t);
@@ -799,7 +808,7 @@ EOF
 
       it "allows storing a result value for the lexer" do
         case language
-        when "c"
+        when "c", "cpp"
           write_grammar <<EOF
 ptype uint64_t;
 token word /[a-z]+/ <<
@@ -843,7 +852,8 @@ EOF
       end
 
       it "allows creating a JSON parser" do
-        write_grammar(File.read("spec/json_parser.#{language}.propane"))
+        ext = language == "cpp" ? "c" : language
+        write_grammar(File.read("spec/json_parser.#{ext}.propane"))
         run_propane(language: language)
         compile(["spec/test_parsing_json.#{language}", "spec/json_types.#{language}"], language: language)
       end
@@ -909,7 +919,7 @@ EOF
 
       it "matches backslash escape sequences" do
         case language
-        when "c"
+        when "c", "cpp"
           write_grammar <<EOF
 <<
   #include <stdio.h>
@@ -1123,8 +1133,8 @@ Start -> a? b R? <<
   printf("b: %d\\n", $2);
   printf("R: %s\\n", $3 == NULL ? "" : $3);
 >>
-R -> c d << $$ = "cd"; >>
-R (string) -> d c << $$ = "dc"; >>
+R -> c d << $$ = (char *)"cd"; >>
+R (string) -> d c << $$ = (char *)"dc"; >>
 EOF
         end
         run_propane(language: language)
@@ -1334,7 +1344,7 @@ EOF
 >>
 ptype char const *;
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
-  char * s = malloc(match_length + 1);
+  char * s = (char *)malloc(match_length + 1);
   strncpy(s, (char const *)match, match_length);
   s[match_length] = 0;
   $$ = s;
@@ -1381,7 +1391,7 @@ EOF
 >>
 ptype char const *;
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
-  char * s = malloc(match_length + 1);
+  char * s = (char *)malloc(match_length + 1);
   strncpy(s, (char const *)match, match_length);
   s[match_length] = 0;
   $$ = s;
@@ -1405,7 +1415,8 @@ EOF
       end
 
       it "does not free memory allocated for AST nodes" do
-        write_grammar(File.read("spec/ast_node_memory_remains.#{language}.propane"))
+        ext = language == "cpp" ? "c" : language
+        write_grammar(File.read("spec/ast_node_memory_remains.#{ext}.propane"))
         run_propane(language: language)
         compile("spec/test_ast_node_memory_remains.#{language}", language: language)
         results = run_test

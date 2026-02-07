@@ -6,7 +6,7 @@ Propane is a LALR Parser Generator (LPG) which:
   * generates a built-in lexer to tokenize input
   * supports UTF-8 lexer inputs
   * generates a table-driven shift/reduce parser to parse input in linear time
-  * targets C or D language outputs
+  * targets C, C++, or D language outputs
   * optionally supports automatic full AST generation
   * is MIT-licensed
   * is distributable as a standalone Ruby script

@@ -11,24 +11,28 @@ class Propane
         @log = StringIO.new
       end
       @language =
-        if output_file =~ /\.([a-z]+)$/
-          $1
-        else
+        if output_file.end_with?(".d")
           "d"
+        else
+          "c"
         end
       @options = options
       process_grammar!
     end
 
     def generate
-      extensions = [@language]
+      extensions = [nil]
       if @language == "c"
         extensions += %w[h]
       end
       extensions.each do |extension|
-        template = Assets.get("parser.#{extension}.erb")
+        template = Assets.get("parser.#{extension || @language}.erb")
+        if extension
+          output_file = @output_file.sub(%r{\.[a-z]+$}, ".#{extension}")
+        else
+          output_file = @output_file
+        end
         erb = ERB.new(template, trim_mode: "<>")
-        output_file = @output_file.sub(%r{\.[a-z]+$}, ".#{extension}")
         result = erb.result(binding.clone)
         File.open(output_file, "wb") do |fh|
           fh.write(result)

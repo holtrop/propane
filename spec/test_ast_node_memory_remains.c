@@ -386,7 +386,7 @@ int main(int argc, char * argv[])
         }
         pmis = pmis->pModuleItems;
     }
-    pfds = malloc(n_pfds * sizeof(PModuleItems *));
+    pfds = (PFunctionDefinition **)malloc(n_pfds * sizeof(PModuleItems *));
     pmis = pmod->pModuleItems;
     size_t pfd_i = n_pfds;
     while (pmis != NULL)

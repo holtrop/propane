@@ -2,6 +2,10 @@ unless ENV["dist_specs"]
   require "bundler/setup"
   require "simplecov"
 
+  class MyFormatter
+    def format(*args)
+    end
+  end
   SimpleCov.start do
     add_filter "/spec/"
     add_filter "/.bundle/"
@@ -12,6 +16,7 @@ unless ENV["dist_specs"]
     end
     project_name "Propane"
     merge_timeout 3600
+    formatter(MyFormatter)
   end
 
   RSpec.configure do |config|

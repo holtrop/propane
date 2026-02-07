@@ -5,7 +5,7 @@
 
 JSONValue * JSONValue_new(size_t id)
 {
-    JSONValue * jv = calloc(1, sizeof(JSONValue));
+    JSONValue * jv = (JSONValue *)calloc(1, sizeof(JSONValue));
     jv->id = id;
     return jv;
 }
@@ -29,7 +29,7 @@ void JSONObject_append(JSONValue * object, char const * name, JSONValue * value)
         }
     }
     size_t const new_size = size + 1;
-    void * new_entries = malloc(sizeof(object->object.entries[0]) * new_size);
+    JSONObjectEntry * new_entries = (JSONObjectEntry *)malloc(sizeof(object->object.entries[0]) * new_size);
     if (size > 0)
     {
         memcpy(new_entries, object->object.entries, size * sizeof(object->object.entries[0]));
@@ -52,7 +52,7 @@ void JSONArray_append(JSONValue * array, JSONValue * value)
 {
     size_t const size = array->array.size;
     size_t const new_size = size + 1;
-    JSONValue ** new_entries = malloc(sizeof(JSONValue *) * new_size);
+    JSONValue ** new_entries = (JSONValue **)malloc(sizeof(JSONValue *) * new_size);
     if (array->array.size > 0)
     {
         memcpy(new_entries, array->array.entries, sizeof(JSONValue *) * size);

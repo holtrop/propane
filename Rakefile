@@ -1,5 +1,7 @@
 require "rake/clean"
 require "rspec/core/rake_task"
+require "simplecov"
+require "stringio"
 
 CLEAN.include %w[spec/run gen .yardoc yard coverage dist]
 
@@ -10,6 +12,16 @@ end
 RSpec::Core::RakeTask.new(:spec, :example_pattern) do |task, args|
   if args.example_pattern
     task.rspec_opts = %W[-e "#{args.example_pattern}" -f documentation]
+  end
+end
+task :spec do |task, args|
+  original_stdout = $stdout
+  sio = StringIO.new
+  $stdout = sio
+  SimpleCov.collate Dir["coverage/.resultset.json"]
+  $stdout = original_stdout
+  sio.string.lines.each do |line|
+    $stdout.write(line) unless line =~ /Coverage report generated for/
   end
 end
 

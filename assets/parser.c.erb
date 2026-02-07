@@ -805,7 +805,7 @@ static void state_values_stack_push(state_values_stack_t * stack)
     if (current_length >= current_capacity)
     {
         size_t const new_capacity = current_capacity * 2u;
-        state_value_t * new_entries = malloc(new_capacity * sizeof(state_value_t));
+        state_value_t * new_entries = (state_value_t *)malloc(new_capacity * sizeof(state_value_t));
         memcpy(new_entries, stack->entries, current_length * sizeof(state_value_t));
         free(stack->entries);
         stack->capacity = new_capacity;
@@ -989,7 +989,7 @@ size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context)
             {
                 /* We shifted a token, mark it consumed. */
 <% if @grammar.ast %>
-                <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %> * token_ast_node = malloc(sizeof(<%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>));
+                <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %> * token_ast_node = (<%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %> *)malloc(sizeof(<%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>));
                 token_ast_node->position = token_info.position;
                 token_ast_node->end_position = token_info.end_position;
                 token_ast_node->token = token;

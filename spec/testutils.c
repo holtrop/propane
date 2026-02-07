@@ -17,7 +17,7 @@ void assert_eq_size_t_i(size_t expected, size_t actual, char const * file, size_
 void str_init(str_t * str, char const * cs)
 {
     size_t length = strlen(cs);
-    str->cs = malloc(length + 1u);
+    str->cs = (char *)malloc(length + 1u);
     strcpy(str->cs, cs);
 }
 
@@ -25,7 +25,7 @@ void str_append(str_t * str, char const * cs)
 {
     size_t length = strlen(str->cs);
     size_t length2 = strlen(cs);
-    char * new_cs = malloc(length + length2 + 1u);
+    char * new_cs = (char *)malloc(length + length2 + 1u);
     memcpy(new_cs, str->cs, length);
     strcpy(&new_cs[length], cs);
     free(str->cs);
