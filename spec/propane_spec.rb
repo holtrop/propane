@@ -78,9 +78,9 @@ EOF
     end
     case options[:language]
     when "c"
-      command = [*%w[gcc -Wall -o spec/run/testparser -Ispec -Ispec/run], *parsers, *test_files, "spec/testutils.c", "-lm"]
+      command = [*%w[gcc -g -Wall -o spec/run/testparser -Ispec -Ispec/run], *parsers, *test_files, "spec/testutils.c", "-lm"]
     when "cpp"
-      command = [*%w[g++ -x c++ -Wall -o spec/run/testparser -Ispec -Ispec/run], *parsers, *test_files, "spec/testutils.c", "-lm"]
+      command = [*%w[g++ -g -x c++ -Wall -o spec/run/testparser -Ispec -Ispec/run], *parsers, *test_files, "spec/testutils.c", "-lm"]
     when "d"
       command = [*%w[ldc2 -g --unittest -of spec/run/testparser -Ispec], *parsers, *test_files, "spec/testutils.d"]
     end
@@ -88,12 +88,13 @@ EOF
     expect(result).to be_truthy
   end
 
-  def run_test
+  def run_test(options)
     stdout, stderr, status = Open3.capture3("spec/run/testparser")
     File.binwrite("spec/run/.stderr", stderr)
     File.binwrite("spec/run/.stdout", stdout)
     stderr.sub!(/^.*modules passed unittests\n/, "")
-    Results.new(stdout, stderr, status)
+    results = Results.new(stdout, stderr, status)
+    results
   end
 
   def lines(str)
@@ -286,7 +287,7 @@ Foo -> plus <<>>
 EOF
         run_propane(language: language)
         compile("spec/test_lexer.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -324,7 +325,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_lexer_unknown_character.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -418,7 +419,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_basic_math_grammar.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -444,7 +445,7 @@ R2 -> a b;
 EOF
         run_propane(language: language)
         compile("spec/test_parser_identical_rules_lookahead.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.status).to eq 0
       end
 
@@ -459,7 +460,7 @@ R1 -> b;
 EOF
         run_propane(language: language)
         compile("spec/test_parser_rule_from_multiple_states.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.status).to eq 0
       end
 
@@ -494,7 +495,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_user_code.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
           "abc!",
@@ -530,7 +531,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_pattern.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
           "def!",
@@ -572,7 +573,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_return_token_from_pattern.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
           "def!",
@@ -630,7 +631,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_lexer_modes.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
           "begin string mode",
@@ -688,7 +689,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_lexer_multiple_modes.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
           "ident: d",
@@ -725,7 +726,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_parser_rule_user_code.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
           "A!",
@@ -744,7 +745,7 @@ As -> As a << $$ = $1 + 1u; >>
 EOF
         run_propane(language: language)
         compile("spec/test_parsing_lists.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.status).to eq 0
         expect(results.stderr).to eq ""
       end
@@ -798,7 +799,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_lexer_match_text.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
           "Matched token is identifier_123",
@@ -831,7 +832,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_lexer_result_value.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -846,7 +847,7 @@ Start -> a num;
 EOF
         run_propane(language: language)
         compile("spec/test_error_positions.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -875,7 +876,7 @@ Start -> b c b;
 EOF
         run_propane(name: "myp2", language: language)
         compile("spec/test_multiple_parsers.#{language}", parsers: %w[myp1 myp2], language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -894,7 +895,7 @@ Any -> c;
 EOF
         run_propane(language: language)
         compile("spec/test_user_terminate_lexer.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -912,7 +913,7 @@ Any -> ;
 EOF
         run_propane(language: language)
         compile("spec/test_user_terminate.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -956,7 +957,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_match_backslashes.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
@@ -1021,7 +1022,7 @@ Two -> two;
 EOF
         run_propane(language: language)
         compile("spec/test_ast.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -1065,7 +1066,7 @@ Two -> two;
 EOF
         run_propane(language: language)
         compile("spec/test_ast_ps.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -1139,7 +1140,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_optional_rule_component.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
@@ -1191,7 +1192,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_optional_rule_component_ast.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -1232,7 +1233,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_named_optional_rule_component_ast.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -1252,7 +1253,7 @@ T -> c;
 EOF
         run_propane(language: language)
         compile("spec/test_ast_token_positions.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -1272,7 +1273,7 @@ A -> bb? c?;
 EOF
         run_propane(language: language)
         compile("spec/test_ast_invalid_positions.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -1292,7 +1293,7 @@ T -> c;
 EOF
         run_propane(language: language)
         compile("spec/test_ast_field_aliases.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -1315,7 +1316,7 @@ T -> c;
 EOF
         run_propane(language: language)
         compile("spec/test_ast_field_aliases.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
@@ -1358,7 +1359,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_field_aliases.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
         expect(results.stdout).to match /first is foo1.*second is bar2/m
@@ -1408,7 +1409,7 @@ EOF
         end
         run_propane(language: language)
         compile("spec/test_field_aliases.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
         expect(results.stdout).to match /first is foo1.*second is bar2/m
@@ -1419,7 +1420,7 @@ EOF
         write_grammar(File.read("spec/ast_node_memory_remains.#{ext}.propane"))
         run_propane(language: language)
         compile("spec/test_ast_node_memory_remains.#{language}", language: language)
-        results = run_test
+        results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end

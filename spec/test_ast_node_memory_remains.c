@@ -411,5 +411,7 @@ int main(int argc, char * argv[])
         }
     }
 
+    p_free_ast(pmod);
+
     return 0;
 }

@@ -30,6 +30,8 @@ int main()
     assert_eq(3, start->end_position.row);
     assert_eq(8, start->end_position.col);
 
+    p_free_ast(start);
+
     input = "a\nbb";
     p_context_init(&context, (uint8_t const *)input, strlen(input));
     assert(p_parse(&context) == P_SUCCESS);
@@ -53,6 +55,8 @@ int main()
     assert_eq(1, start->position.col);
     assert_eq(2, start->end_position.row);
     assert_eq(2, start->end_position.col);
+
+    p_free_ast(start);
 
     input = "a\nc\nc";
     p_context_init(&context, (uint8_t const *)input, strlen(input));
@@ -78,6 +82,8 @@ int main()
     assert_eq(3, start->end_position.row);
     assert_eq(1, start->end_position.col);
 
+    p_free_ast(start);
+
     input = "a";
     p_context_init(&context, (uint8_t const *)input, strlen(input));
     assert(p_parse(&context) == P_SUCCESS);
@@ -97,6 +103,8 @@ int main()
     assert_eq(1, start->position.col);
     assert_eq(1, start->end_position.row);
     assert_eq(1, start->end_position.col);
+
+    p_free_ast(start);
 
     return 0;
 }

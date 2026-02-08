@@ -17,6 +17,8 @@ int main()
     assert(start->pR == NULL);
     assert(start->r == NULL);
 
+    p_free_ast(start);
+
     input = "abcd";
     p_context_init(&context, (uint8_t const *)input, strlen(input));
     assert(p_parse(&context) == P_SUCCESS);
@@ -31,6 +33,8 @@ int main()
     assert(start->pR == start->r);
     assert_eq(TOKEN_c, start->pR->pToken1->token);
 
+    p_free_ast(start);
+
     input = "bdc";
     p_context_init(&context, (uint8_t const *)input, strlen(input));
     assert(p_parse(&context) == P_SUCCESS);
@@ -39,6 +43,8 @@ int main()
     assert(start->pToken2 != NULL);
     assert(start->r != NULL);
     assert_eq(TOKEN_d, start->pR->pToken1->token);
+
+    p_free_ast(start);
 
     return 0;
 }

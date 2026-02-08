@@ -13,5 +13,7 @@ int main()
     assert(top->pToken != NULL);
     assert_eq(TOKEN_hi, top->pToken->token);
 
+    p_free_ast(top);
+
     return 0;
 }
