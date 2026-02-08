@@ -15,13 +15,15 @@ RSpec::Core::RakeTask.new(:spec, :example_pattern) do |task, args|
   end
 end
 task :spec do |task, args|
-  original_stdout = $stdout
-  sio = StringIO.new
-  $stdout = sio
-  SimpleCov.collate Dir["coverage/.resultset.json"]
-  $stdout = original_stdout
-  sio.string.lines.each do |line|
-    $stdout.write(line) unless line =~ /Coverage report generated for/
+  unless ENV["dist_specs"]
+    original_stdout = $stdout
+    sio = StringIO.new
+    $stdout = sio
+    SimpleCov.collate Dir["coverage/.resultset.json"]
+    $stdout = original_stdout
+    sio.string.lines.each do |line|
+      $stdout.write(line) unless line =~ /Coverage report generated for/
+    end
   end
 end
 
