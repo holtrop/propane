@@ -94,6 +94,17 @@ EOF
     File.binwrite("spec/run/.stdout", stdout)
     stderr.sub!(/^.*modules passed unittests\n/, "")
     results = Results.new(stdout, stderr, status)
+    if %w[c cpp].include?(options[:language])
+      stdout, stderr, status = Open3.capture3("valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose spec/run/testparser")
+      vgout = stdout + stderr
+      File.binwrite("spec/run/.vgout", vgout)
+      vgout.scan(/lost: (\d+) bytes/) do |match|
+        bytes = $1.to_i
+        if bytes > 0
+          raise "Valgrind detected memory leak"
+        end
+      end
+    end
     results
   end
 
@@ -1343,7 +1354,7 @@ EOF
 #include <stdio.h>
 #include <string.h>
 >>
-ptype char const *;
+ptype char *;
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
   char * s = (char *)malloc(match_length + 1);
   strncpy(s, (char const *)match, match_length);
@@ -1354,6 +1365,8 @@ drop /\\s+/;
 Start -> id:first id:second <<
   printf("first is %s\\n", ${first});
   printf("second is %s\\n", ${second});
+  free(${first});
+  free(${second});
 >>
 EOF
         end
@@ -1390,7 +1403,7 @@ EOF
 #include <stdio.h>
 #include <string.h>
 >>
-ptype char const *;
+ptype char *;
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
   char * s = (char *)malloc(match_length + 1);
   strncpy(s, (char const *)match, match_length);
@@ -1403,6 +1416,8 @@ Start -> Foo;
 Start -> id:first id:second <<
   printf("first is %s\\n", ${first});
   printf("second is %s\\n", ${second});
+  free(${first});
+  free(${second});
 >>
 Foo -> ;
 EOF
