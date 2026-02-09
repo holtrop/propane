@@ -326,6 +326,36 @@ assert(itemsmore.pItem.pItem.pItem !is null);
 assert(itemsmore.pItem.pItem.pItem.pToken1 !is null);
 ```
 
+## Freeing user-allocated memory in token node `pvalue`: the `free_token_node` statement
+
+If user lexer code block allocates memory to store in a token node's `pvalue`,
+the `free_token_node` grammar statement can be used to specify the name of a
+function which will be called during the `p_free_ast()` call to free the memory
+associated with a token node.
+
+Example:
+
+```
+<<
+static void free_token(Token * token)
+{
+    free(token->pvalue);
+}
+>>
+ast;
+free_token_node free_token;
+ptype int *;
+token a <<
+  $$ = (int *)malloc(sizeof(int));
+  *$$ = 1;
+>>
+token b <<
+  $$ = (int *)malloc(sizeof(int));
+  *$$ = 2;
+>>
+Start -> a:a b:b;
+```
+
 ##> Specifying tokens - the `token` statement
 
 The `token` statement allows defining a lexer token and a pattern to match that
@@ -1097,6 +1127,20 @@ assert(result == P_SUCCESS);
 assert(code_point == 0x1F9E1u);
 assert(code_point_length == 4u);
 ```
+
+### `p_free_ast`
+
+The `p_free_ast()` function can be used to free the memory used by the AST.
+It should be passed the same value that is returned by `p_result()`.
+
+The `p_free_ast()` function is only available for C/C++ output targets.
+
+Note that if any lexer user code block allocates memory to store in a token's
+`pvalue`, in order to properly free this memory a `free_token_node` function
+should be specified in the grammar file.
+If specified, the `free_token_node` function will be called during the
+`p_free_ast()` process to allow user code to free any memory associated with
+a token node's `pvalue`.
 
 ##> Data
 

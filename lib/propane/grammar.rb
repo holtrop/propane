@@ -8,6 +8,7 @@ class Propane
     attr_reader :ast
     attr_reader :ast_prefix
     attr_reader :ast_suffix
+    attr_reader :free_token_node
     attr_reader :modulename
     attr_reader :patterns
     attr_reader :rules
@@ -32,6 +33,7 @@ class Propane
       @ast = false
       @ast_prefix = ""
       @ast_suffix = ""
+      @free_token_node = nil
       parse_grammar!
     end
 
@@ -62,6 +64,7 @@ class Propane
       elsif parse_ast_statement!
       elsif parse_ast_prefix_statement!
       elsif parse_ast_suffix_statement!
+      elsif parse_free_token_node_statement!
       elsif parse_module_statement!
       elsif parse_ptype_statement!
       elsif parse_pattern_statement!
@@ -109,6 +112,12 @@ class Propane
     def parse_ast_suffix_statement!
       if md = consume!(/ast_suffix\s+(\w+)\s*;/)
         @ast_suffix = md[1]
+      end
+    end
+
+    def parse_free_token_node_statement!
+      if md = consume!(/free_token_node\s+(\w+)\s*;/)
+        @free_token_node = md[1]
       end
     end
 

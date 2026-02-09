@@ -1163,6 +1163,9 @@ static void free_ast_node(ASTNode * node)
 {
     if (node->is_token)
     {
+<%   if @grammar.free_token_node %>
+        <%= @grammar.free_token_node %>((<%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %> *) node);
+<%   end %>
         /* TODO: free value_t */
     }
     else if (node->n_fields > 0u)

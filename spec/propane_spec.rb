@@ -1439,6 +1439,36 @@ EOF
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
+
+      if %w[c cpp].include?(language)
+        it "allows a user function to free token node memory in AST mode" do
+    write_grammar <<EOF
+<<
+static void free_token(Token * token)
+{
+    free(token->pvalue);
+}
+>>
+ast;
+free_token_node free_token;
+ptype int *;
+token a <<
+  $$ = (int *)malloc(sizeof(int));
+  *$$ = 1;
+>>
+token b <<
+  $$ = (int *)malloc(sizeof(int));
+  *$$ = 2;
+>>
+Start -> a:a b:b;
+EOF
+          run_propane(language: language)
+          compile("spec/test_free_ast_token_node_memory.#{language}", language: language)
+          results = run_test(language: language)
+          expect(results.stderr).to eq ""
+          expect(results.status).to eq 0
+        end
+      end
     end
   end
 end
