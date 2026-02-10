@@ -1,3 +1,21 @@
+## v3.0.0
+
+### New Features
+
+- Add support for multiple starting rules (#38)
+- Add `p_free_tree()` functions to reclaim generated tree memory
+- Add `free_token_node` grammar statement to reclaim user-allocated memory stored in a Token tree node `pvalue` field
+- Add valgrind memory leak tests to unit tests
+- Fix build issues for C++ to officially support C++ target output
+
+### Improvements
+
+- Document `p_lex()` and `p_token_info_t` in user guide (#37)
+
+### Breaking changes
+
+- Rename AST generation mode to tree generation mode (see [UPGRADING.md]())
+
 ## v2.3.0
 
 ### New Features
