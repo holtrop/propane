@@ -71,12 +71,15 @@ class Propane
         end
         tokens_by_name[token.name] = token
       end
-      # Check for user start rule.
-      unless @grammar.rules.find {|rule| rule.name == @grammar.start_rule}
-        raise Error.new("Start rule `#{@grammar.start_rule}` not found")
+      # Create real start rule(s).
+      real_start_rules = @grammar.start_rules.map do |start_rule|
+        unless @grammar.rules.find {|rule| rule.name == start_rule}
+          raise Error.new("Start rule `#{start_rule}` not found")
+        end
+        Rule.new("$#{start_rule}", [start_rule, "$EOF"], nil, nil, nil)
       end
-      # Add "real" start rule.
-      @grammar.rules.unshift(Rule.new("$Start", [@grammar.start_rule, "$EOF"], nil, nil, nil))
+      # Add real start rules before user-given rules.
+      @grammar.rules = real_start_rules + @grammar.rules
       # Generate and add rules for optional components.
       generate_optional_component_rules!(tokens_by_name)
       # Build rule sets.
@@ -332,9 +335,9 @@ class Propane
     #
     # @return [Array<String>]
     #   Start rule parser value type name and type string.
-    def start_rule_type
+    def start_rule_type(start_rule_index = 0)
       start_rule = @grammar.rules.find do |rule|
-        rule.name == @grammar.start_rule
+        rule.name == @grammar.start_rules[start_rule_index]
       end
       [start_rule.ptypename, @grammar.ptypes[start_rule.ptypename]]
     end

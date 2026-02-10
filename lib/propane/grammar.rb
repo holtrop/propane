@@ -11,8 +11,8 @@ class Propane
     attr_reader :free_token_node
     attr_reader :modulename
     attr_reader :patterns
-    attr_reader :rules
-    attr_reader :start_rule
+    attr_accessor :rules
+    attr_reader :start_rules
     attr_reader :tokens
     attr_reader :code_blocks
     attr_reader :ptypes
@@ -20,7 +20,7 @@ class Propane
 
     def initialize(input)
       @patterns = []
-      @start_rule = "Start"
+      @start_rules = []
       @tokens = []
       @rules = []
       @code_blocks = {}
@@ -35,6 +35,7 @@ class Propane
       @ast_suffix = ""
       @free_token_node = nil
       parse_grammar!
+      @start_rules << "Start" if @start_rules.empty?
     end
 
     def ptype
@@ -241,8 +242,11 @@ class Propane
     end
 
     def parse_start_statement!
-      if md = consume!(/start\s+(\w+)\s*;/)
-        @start_rule = md[1]
+      if md = consume!(/start\s+([\w\s]*);/)
+        start_rules = md[1].split(/\s+/).map(&:strip)
+        start_rules.each do |start_rule|
+          @start_rules << start_rule unless @start_rules.include?(start_rule)
+        end
       end
     end
 

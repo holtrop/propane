@@ -738,6 +738,22 @@ Example:
 start MyStartRule;
 ```
 
+Multiple start rules can be specified, either with multiple `start` statements
+or one `start` statement listing multiple start rules.
+Example:
+
+```
+start Module ModuleItem Statement Expression;
+```
+
+When multiple start rules are specified, multiple `p_parse_*()` functions,
+`p_result_*()`, and `p_free_ast_*()` functions (in AST mode) are generated.
+A default `p_parse()`, `p_result()`, `p_free_ast()` are generated corresponding
+to the first start rule.
+Additionally, each start rule causes the generation of another version of each
+of these functions, for example `p_parse_Statement()`, `p_result_Statement()`,
+and `p_free_ast_Statement()`.
+
 ##> Specifying the parser module name - the `module` statement
 
 The `module` statement can be used to specify the module name for a generated
@@ -1018,6 +1034,16 @@ p_context_init(&context, input, input_length);
 size_t result = p_parse(&context);
 ```
 
+When multiple start rules are specified, a separate parse function is generated
+for each which starts parsing at the given rule.
+For example, if `Statement` is specified as a start rule:
+
+```
+size_t result = p_parse_Statement(&context);
+```
+
+In this case, the parser will start parsing with the `Statement` rule.
+
 ### `p_position_valid`
 
 The `p_position_valid()` function is only generated for C targets.
@@ -1055,6 +1081,23 @@ if (p_parse(&context) == P_SUCCESS)
 
 If AST generation mode is active, then the `p_result()` function returns a
 `Start *` pointing to the `Start` AST structure.
+
+When multiple start rules are specified, a separate result function is generated
+for each which returns the parse result for the corresponding rule.
+For example, if `Statement` is specified as a start rule:
+
+```
+p_context_t context;
+p_context_init(&context, input, input_length);
+size_t result = p_parse(&context);
+if (p_parse_Statement(&context) == P_SUCCESS)
+{
+    result = p_result_Statement(&context);
+}
+```
+
+In this case, the parser will start parsing with the `Statement` rule and the
+parse result from the `Statement` rule will be returned.
 
 ### `p_position`
 
@@ -1141,6 +1184,17 @@ should be specified in the grammar file.
 If specified, the `free_token_node` function will be called during the
 `p_free_ast()` process to allow user code to free any memory associated with
 a token node's `pvalue`.
+
+When multiple start rules are specified, a separate `p_free_ast` function is
+generated for each which frees the AST resulting from parsing the given rule.
+For example, if `Statement` is specified as a start rule:
+
+```
+p_free_ast_Statement(statement_ast);
+```
+
+In this case, Propane will free a `Statement` AST structure returned by the
+`p_parse_Statement(&context)` function.
 
 ##> Data
 

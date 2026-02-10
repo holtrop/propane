@@ -5,6 +5,16 @@ void assert_eq_size_t_i(size_t expected, size_t actual, char const * file, size_
 #define assert_eq(expected, actual) \
     assert_eq_size_t_i(expected, actual, __FILE__, __LINE__)
 
+void assert_ne_size_t_i(size_t expected, size_t actual, char const * file, size_t line);
+
+#define assert_ne(expected, actual) \
+    assert_ne_size_t_i(expected, actual, __FILE__, __LINE__)
+
+void assert_not_null_i(void * ptr, char const * file, size_t line);
+
+#define assert_not_null(ptr) \
+    assert_not_null_i(ptr, __FILE__, __LINE__)
+
 typedef struct
 {
     char * cs;

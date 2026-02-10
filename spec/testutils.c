@@ -14,6 +14,24 @@ void assert_eq_size_t_i(size_t expected, size_t actual, char const * file, size_
     }
 }
 
+void assert_ne_size_t_i(size_t expected, size_t actual, char const * file, size_t line)
+{
+    if (expected == actual)
+    {
+        fprintf(stderr, "%s:%lu: expected not %lu, got %lu\n", file, line, expected, actual);
+        assert(false);
+    }
+}
+
+void assert_not_null_i(void * ptr, char const * file, size_t line)
+{
+    if (ptr == NULL)
+    {
+        fprintf(stderr, "%s:%lu: expected not NULL\n", file, line);
+        assert(false);
+    }
+}
+
 void str_init(str_t * str, char const * cs)
 {
     size_t length = strlen(cs);

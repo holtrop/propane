@@ -16,11 +16,20 @@ class Propane
       @warnings = Set.new
       @errors = Set.new
       @options = options
-      start_item = Item.new(grammar.rules.first, 0)
-      eval_item_sets = Set[ItemSet.new([start_item])]
+      start_items = grammar.rules[0...grammar.start_rules.length].map do |start_rule|
+        Item.new(start_rule, 0)
+      end
+      start_item_sets = start_items.map {|item| ItemSet.new([item])}
+      eval_item_sets = Set[*start_item_sets]
 
       while eval_item_sets.size > 0
-        item_set = eval_item_sets.first
+        item_set =
+          if start_item_sets.size > 0
+            # Ensure we evaluate start_item_sets first in order
+            start_item_sets.slice!(0)
+          else
+            eval_item_sets.first
+          end
         eval_item_sets.delete(item_set)
         unless @item_sets_set.include?(item_set)
           item_set.id = @item_sets.size

@@ -1440,6 +1440,47 @@ EOF
         expect(results.status).to eq 0
       end
 
+      it "allows multiple starting rules" do
+    write_grammar <<EOF
+ptype int;
+token a << $$ = 1; >>
+token b << $$ = 2; >>
+token c << $$ = 3; >>
+Start -> a b R;
+Start -> Bs:bs << $$ = $1; >>
+R -> c:c << $$ = $1; >>
+Bs -> << $$ = 0; >>
+Bs -> b:b Bs:bs << $$ = $1 + $2; >>
+start Start R Bs;
+EOF
+        run_propane(language: language)
+        compile("spec/test_starting_rules.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
+      it "allows multiple starting rules in AST mode" do
+    write_grammar <<EOF
+ast;
+ptype int;
+token a << $$ = 1; >>
+token b << $$ = 2; >>
+token c << $$ = 3; >>
+Start -> a b R;
+Start -> Bs:bs;
+R -> c:c;
+Bs -> ;
+Bs -> b:b Bs:bs;
+start Start R Bs;
+EOF
+        run_propane(language: language)
+        compile("spec/test_starting_rules_ast.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
       if %w[c cpp].include?(language)
         it "allows a user function to free token node memory in AST mode" do
     write_grammar <<EOF

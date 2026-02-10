@@ -924,6 +924,8 @@ static size_t check_reduce(size_t state_id, <%= @grammar.prefix %>token_t token)
  *
  * @param context
  *   Lexer/parser context structure.
+ * @start_state_id
+ *   ID of the state in which to start.
  *
  * @retval P_SUCCESS
  *   The parser successfully matched the input text. The parse result value
@@ -936,7 +938,7 @@ static size_t check_reduce(size_t state_id, <%= @grammar.prefix %>token_t token)
  * @reval P_UNEXPECTED_INPUT
  *   Input text does not match any lexer pattern.
  */
-size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context)
+static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start_state_id)
 {
     <%= @grammar.prefix %>token_info_t token_info;
     <%= @grammar.prefix %>token_t token = INVALID_TOKEN_ID;
@@ -949,6 +951,7 @@ size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context)
 <% end %>
     state_values_stack_init(&statevalues);
     state_values_stack_push(&statevalues);
+    state_values_stack_index(&statevalues, -1)->state_id = start_state_id;
     size_t result;
     for (;;)
     {
@@ -974,7 +977,7 @@ size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context)
             {
                 /* Successful parse. */
 <% if @grammar.ast %>
-                context->parse_result = (<%= @grammar.ast_prefix %><%= @grammar.start_rule %><%= @grammar.ast_suffix %> *)state_values_stack_index(&statevalues, -1)->ast_node;
+                context->parse_result = state_values_stack_index(&statevalues, -1)->ast_node;
 <% else %>
                 context->parse_result = state_values_stack_index(&statevalues, -1)->pvalue;
 <% end %>
@@ -1101,6 +1104,19 @@ size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context)
     return result;
 }
 
+size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context)
+{
+    return parse_from(context, 0u);
+}
+
+<% @grammar.start_rules.each_with_index do |start_rule, i| %>
+
+size_t <%= @grammar.prefix %>parse_<%= start_rule %>(<%= @grammar.prefix %>context_t * context)
+{
+    return parse_from(context, <%= i %>u);
+}
+<% end %>
+
 /**
  * Get the parse result value.
  *
@@ -1110,17 +1126,28 @@ size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context)
  * @return Parse result value.
  */
 <% if @grammar.ast %>
-<%= @grammar.ast_prefix %><%= @grammar.start_rule %><%= @grammar.ast_suffix %> * <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
+<%= @grammar.ast_prefix %><%= @grammar.start_rules[0] %><%= @grammar.ast_suffix %> * <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
+{
+    return (<%= @grammar.ast_prefix %><%= @grammar.start_rules[0] %><%= @grammar.ast_suffix %> *) context->parse_result;
+}
+<%   @grammar.start_rules.each_with_index do |start_rule, i| %>
+<%= @grammar.ast_prefix %><%= start_rule %><%= @grammar.ast_suffix %> * <%= @grammar.prefix %>result_<%= start_rule %>(<%= @grammar.prefix %>context_t * context)
+{
+    return (<%= @grammar.ast_prefix %><%= start_rule %><%= @grammar.ast_suffix %> *) context->parse_result;
+}
+<%   end %>
 <% else %>
 <%= start_rule_type[1] %> <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
-<% end %>
 {
-<% if @grammar.ast %>
-    return context->parse_result;
-<% else %>
     return context->parse_result.v_<%= start_rule_type[0] %>;
-<% end %>
 }
+<%   @grammar.start_rules.each_with_index do |start_rule, i| %>
+<%= start_rule_type(i)[1] %> <%= @grammar.prefix %>result_<%= start_rule %>(<%= @grammar.prefix %>context_t * context)
+{
+    return context->parse_result.v_<%= start_rule_type(i)[0] %>;
+}
+<%   end %>
+<% end %>
 
 /**
  * Get the current text input position.
@@ -1184,8 +1211,18 @@ static void free_ast_node(ASTNode * node)
 /**
  * Free all AST node memory.
  */
-void <%= @grammar.prefix %>free_ast(<%= @grammar.ast_prefix %><%= @grammar.start_rule %><%= @grammar.ast_suffix %> * ast)
+void <%= @grammar.prefix %>free_ast(<%= @grammar.ast_prefix %><%= @grammar.start_rules[0] %><%= @grammar.ast_suffix %> * ast)
 {
     free_ast_node((ASTNode *)ast);
 }
+<%   @grammar.start_rules.each_with_index do |start_rule, i| %>
+
+/**
+ * Free all AST node memory.
+ */
+void <%= @grammar.prefix %>free_ast_<%= start_rule %>(<%= @grammar.ast_prefix %><%= start_rule %><%= @grammar.ast_suffix %> * ast)
+{
+    free_ast_node((ASTNode *)ast);
+}
+<%   end %>
 <% end %>
