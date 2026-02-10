@@ -58,7 +58,7 @@ typedef struct
 /** User header code blocks. */
 <%= @grammar.code_blocks.fetch("header", "") %>
 
-<% if @grammar.ast %>
+<% if @grammar.tree %>
 /** Parser values type. */
 typedef <%= @grammar.ptype %> <%= @grammar.prefix %>value_t;
 <% else %>
@@ -71,18 +71,18 @@ typedef union
 } <%= @grammar.prefix %>value_t;
 <% end %>
 
-<% if @grammar.ast %>
-/** AST node types. @{ */
-typedef struct <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>
+<% if @grammar.tree %>
+/** Tree node types. @{ */
+typedef struct <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>
 {
-    <% # ASTNode fields must be present in the same order here. # %>
+    <% # TreeNode fields must be present in the same order here. # %>
     <%= @grammar.prefix %>position_t position;
     <%= @grammar.prefix %>position_t end_position;
     uint16_t n_fields;
     uint8_t is_token;
     <%= @grammar.prefix %>token_t token;
     <%= @grammar.prefix %>value_t pvalue;
-} <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>;
+} <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>;
 
 <%   @parser.rule_sets.each do |name, rule_set| %>
 <%     next if name.start_with?("$") %>
@@ -93,14 +93,14 @@ struct <%= name %>;
 <%   @parser.rule_sets.each do |name, rule_set| %>
 <%     next if name.start_with?("$") %>
 <%     next if rule_set.optional? %>
-typedef struct <%= @grammar.ast_prefix %><%= name %><%= @grammar.ast_suffix %>
+typedef struct <%= @grammar.tree_prefix %><%= name %><%= @grammar.tree_suffix %>
 {
-    <% # ASTNode fields must be present in the same order here. # %>
+    <% # TreeNode fields must be present in the same order here. # %>
     <%= @grammar.prefix %>position_t position;
     <%= @grammar.prefix %>position_t end_position;
     uint16_t n_fields;
     uint8_t is_token;
-<%     rule_set.ast_fields.each do |fields| %>
+<%     rule_set.tree_fields.each do |fields| %>
     union
     {
 <%       fields.each do |field_name, type| %>
@@ -108,7 +108,7 @@ typedef struct <%= @grammar.ast_prefix %><%= name %><%= @grammar.ast_suffix %>
 <%       end %>
     };
 <%     end %>
-} <%= @grammar.ast_prefix %><%= name %><%= @grammar.ast_suffix %>;
+} <%= @grammar.tree_prefix %><%= name %><%= @grammar.tree_suffix %>;
 
 <%   end %>
 /** @} */
@@ -161,7 +161,7 @@ typedef struct
     /* Parser context data. */
 
     /** Parse result value. */
-<% if @grammar.ast %>
+<% if @grammar.tree %>
     void * parse_result;
 <% else %>
     <%= @grammar.prefix %>value_t parse_result;
@@ -193,10 +193,10 @@ size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context);
 size_t <%= @grammar.prefix %>parse_<%= start_rule %>(<%= @grammar.prefix %>context_t * context);
 <%   end %>
 
-<% if @grammar.ast %>
-<%= @grammar.ast_prefix %><%= @grammar.start_rules[0] %><%= @grammar.ast_suffix %> * <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context);
+<% if @grammar.tree %>
+<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context);
 <%   @grammar.start_rules.each_with_index do |start_rule, i| %>
-<%= @grammar.ast_prefix %><%= start_rule %><%= @grammar.ast_suffix %> * <%= @grammar.prefix %>result_<%= start_rule %>(<%= @grammar.prefix %>context_t * context);
+<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * <%= @grammar.prefix %>result_<%= start_rule %>(<%= @grammar.prefix %>context_t * context);
 <%   end %>
 <% else %>
 <%= start_rule_type[1] %> <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context);
@@ -205,10 +205,10 @@ size_t <%= @grammar.prefix %>parse_<%= start_rule %>(<%= @grammar.prefix %>conte
 <%   end %>
 <% end %>
 
-<% if @grammar.ast %>
-void <%= @grammar.prefix %>free_ast(<%= @grammar.ast_prefix %><%= @grammar.start_rules[0] %><%= @grammar.ast_suffix %> * ast);
+<% if @grammar.tree %>
+void <%= @grammar.prefix %>free_tree(<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * tree);
 <%   @grammar.start_rules.each_with_index do |start_rule, i| %>
-void <%= @grammar.prefix %>free_ast_<%= start_rule %>(<%= @grammar.ast_prefix %><%= start_rule %><%= @grammar.ast_suffix %> * ast);
+void <%= @grammar.prefix %>free_tree_<%= start_rule %>(<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * tree);
 <%   end %>
 <% end %>
 

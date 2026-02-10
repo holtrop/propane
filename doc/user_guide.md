@@ -14,7 +14,7 @@ Propane is a LALR Parser Generator (LPG) which:
   * supports UTF-8 lexer inputs
   * generates a table-driven shift/reduce parser to parse input in linear time
   * targets C, C++, or D language outputs
-  * optionally supports automatic full AST generation
+  * optionally supports automatic full parse tree generation
   * tracks input text start and end positions for all matched tokens/rules
   * is MIT-licensed
   * is distributable as a standalone Ruby script
@@ -189,21 +189,21 @@ rule.
 Parser values for the rules or tokens in the rule pattern can be accessed
 positionally with tokens `$1`, `$2`, `$3`, etc...
 
-Parser rule code blocks are not available in AST generation mode.
-In AST generation mode, a full parse tree is automatically constructed in
+Parser rule code blocks are not available in tree generation mode.
+In tree generation mode, a full parse tree is automatically constructed in
 memory for user code to traverse after parsing is complete.
 
-##> AST generation mode - the `ast` statement
+##> Tree generation mode - the `tree` statement
 
-To activate AST generation mode, place the `ast` statement in your grammar file:
+To activate tree generation mode, place the `tree` statement in your grammar file:
 
 ```
-ast;
+tree;
 ```
 
 It is recommended to place this statement early in the grammar.
 
-In AST generation mode various aspects of propane's behavior are changed:
+In tree generation mode various aspects of propane's behavior are changed:
 
   * Only one `ptype` is allowed.
   * Parser user code blocks are not supported.
@@ -214,10 +214,10 @@ In AST generation mode various aspects of propane's behavior are changed:
   with the `start` grammar statement, the name of the start struct will be
   given by the user-specified start rule instead of `Start`.
 
-Example AST generation grammar:
+Example tree generation grammar:
 
 ```
-ast;
+tree;
 
 ptype int;
 
@@ -284,23 +284,23 @@ assert_eq(22, itemsmore.item.pToken1.pvalue);
 assert(itemsmore.pItemsMore is null);
 ```
 
-## `ast_prefix` and `ast_suffix` statements
+## `tree_prefix` and `tree_suffix` statements
 
-In AST generation mode, structure types are defined and named based on the
+In tree generation mode, structure types are defined and named based on the
 rules in the grammar.
 Additionally, a structure type called `Token` is generated to hold parsed
 token information.
 
-These structure names can be modified by using the `ast_prefix` or `ast_suffix`
+These structure names can be modified by using the `tree_prefix` or `tree_suffix`
 statements in the grammar file.
 The field names that point to instances of the structures are not affected by
-the `ast_prefix` or `ast_suffix` values.
+the `tree_prefix` or `tree_suffix` values.
 
 For example, if the following two lines were added to the example above:
 
 ```
-ast_prefix ABC;
-ast_suffix XYZ;
+tree_prefix ABC;
+tree_suffix XYZ;
 ```
 
 Then the types would be used as such instead:
@@ -330,7 +330,7 @@ assert(itemsmore.pItem.pItem.pItem.pToken1 !is null);
 
 If user lexer code block allocates memory to store in a token node's `pvalue`,
 the `free_token_node` grammar statement can be used to specify the name of a
-function which will be called during the `p_free_ast()` call to free the memory
+function which will be called during the `p_free_tree()` call to free the memory
 associated with a token node.
 
 Example:
@@ -342,7 +342,7 @@ static void free_token(Token * token)
     free(token->pvalue);
 }
 >>
-ast;
+tree;
 free_token_node free_token;
 ptype int *;
 token a <<
@@ -641,7 +641,7 @@ In this example:
   * a reduced `Values`'s parser value has a type of `Value[]`.
   * a reduced `KeyValue`'s parser value has a type of `Value[string]`.
 
-When AST generation mode is active, the `ptype` functionality works differently.
+When tree generation mode is active, the `ptype` functionality works differently.
 In this mode, only one `ptype` is used by the parser.
 Lexer user code blocks may assign a parse value to the generated `Token` node
 by assigning to `$$` within a lexer code block.
@@ -700,8 +700,8 @@ A field can be immediately followed by a `?` character to signify that it is
 optional.
 A field can optionally be followed by a `:` and then a field alias name.
 If present, the field alias name is used to refer to the field value in user
-code blocks, or if AST mode is active, the field alias name is used as the
-field name in the generated AST node structure.
+code blocks, or if tree generation mode is active, the field alias name is used
+as the field name in the generated tree node structure.
 An optional and named field must use the format `field?:name`.
 Example:
 
@@ -725,7 +725,7 @@ The `$$` symbol accesses the output parser value for this rule.
 The above examples demonstrate how the parser values for the rule components
 can be used to produce the parser value for the accepted rule.
 
-Parser rule code blocks are not allowed and not used when AST generation mode
+Parser rule code blocks are not allowed and not used when tree generation mode
 is active.
 
 ##> Specifying the parser start rule name - the `start` statement
@@ -747,12 +747,12 @@ start Module ModuleItem Statement Expression;
 ```
 
 When multiple start rules are specified, multiple `p_parse_*()` functions,
-`p_result_*()`, and `p_free_ast_*()` functions (in AST mode) are generated.
-A default `p_parse()`, `p_result()`, `p_free_ast()` are generated corresponding
+`p_result_*()`, and `p_free_tree_*()` functions (in tree mode) are generated.
+A default `p_parse()`, `p_result()`, `p_free_tree()` are generated corresponding
 to the first start rule.
 Additionally, each start rule causes the generation of another version of each
 of these functions, for example `p_parse_Statement()`, `p_result_Statement()`,
-and `p_free_ast_Statement()`.
+and `p_free_tree_Statement()`.
 
 ##> Specifying the parser module name - the `module` statement
 
@@ -873,17 +873,17 @@ The `p_token_info_t` structure contains the following fields:
 * `token` (`p_token_t`) holds the token ID of the lexed token
 * `pvalue` (`p_value_t`) holds the parser value associated with the token.
 
-### AST Node Types
+### Tree Node Types
 
-If AST generation mode is enabled, a structure type for each rule will be
+If tree generation mode is enabled, a structure type for each rule will be
 generated.
 The name of the structure type is given by the name of the rule.
-Additionally a structure type called `Token` is generated to represent an
-AST node which refers to a raw parser token rather than a composite rule.
+Additionally a structure type called `Token` is generated to represent a
+tree node which refers to a raw parser token rather than a composite rule.
 
-#### AST Node Fields
+#### Tree Node Fields
 
-All AST nodes have a `position` field specifying the text position of the
+All tree nodes have a `position` field specifying the text position of the
 beginning of the matched token or rule, and an `end_position` field specifying
 the text position of the end of the matched token or rule.
 Each of these fields are instances of the `p_position_t` structure.
@@ -902,7 +902,7 @@ A `Token` node has the following additional fields:
   * `pvalue` which specifies the parser value for the token. If a lexer user
   code block assigned to `$$`, the assigned value will be stored here.
 
-AST node structures for rules contain generated fields based on the
+Tree node structures for rules contain generated fields based on the
 right hand side components specified for all rules of a given name.
 
 In this example:
@@ -925,10 +925,10 @@ The `Items` structure will have fields:
   * `pItemsMore` and `pItemsMore2` which point to the parsed `ItemsMore` structure.
 
 If a rule can be empty (for example in the second `Items` rule above), then
-an instance of a pointer to that rule's generated AST node will be null if the
+an instance of a pointer to that rule's generated tree node will be null if the
 parser matches the empty rule pattern.
 
-The non-positional AST node field pointer will not be generated if there are
+The non-positional tree node field pointer will not be generated if there are
 multiple positions in which an instance of the node it points to could be
 present.
 For example, in the below rules:
@@ -948,7 +948,7 @@ If the first rule is matched, then `pOne1` and `pTwo2` will be non-null while
 If the second rule is matched instead, then the opposite would be the case.
 
 If a field alias is present in a rule definition, an additional field will be
-generated in the AST node with the field alias name.
+generated in the tree node with the field alias name.
 For example:
 
 ```
@@ -1079,8 +1079,8 @@ if (p_parse(&context) == P_SUCCESS)
 }
 ```
 
-If AST generation mode is active, then the `p_result()` function returns a
-`Start *` pointing to the `Start` AST structure.
+If tree generation mode is active, then the `p_result()` function returns a
+`Start *` pointing to the `Start` tree node structure.
 
 When multiple start rules are specified, a separate result function is generated
 for each which returns the parse result for the corresponding rule.
@@ -1171,29 +1171,29 @@ assert(code_point == 0x1F9E1u);
 assert(code_point_length == 4u);
 ```
 
-### `p_free_ast`
+### `p_free_tree`
 
-The `p_free_ast()` function can be used to free the memory used by the AST.
+The `p_free_tree()` function can be used to free the memory used by the tree.
 It should be passed the same value that is returned by `p_result()`.
 
-The `p_free_ast()` function is only available for C/C++ output targets.
+The `p_free_tree()` function is only available for C/C++ output targets.
 
 Note that if any lexer user code block allocates memory to store in a token's
 `pvalue`, in order to properly free this memory a `free_token_node` function
 should be specified in the grammar file.
 If specified, the `free_token_node` function will be called during the
-`p_free_ast()` process to allow user code to free any memory associated with
+`p_free_tree()` process to allow user code to free any memory associated with
 a token node's `pvalue`.
 
-When multiple start rules are specified, a separate `p_free_ast` function is
-generated for each which frees the AST resulting from parsing the given rule.
+When multiple start rules are specified, a separate `p_free_tree` function is
+generated for each which frees the tree resulting from parsing the given rule.
 For example, if `Statement` is specified as a start rule:
 
 ```
-p_free_ast_Statement(statement_ast);
+p_free_tree_Statement(statement_tree);
 ```
 
-In this case, Propane will free a `Statement` AST structure returned by the
+In this case, Propane will free a `Statement` tree structure returned by the
 `p_parse_Statement(&context)` function.
 
 ##> Data

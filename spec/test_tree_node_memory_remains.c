@@ -412,7 +412,7 @@ int main(int argc, char * argv[])
     }
 
     free(pfds);
-    p_free_ast(pmod);
+    p_free_tree(pmod);
 
     return 0;
 }

@@ -43,7 +43,7 @@ int main()
     assert_eq(1, start->end_position.row);
     assert_eq(6, start->end_position.col);
 
-    p_free_ast(start);
+    p_free_tree(start);
 
     input = "\n\n  bb\nc\ncc\n\n     a";
     p_context_init(&context, (uint8_t const *)input, strlen(input));
@@ -82,7 +82,7 @@ int main()
     assert_eq(7, start->end_position.row);
     assert_eq(6, start->end_position.col);
 
-    p_free_ast(start);
+    p_free_tree(start);
 
     return 0;
 }

@@ -4,8 +4,8 @@ class Propane
   class RuleSet
 
     # @return [Array<Hash>]
-    #   AST fields.
-    attr_reader :ast_fields
+    #   tree fields.
+    attr_reader :tree_fields
 
     # @return [Integer]
     #   ID of the RuleSet.
@@ -100,28 +100,28 @@ class Propane
 
     # Finalize a RuleSet after adding all Rules to it.
     def finalize(grammar)
-      if grammar.ast
-        build_ast_fields(grammar)
+      if grammar.tree
+        build_tree_fields(grammar)
       end
     end
 
     private
 
-    # Build the set of AST fields for this RuleSet.
+    # Build the set of tree fields for this RuleSet.
     #
     # This is an Array of Hashes. Each entry in the Array corresponds to a
-    # field location in the AST node. The entry is a Hash. It could have one or
+    # field location in the tree node. The entry is a Hash. It could have one or
     # two keys. It will always have the field name with a positional suffix as
     # a key. It may also have the field name without the positional suffix if
     # that field only exists in one position across all Rules in the RuleSet.
     #
     # @return [void]
-    def build_ast_fields(grammar)
-      field_ast_node_indexes = {}
+    def build_tree_fields(grammar)
+      field_tree_node_indexes = {}
       field_indexes_across_all_rules = {}
-      # Stores the index into @ast_fields by field alias name.
+      # Stores the index into @tree_fields by field alias name.
       field_aliases = {}
-      @ast_fields = []
+      @tree_fields = []
       @rules.each do |rule|
         rule.components.each_with_index do |component, i|
           if component.is_a?(RuleSet) && component.optional?
@@ -132,25 +132,25 @@ class Propane
           else
             node_name = component.name
           end
-          struct_name = "#{grammar.ast_prefix}#{node_name}#{grammar.ast_suffix}"
+          struct_name = "#{grammar.tree_prefix}#{node_name}#{grammar.tree_suffix}"
           field_name = "p#{node_name}#{i + 1}"
-          unless field_ast_node_indexes[field_name]
-            field_ast_node_indexes[field_name] = @ast_fields.size
-            @ast_fields << {field_name => struct_name}
+          unless field_tree_node_indexes[field_name]
+            field_tree_node_indexes[field_name] = @tree_fields.size
+            @tree_fields << {field_name => struct_name}
           end
           rule.aliases.each do |alias_name, index|
             if index == i
-              alias_ast_fields_index = field_ast_node_indexes[field_name]
-              if field_aliases[alias_name] && field_aliases[alias_name] != alias_ast_fields_index
-                raise Error.new("Error: conflicting AST node field positions for alias `#{alias_name}` in rule #{rule.name} defined on line #{rule.line_number}")
+              alias_tree_fields_index = field_tree_node_indexes[field_name]
+              if field_aliases[alias_name] && field_aliases[alias_name] != alias_tree_fields_index
+                raise Error.new("Error: conflicting tree node field positions for alias `#{alias_name}` in rule #{rule.name} defined on line #{rule.line_number}")
               end
-              field_aliases[alias_name] = alias_ast_fields_index
-              @ast_fields[alias_ast_fields_index][alias_name] = @ast_fields[alias_ast_fields_index].first[1]
+              field_aliases[alias_name] = alias_tree_fields_index
+              @tree_fields[alias_tree_fields_index][alias_name] = @tree_fields[alias_tree_fields_index].first[1]
             end
           end
           field_indexes_across_all_rules[node_name] ||= Set.new
-          field_indexes_across_all_rules[node_name] << field_ast_node_indexes[field_name]
-          rule.rule_set_node_field_index_map[i] = field_ast_node_indexes[field_name]
+          field_indexes_across_all_rules[node_name] << field_tree_node_indexes[field_name]
+          rule.rule_set_node_field_index_map[i] = field_tree_node_indexes[field_name]
         end
       end
       field_indexes_across_all_rules.each do |node_name, indexes_across_all_rules|
@@ -158,8 +158,8 @@ class Propane
           # If this field was only seen in one position across all rules,
           # then add an alias to the positional field name that does not
           # include the position.
-          @ast_fields[indexes_across_all_rules.first]["p#{node_name}"] =
-            "#{grammar.ast_prefix}#{node_name}#{grammar.ast_suffix}"
+          @tree_fields[indexes_across_all_rules.first]["p#{node_name}"] =
+            "#{grammar.tree_prefix}#{node_name}#{grammar.tree_suffix}"
         end
       end
     end

@@ -36,7 +36,7 @@ class Propane
 
     # @return [Array<Integer>]
     #   Map this rule's components to their positions in the parent RuleSet's
-    #   node field pointer array. This is used for AST construction.
+    #   node field pointer array. This is used for tree construction.
     attr_accessor :rule_set_node_field_index_map
 
     # Construct a Rule.

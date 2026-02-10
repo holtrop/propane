@@ -5,15 +5,15 @@
 
 int main()
 {
-    char const * input = "hi";
+    char const * input = "ab";
     p_context_t context;
     p_context_init(&context, (uint8_t const *)input, strlen(input));
     assert_eq(P_SUCCESS, p_parse(&context));
-    Top * top = p_result(&context);
-    assert(top->pToken != NULL);
-    assert_eq(TOKEN_hi, top->pToken->token);
+    Start * start = p_result(&context);
+    assert(start->a != NULL);
+    assert(*start->a->pvalue == 1);
+    assert(start->b != NULL);
+    assert(*start->b->pvalue == 2);
 
-    p_free_ast(top);
-
-    return 0;
+    p_free_tree(start);
 }

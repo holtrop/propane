@@ -1,5 +1,5 @@
-ast;
-ast_prefix P;
+tree;
+tree_prefix P;
 
 <<
 import std.bigint;

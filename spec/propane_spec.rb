@@ -245,20 +245,20 @@ EOF
     expect(results.status).to_not eq 0
   end
 
-  it "errors when an alias is in different positions for different rules in a rule set when AST mode is enabled" do
+  it "errors when an alias is in different positions for different rules in a rule set when tree mode is enabled" do
     write_grammar <<EOF
-ast;
+tree;
 token a;
 token b;
 Start -> a:foo b;
 Start -> b b:foo;
 EOF
     results = run_propane(extra_args: %w[-w], capture: true)
-    expect(results.stderr).to match %r{Error: conflicting AST node field positions for alias `foo`}
+    expect(results.stderr).to match %r{Error: conflicting tree node field positions for alias `foo`}
     expect(results.status).to_not eq 0
   end
 
-  it "does not error when an alias is in different positions for different rules in a rule set when AST mode is not enabled" do
+  it "does not error when an alias is in different positions for different rules in a rule set when tree mode is not enabled" do
     write_grammar <<EOF
 token a;
 token b;
@@ -996,9 +996,9 @@ EOF
         run_propane(language: language)
       end
 
-      it "generates an AST" do
+      it "generates a tree" do
         write_grammar <<EOF
-ast;
+tree;
 
 ptype int;
 
@@ -1032,17 +1032,17 @@ One -> one;
 Two -> two;
 EOF
         run_propane(language: language)
-        compile("spec/test_ast.#{language}", language: language)
+        compile("spec/test_tree.#{language}", language: language)
         results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
 
-      it "supports AST node prefix and suffix" do
+      it "supports tree node prefix and suffix" do
         write_grammar <<EOF
-ast;
-ast_prefix P ;
-ast_suffix  S;
+tree;
+tree_prefix P ;
+tree_suffix  S;
 
 ptype int;
 
@@ -1076,7 +1076,7 @@ One -> one;
 Two -> two;
 EOF
         run_propane(language: language)
-        compile("spec/test_ast_ps.#{language}", language: language)
+        compile("spec/test_tree_ps.#{language}", language: language)
         results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
@@ -1092,15 +1092,15 @@ EOF
         compile("spec/test_start_rule.#{language}", language: language)
       end
 
-      it "allows specifying a different start rule with AST generation" do
+      it "allows specifying a different start rule with tree generation" do
         write_grammar <<EOF
-ast;
+tree;
 token hi;
 start Top;
 Top -> hi;
 EOF
         run_propane(language: language)
-        compile("spec/test_start_rule_ast.#{language}", language: language)
+        compile("spec/test_start_rule_tree.#{language}", language: language)
       end
 
       it "allows marking a rule component as optional" do
@@ -1167,10 +1167,10 @@ EOF
         ])
       end
 
-      it "allows marking a rule component as optional in AST generation mode" do
+      it "allows marking a rule component as optional in tree generation mode" do
         if language == "d"
           write_grammar <<EOF
-ast;
+tree;
 
 <<
 import std.stdio;
@@ -1186,7 +1186,7 @@ R -> d c;
 EOF
         else
           write_grammar <<EOF
-ast;
+tree;
 
 <<
 #include <stdio.h>
@@ -1202,16 +1202,16 @@ R -> d c;
 EOF
         end
         run_propane(language: language)
-        compile("spec/test_optional_rule_component_ast.#{language}", language: language)
+        compile("spec/test_optional_rule_component_tree.#{language}", language: language)
         results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
 
-      it "allows naming an optional rule component in AST generation mode" do
+      it "allows naming an optional rule component in tree generation mode" do
         if language == "d"
           write_grammar <<EOF
-ast;
+tree;
 
 <<
 import std.stdio;
@@ -1227,7 +1227,7 @@ R -> d c;
 EOF
         else
           write_grammar <<EOF
-ast;
+tree;
 
 <<
 #include <stdio.h>
@@ -1243,15 +1243,15 @@ R -> d c;
 EOF
         end
         run_propane(language: language)
-        compile("spec/test_named_optional_rule_component_ast.#{language}", language: language)
+        compile("spec/test_named_optional_rule_component_tree.#{language}", language: language)
         results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
 
-      it "stores token and rule positions in AST nodes" do
+      it "stores token and rule positions in tree nodes" do
         write_grammar <<EOF
-ast;
+tree;
 
 token a;
 token bb;
@@ -1263,7 +1263,7 @@ T -> bb;
 T -> c;
 EOF
         run_propane(language: language)
-        compile("spec/test_ast_token_positions.#{language}", language: language)
+        compile("spec/test_tree_token_positions.#{language}", language: language)
         results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
@@ -1271,7 +1271,7 @@ EOF
 
       it "stores invalid positions for empty rule matches" do
         write_grammar <<EOF
-ast;
+tree;
 
 token a;
 token bb;
@@ -1283,15 +1283,15 @@ T -> a A;
 A -> bb? c?;
 EOF
         run_propane(language: language)
-        compile("spec/test_ast_invalid_positions.#{language}", language: language)
+        compile("spec/test_tree_invalid_positions.#{language}", language: language)
         results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
 
-      it "allows specifying field aliases in AST mode" do
+      it "allows specifying field aliases in tree mode" do
         write_grammar <<EOF
-ast;
+tree;
 
 token a;
 token b;
@@ -1303,15 +1303,15 @@ T -> b;
 T -> c;
 EOF
         run_propane(language: language)
-        compile("spec/test_ast_field_aliases.#{language}", language: language)
+        compile("spec/test_tree_field_aliases.#{language}", language: language)
         results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
 
-      it "aliases the correct field when multiple rules are in a rule set in AST mode" do
+      it "aliases the correct field when multiple rules are in a rule set in tree mode" do
         write_grammar <<EOF
-ast;
+tree;
 
 token a;
 token b;
@@ -1326,13 +1326,13 @@ T -> b;
 T -> c;
 EOF
         run_propane(language: language)
-        compile("spec/test_ast_field_aliases.#{language}", language: language)
+        compile("spec/test_tree_field_aliases.#{language}", language: language)
         results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
 
-      it "allows specifying field aliases when AST mode is not enabled" do
+      it "allows specifying field aliases when tree mode is not enabled" do
         if language == "d"
           write_grammar <<EOF
 <<
@@ -1378,7 +1378,7 @@ EOF
         expect(results.stdout).to match /first is foo1.*second is bar2/m
       end
 
-      it "aliases the correct field when multiple rules are in a rule set when AST mode is not enabled" do
+      it "aliases the correct field when multiple rules are in a rule set when tree mode is not enabled" do
         if language == "d"
           write_grammar <<EOF
 <<
@@ -1430,11 +1430,11 @@ EOF
         expect(results.stdout).to match /first is foo1.*second is bar2/m
       end
 
-      it "does not free memory allocated for AST nodes" do
+      it "does not free memory allocated for tree nodes" do
         ext = language == "cpp" ? "c" : language
-        write_grammar(File.read("spec/ast_node_memory_remains.#{ext}.propane"))
+        write_grammar(File.read("spec/tree_node_memory_remains.#{ext}.propane"))
         run_propane(language: language)
-        compile("spec/test_ast_node_memory_remains.#{language}", language: language)
+        compile("spec/test_tree_node_memory_remains.#{language}", language: language)
         results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
@@ -1460,9 +1460,9 @@ EOF
         expect(results.status).to eq 0
       end
 
-      it "allows multiple starting rules in AST mode" do
+      it "allows multiple starting rules in tree mode" do
     write_grammar <<EOF
-ast;
+tree;
 ptype int;
 token a << $$ = 1; >>
 token b << $$ = 2; >>
@@ -1475,14 +1475,14 @@ Bs -> b:b Bs:bs;
 start Start R Bs;
 EOF
         run_propane(language: language)
-        compile("spec/test_starting_rules_ast.#{language}", language: language)
+        compile("spec/test_starting_rules_tree.#{language}", language: language)
         results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
 
       if %w[c cpp].include?(language)
-        it "allows a user function to free token node memory in AST mode" do
+        it "allows a user function to free token node memory in tree mode" do
     write_grammar <<EOF
 <<
 static void free_token(Token * token)
@@ -1490,7 +1490,7 @@ static void free_token(Token * token)
     free(token->pvalue);
 }
 >>
-ast;
+tree;
 free_token_node free_token;
 ptype int *;
 token a <<
@@ -1504,7 +1504,7 @@ token b <<
 Start -> a:a b:b;
 EOF
           run_propane(language: language)
-          compile("spec/test_free_ast_token_node_memory.#{language}", language: language)
+          compile("spec/test_free_tree_token_node_memory.#{language}", language: language)
           results = run_test(language: language)
           expect(results.stderr).to eq ""
           expect(results.status).to eq 0

@@ -5,9 +5,9 @@ class Propane
     # Reserve identifiers beginning with a double-underscore for internal use.
     IDENTIFIER_REGEX = /(?:[a-zA-Z]|_[a-zA-Z0-9])[a-zA-Z_0-9]*/
 
-    attr_reader :ast
-    attr_reader :ast_prefix
-    attr_reader :ast_suffix
+    attr_reader :tree
+    attr_reader :tree_prefix
+    attr_reader :tree_suffix
     attr_reader :free_token_node
     attr_reader :modulename
     attr_reader :patterns
@@ -30,9 +30,9 @@ class Propane
       @input = input.gsub("\r\n", "\n")
       @ptypes = {"default" => "void *"}
       @prefix = "p_"
-      @ast = false
-      @ast_prefix = ""
-      @ast_suffix = ""
+      @tree = false
+      @tree_prefix = ""
+      @tree_suffix = ""
       @free_token_node = nil
       parse_grammar!
       @start_rules << "Start" if @start_rules.empty?
@@ -62,9 +62,9 @@ class Propane
       if parse_white_space!
       elsif parse_comment_line!
       elsif @modeline.nil? && parse_mode_label!
-      elsif parse_ast_statement!
-      elsif parse_ast_prefix_statement!
-      elsif parse_ast_suffix_statement!
+      elsif parse_tree_statement!
+      elsif parse_tree_prefix_statement!
+      elsif parse_tree_suffix_statement!
       elsif parse_free_token_node_statement!
       elsif parse_module_statement!
       elsif parse_ptype_statement!
@@ -98,21 +98,21 @@ class Propane
       consume!(/#.*\n/)
     end
 
-    def parse_ast_statement!
-      if consume!(/ast\s*;/)
-        @ast = true
+    def parse_tree_statement!
+      if consume!(/tree\s*;/)
+        @tree = true
       end
     end
 
-    def parse_ast_prefix_statement!
-      if md = consume!(/ast_prefix\s+(\w+)\s*;/)
-        @ast_prefix = md[1]
+    def parse_tree_prefix_statement!
+      if md = consume!(/tree_prefix\s+(\w+)\s*;/)
+        @tree_prefix = md[1]
       end
     end
 
-    def parse_ast_suffix_statement!
-      if md = consume!(/ast_suffix\s+(\w+)\s*;/)
-        @ast_suffix = md[1]
+    def parse_tree_suffix_statement!
+      if md = consume!(/tree_suffix\s+(\w+)\s*;/)
+        @tree_suffix = md[1]
       end
     end
 
@@ -136,8 +136,8 @@ class Propane
       if consume!(/ptype\s+/)
         name = "default"
         if md = consume!(/(#{IDENTIFIER_REGEX})\s*=\s*/)
-          if @ast
-            raise Error.new("Multiple ptypes are unsupported in AST mode")
+          if @tree
+            raise Error.new("Multiple ptypes are unsupported in tree mode")
           end
           name = md[1]
         end
@@ -151,8 +151,8 @@ class Propane
         md = consume!(/(#{IDENTIFIER_REGEX})\s*/, "expected token name")
         name = md[1]
         if md = consume!(/\((#{IDENTIFIER_REGEX})\)\s*/)
-          if @ast
-            raise Error.new("Multiple ptypes are unsupported in AST mode")
+          if @tree
+            raise Error.new("Multiple ptypes are unsupported in tree mode")
           end
           ptypename = md[1]
         end
@@ -175,8 +175,8 @@ class Propane
         md = consume!(/(#{IDENTIFIER_REGEX})\s*/, "expected token name")
         name = md[1]
         if md = consume!(/\((#{IDENTIFIER_REGEX})\)\s*/)
-          if @ast
-            raise Error.new("Multiple ptypes are unsupported in AST mode")
+          if @tree
+            raise Error.new("Multiple ptypes are unsupported in tree mode")
           end
           ptypename = md[1]
         end
@@ -205,12 +205,12 @@ class Propane
     def parse_rule_statement!
       if md = consume!(/(#{IDENTIFIER_REGEX})\s*(?:\((#{IDENTIFIER_REGEX})\))?\s*->\s*/)
         rule_name, ptypename = *md[1, 2]
-        if @ast && ptypename
-          raise Error.new("Multiple ptypes are unsupported in AST mode")
+        if @tree && ptypename
+          raise Error.new("Multiple ptypes are unsupported in tree mode")
         end
         md = consume!(/((?:#{IDENTIFIER_REGEX}\??(?::#{IDENTIFIER_REGEX})?\s*)*)\s*/, "expected rule component list")
         components = md[1].strip.split(/\s+/)
-        if @ast
+        if @tree
           consume!(/;/, "expected `;'")
         else
           unless code = parse_code_block!
@@ -227,8 +227,8 @@ class Propane
       if pattern = parse_pattern!
         consume!(/\s+/)
         if md = consume!(/\((#{IDENTIFIER_REGEX})\)\s*/)
-          if @ast
-            raise Error.new("Multiple ptypes are unsupported in AST mode")
+          if @tree
+            raise Error.new("Multiple ptypes are unsupported in tree mode")
           end
           ptypename = md[1]
         end

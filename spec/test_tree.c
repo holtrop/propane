@@ -33,7 +33,7 @@ int main()
     assert_eq(22, itemsmore->pItem->pToken1->pvalue);
     assert(itemsmore->pItemsMore == NULL);
 
-    p_free_ast(start);
+    p_free_tree(start);
 
     input = "";
     p_context_init(&context, (uint8_t const *)input, strlen(input));
@@ -41,7 +41,7 @@ int main()
     start = p_result(&context);
     assert(start->pItems == NULL);
 
-    p_free_ast(start);
+    p_free_tree(start);
 
     input = "2 1";
     p_context_init(&context, (uint8_t const *)input, strlen(input));
@@ -55,7 +55,7 @@ int main()
     assert(start->pItems->pItem->pDual->pTwo2 == NULL);
     assert(start->pItems->pItem->pDual->pOne1 == NULL);
 
-    p_free_ast(start);
+    p_free_tree(start);
 
     return 0;
 }

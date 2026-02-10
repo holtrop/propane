@@ -20,7 +20,7 @@ syn match propaneOperator "->"
 syn match propaneFieldAlias ":[a-zA-Z0-9_]\+" contains=propaneFieldOperator
 syn match propaneFieldOperator ":" contained
 syn match propaneOperator "?"
-syn keyword propaneKeyword ast ast_prefix ast_suffix drop module prefix ptype start token tokenid
+syn keyword propaneKeyword drop free_token_node module prefix ptype start token tokenid tree tree_prefix tree_suffix
 
 syn region propaneRegex start="/" end="/" skip="\v\\\\|\\/"
 

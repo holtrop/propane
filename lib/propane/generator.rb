@@ -298,7 +298,7 @@ class Propane
         end
       else
         code = code.gsub(/\$\$/) do |match|
-          if @grammar.ast
+          if @grammar.tree
             case @language
             when "c"
               "out_token_info->pvalue"

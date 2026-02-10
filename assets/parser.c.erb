@@ -638,7 +638,7 @@ typedef struct
      * reduce action.
      */
     parser_state_id_t n_states;
-<% if @grammar.ast %>
+<% if @grammar.tree %>
 
     /**
      * Map of rule components to rule set child fields.
@@ -646,7 +646,7 @@ typedef struct
     uint16_t const * rule_set_node_field_index_map;
 
     /**
-     * Number of rule set AST node fields.
+     * Number of rule set tree node fields.
      */
     uint16_t rule_set_node_field_array_size;
 
@@ -688,21 +688,21 @@ typedef struct
     /** Parser value from this state. */
     <%= @grammar.prefix %>value_t pvalue;
 
-<% if @grammar.ast %>
-    /** AST node. */
-    void * ast_node;
+<% if @grammar.tree %>
+    /** tree node. */
+    void * tree_node;
 <% end %>
 } state_value_t;
 
-/** Common AST node structure. */
-typedef struct ASTNode_s
+/** Common tree node structure. */
+typedef struct TreeNode_s
 {
     <%= @grammar.prefix %>position_t position;
     <%= @grammar.prefix %>position_t end_position;
     uint16_t n_fields;
     uint8_t is_token;
-    struct ASTNode_s * fields[];
-} ASTNode;
+    struct TreeNode_s * fields[];
+} TreeNode;
 
 /** Parser shift table. */
 static const shift_t parser_shift_table[] = {
@@ -711,7 +711,7 @@ static const shift_t parser_shift_table[] = {
 <%   end %>
 };
 
-<% if @grammar.ast %>
+<% if @grammar.tree %>
 <%   @grammar.rules.each do |rule| %>
 <%     unless rule.flat_rule_set_node_field_index_map? %>
 const uint16_t r_<%= rule.name.gsub("$", "_") %><%= rule.id %>_node_field_index_map[<%= rule.rule_set_node_field_index_map.size %>] = {<%= rule.rule_set_node_field_index_map.map {|v| v.to_s}.join(", ") %>};
@@ -726,14 +726,14 @@ static const reduce_t parser_reduce_table[] = {
         <%= reduce[:token_id] %>u, /* Token: <%= reduce[:token] ? reduce[:token].name : "(any)" %> */
         <%= reduce[:rule_id] %>u, /* Rule ID */
         <%= reduce[:rule_set_id] %>u, /* Rule set ID (<%= reduce[:rule].rule_set.name %>) */
-<%     if @grammar.ast %>
+<%     if @grammar.tree %>
         <%= reduce[:n_states] %>u, /* Number of states */
 <%       if reduce[:rule].flat_rule_set_node_field_index_map? %>
         NULL, /* No rule set node field index map (flat map) */
 <%       else %>
         &r_<%= reduce[:rule].name.gsub("$", "_") %><%= reduce[:rule].id %>_node_field_index_map[0], /* Rule set node field index map */
 <%       end %>
-        <%= reduce[:rule].rule_set.ast_fields.size %>, /* Number of AST fields */
+        <%= reduce[:rule].rule_set.tree_fields.size %>, /* Number of tree fields */
         <%= reduce[:propagate_optional_target] %>}, /* Propagate optional target? */
 <%     else %>
         <%= reduce[:n_states] %>u},
@@ -841,7 +841,7 @@ static void state_values_stack_free(state_values_stack_t * stack)
      free(stack->entries);
 }
 
-<% unless @grammar.ast %>
+<% unless @grammar.tree %>
 /**
  * Execute user code associated with a parser rule.
  *
@@ -944,7 +944,7 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
     <%= @grammar.prefix %>token_t token = INVALID_TOKEN_ID;
     state_values_stack_t statevalues;
     size_t reduced_rule_set = INVALID_ID;
-<% if @grammar.ast %>
+<% if @grammar.tree %>
     void * reduced_parser_node;
 <% else %>
     <%= @grammar.prefix %>value_t reduced_parser_value;
@@ -976,8 +976,8 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
             if ((shift_state != INVALID_ID) && (token == TOKEN___EOF))
             {
                 /* Successful parse. */
-<% if @grammar.ast %>
-                context->parse_result = state_values_stack_index(&statevalues, -1)->ast_node;
+<% if @grammar.tree %>
+                context->parse_result = state_values_stack_index(&statevalues, -1)->tree_node;
 <% else %>
                 context->parse_result = state_values_stack_index(&statevalues, -1)->pvalue;
 <% end %>
@@ -993,15 +993,15 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
             if (reduced_rule_set == INVALID_ID)
             {
                 /* We shifted a token, mark it consumed. */
-<% if @grammar.ast %>
-                <%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %> * token_ast_node = (<%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %> *)malloc(sizeof(<%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %>));
-                token_ast_node->position = token_info.position;
-                token_ast_node->end_position = token_info.end_position;
-                token_ast_node->n_fields = 0u;
-                token_ast_node->is_token = 1u;
-                token_ast_node->token = token;
-                token_ast_node->pvalue = token_info.pvalue;
-                state_values_stack_index(&statevalues, -1)->ast_node = token_ast_node;
+<% if @grammar.tree %>
+                <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> * token_tree_node = (<%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> *)malloc(sizeof(<%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>));
+                token_tree_node->position = token_info.position;
+                token_tree_node->end_position = token_info.end_position;
+                token_tree_node->n_fields = 0u;
+                token_tree_node->is_token = 1u;
+                token_tree_node->token = token;
+                token_tree_node->pvalue = token_info.pvalue;
+                state_values_stack_index(&statevalues, -1)->tree_node = token_tree_node;
 <% else %>
                 state_values_stack_index(&statevalues, -1)->pvalue = token_info.pvalue;
 <% end %>
@@ -1010,8 +1010,8 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
             else
             {
                 /* We shifted a RuleSet. */
-<% if @grammar.ast %>
-                state_values_stack_index(&statevalues, -1)->ast_node = reduced_parser_node;
+<% if @grammar.tree %>
+                state_values_stack_index(&statevalues, -1)->tree_node = reduced_parser_node;
 <% else %>
                 state_values_stack_index(&statevalues, -1)->pvalue = reduced_parser_value;
                 <%= @grammar.prefix %>value_t new_parse_result;
@@ -1027,16 +1027,16 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
         if (reduce_index != INVALID_ID)
         {
             /* We have something to reduce. */
-<% if @grammar.ast %>
+<% if @grammar.tree %>
             if (parser_reduce_table[reduce_index].propagate_optional_target)
             {
-                reduced_parser_node = state_values_stack_index(&statevalues, -1)->ast_node;
+                reduced_parser_node = state_values_stack_index(&statevalues, -1)->tree_node;
             }
             else if (parser_reduce_table[reduce_index].n_states > 0)
             {
                 size_t n_fields = parser_reduce_table[reduce_index].rule_set_node_field_array_size;
-                size_t bytes = sizeof(ASTNode) + n_fields * sizeof(void *);
-                ASTNode * node = (ASTNode *)malloc(bytes);
+                size_t bytes = sizeof(TreeNode) + n_fields * sizeof(void *);
+                TreeNode * node = (TreeNode *)malloc(bytes);
                 memset(node, 0, bytes);
                 node->position = INVALID_POSITION;
                 node->end_position = INVALID_POSITION;
@@ -1045,20 +1045,20 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
                 {
                     for (size_t i = 0; i < parser_reduce_table[reduce_index].n_states; i++)
                     {
-                        node->fields[i] = (ASTNode *)state_values_stack_index(&statevalues, -(int)parser_reduce_table[reduce_index].n_states + (int)i)->ast_node;
+                        node->fields[i] = (TreeNode *)state_values_stack_index(&statevalues, -(int)parser_reduce_table[reduce_index].n_states + (int)i)->tree_node;
                     }
                 }
                 else
                 {
                     for (size_t i = 0; i < parser_reduce_table[reduce_index].n_states; i++)
                     {
-                        node->fields[parser_reduce_table[reduce_index].rule_set_node_field_index_map[i]] = (ASTNode *)state_values_stack_index(&statevalues, -(int)parser_reduce_table[reduce_index].n_states + (int)i)->ast_node;
+                        node->fields[parser_reduce_table[reduce_index].rule_set_node_field_index_map[i]] = (TreeNode *)state_values_stack_index(&statevalues, -(int)parser_reduce_table[reduce_index].n_states + (int)i)->tree_node;
                     }
                 }
                 bool position_found = false;
                 for (size_t i = 0; i < n_fields; i++)
                 {
-                    ASTNode * child = node->fields[i];
+                    TreeNode * child = node->fields[i];
                     if ((child != NULL) && <%= @grammar.prefix %>position_valid(child->position))
                     {
                         if (!position_found)
@@ -1125,15 +1125,15 @@ size_t <%= @grammar.prefix %>parse_<%= start_rule %>(<%= @grammar.prefix %>conte
  *
  * @return Parse result value.
  */
-<% if @grammar.ast %>
-<%= @grammar.ast_prefix %><%= @grammar.start_rules[0] %><%= @grammar.ast_suffix %> * <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
+<% if @grammar.tree %>
+<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
 {
-    return (<%= @grammar.ast_prefix %><%= @grammar.start_rules[0] %><%= @grammar.ast_suffix %> *) context->parse_result;
+    return (<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> *) context->parse_result;
 }
 <%   @grammar.start_rules.each_with_index do |start_rule, i| %>
-<%= @grammar.ast_prefix %><%= start_rule %><%= @grammar.ast_suffix %> * <%= @grammar.prefix %>result_<%= start_rule %>(<%= @grammar.prefix %>context_t * context)
+<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * <%= @grammar.prefix %>result_<%= start_rule %>(<%= @grammar.prefix %>context_t * context)
 {
-    return (<%= @grammar.ast_prefix %><%= start_rule %><%= @grammar.ast_suffix %> *) context->parse_result;
+    return (<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> *) context->parse_result;
 }
 <%   end %>
 <% else %>
@@ -1184,14 +1184,14 @@ size_t <%= @grammar.prefix %>user_terminate_code(<%= @grammar.prefix %>context_t
 {
     return context->token;
 }
-<% if @grammar.ast %>
+<% if @grammar.tree %>
 
-static void free_ast_node(ASTNode * node)
+static void free_tree_node(TreeNode * node)
 {
     if (node->is_token)
     {
 <%   if @grammar.free_token_node %>
-        <%= @grammar.free_token_node %>((<%= @grammar.ast_prefix %>Token<%= @grammar.ast_suffix %> *) node);
+        <%= @grammar.free_token_node %>((<%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> *) node);
 <%   end %>
         /* TODO: free value_t */
     }
@@ -1201,7 +1201,7 @@ static void free_ast_node(ASTNode * node)
         {
             if (node->fields[i] != NULL)
             {
-                free_ast_node(node->fields[i]);
+                free_tree_node(node->fields[i]);
             }
         }
     }
@@ -1209,20 +1209,20 @@ static void free_ast_node(ASTNode * node)
 }
 
 /**
- * Free all AST node memory.
+ * Free all tree node memory.
  */
-void <%= @grammar.prefix %>free_ast(<%= @grammar.ast_prefix %><%= @grammar.start_rules[0] %><%= @grammar.ast_suffix %> * ast)
+void <%= @grammar.prefix %>free_tree(<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * tree)
 {
-    free_ast_node((ASTNode *)ast);
+    free_tree_node((TreeNode *)tree);
 }
 <%   @grammar.start_rules.each_with_index do |start_rule, i| %>
 
 /**
- * Free all AST node memory.
+ * Free all tree node memory.
  */
-void <%= @grammar.prefix %>free_ast_<%= start_rule %>(<%= @grammar.ast_prefix %><%= start_rule %><%= @grammar.ast_suffix %> * ast)
+void <%= @grammar.prefix %>free_tree_<%= start_rule %>(<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * tree)
 {
-    free_ast_node((ASTNode *)ast);
+    free_tree_node((TreeNode *)tree);
 }
 <%   end %>
 <% end %>
