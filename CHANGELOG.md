@@ -14,7 +14,7 @@
 
 ### Breaking changes
 
-- Rename AST generation mode to tree generation mode (see [UPGRADING.md]())
+- Rename AST generation mode to tree generation mode (see [UPGRADING.md](UPGRADING.md))
 
 ## v2.3.0
 
