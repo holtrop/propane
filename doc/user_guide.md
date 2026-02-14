@@ -151,7 +151,34 @@ needed by a `ptype` directive, for example:
 
 ### Lexer pattern code blocks
 
+#### C/C++
+
+The lexer code block is passed the following arguments:
+
+  * `match` - a pointer points to the text matched by the lexer pattern.
+  * `match_length` - length of the matched text.
+
 Example:
+
+```
+ptype long;
+
+token integer /\d+/ <<
+  long v = 0;
+  for (size_t i = 0u; i < match_length; i++)
+  {
+    v *= 10;
+    v += (match[i] - '0');
+  }
+  $$ = v;
+>>
+```
+
+#### D
+
+The lexer code block is passed the following arguments:
+
+  * `match` - a slice containing the text matched by the lexer pattern.
 
 ```
 ptype ulong;
@@ -167,7 +194,7 @@ token integer /\d+/ <<
 >>
 ```
 
-Lexer code blocks appear following a `token` or pattern expression.
+Lexer code blocks appear following a `drop`, `token`, or pattern expression.
 User code in a lexer code block will be executed when the lexer matches the
 given pattern.
 Assignment to the `$$` symbol will associate a parser value with the lexed

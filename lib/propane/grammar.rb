@@ -195,8 +195,10 @@ class Propane
           raise Error.new("Line #{@line_number}: expected pattern to follow `drop'")
         end
         consume!(/\s+/)
-        consume!(/;/, "expected `;'")
-        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, modes: get_modes_from_modeline)
+        unless code = parse_code_block!
+          consume!(/;/, "expected `;' or code block")
+        end
+        @patterns << Pattern.new(pattern: pattern, line_number: @line_number, code: code, modes: get_modes_from_modeline)
         @modeline = nil
         true
       end
@@ -285,6 +287,8 @@ class Propane
             end
           elsif md = consume!(%r{(.)})
             pattern += md[1]
+          elsif @input == "" || @input.start_with?("\n")
+            raise Error.new("Line #{@line_number}: Unterminated pattern; expected `/`")
           end
         end
         pattern

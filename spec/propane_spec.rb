@@ -1483,7 +1483,7 @@ EOF
 
       if %w[c cpp].include?(language)
         it "allows a user function to free token node memory in tree mode" do
-    write_grammar <<EOF
+          write_grammar <<EOF
 <<
 static void free_token(Token * token)
 {
@@ -1509,6 +1509,40 @@ EOF
           expect(results.stderr).to eq ""
           expect(results.status).to eq 0
         end
+      end
+
+      it "executes code blocks associated with drop statements" do
+        if language == "d"
+          write_grammar <<EOF
+<<
+import std.stdio;
+>>
+drop /\\s+/;
+drop /#(.*)\\n/ <<
+  stderr.write("comment: ", match);
+>>
+token a;
+Start -> a;
+EOF
+        else
+          write_grammar <<EOF
+<<
+#include <stdio.h>
+#include <string.h>
+>>
+drop /\\s+/;
+drop /#(.*)\\n/ <<
+  fprintf(stderr, "comment: %.*s", (int)match_length, match);
+>>
+token a;
+Start -> a;
+EOF
+        end
+        run_propane(language: language)
+        compile("spec/test_drop_code_block.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to match %r{comment: # comment 1\n.*comment: #    comment 2}m
+        expect(results.status).to eq 0
       end
     end
   end
