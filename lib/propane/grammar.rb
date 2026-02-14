@@ -5,6 +5,7 @@ class Propane
     # Reserve identifiers beginning with a double-underscore for internal use.
     IDENTIFIER_REGEX = /(?:[a-zA-Z]|_[a-zA-Z0-9])[a-zA-Z_0-9]*/
 
+    attr_reader :context_user_code
     attr_reader :tree
     attr_reader :tree_prefix
     attr_reader :tree_suffix
@@ -34,6 +35,7 @@ class Propane
       @tree_prefix = ""
       @tree_suffix = ""
       @free_token_node = nil
+      @context_user_code = ""
       parse_grammar!
       @start_rules << "Start" if @start_rules.empty?
     end
@@ -62,6 +64,7 @@ class Propane
       if parse_white_space!
       elsif parse_comment_line!
       elsif @modeline.nil? && parse_mode_label!
+      elsif parse_context_statement!
       elsif parse_tree_statement!
       elsif parse_tree_prefix_statement!
       elsif parse_tree_suffix_statement!
@@ -96,6 +99,15 @@ class Propane
 
     def parse_comment_line!
       consume!(/#.*\n/)
+    end
+
+    def parse_context_statement!
+      if md = consume!(/context\b\s*/)
+        unless code = parse_code_block!
+          raise Error.new("Line #{@line_number}: expected code block")
+        end
+        @context_user_code += code
+      end
     end
 
     def parse_tree_statement!

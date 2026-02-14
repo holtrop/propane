@@ -265,6 +265,15 @@ class Propane
           "context.user_terminate_code = (#{user_terminate_code}); return #{retval};"
         end
       end
+      code = code.gsub(/\$\{context\.(\w+)\}/) do |match|
+        fieldname = $1
+        case @language
+        when "c"
+          "context->#{fieldname}"
+        when "d"
+          "context.#{fieldname}"
+        end
+      end
       if parser
         code = code.gsub(/\$\$/) do |match|
           case @language

@@ -1544,6 +1544,66 @@ EOF
         expect(results.stderr).to match %r{comment: # comment 1\n.*comment: #    comment 2}m
         expect(results.status).to eq 0
       end
+
+      it "allows user-defined context fields" do
+        if language == "d"
+          write_grammar <<EOF
+context <<
+    string comments;
+    uint acount;
+>>
+drop /\\s+/;
+drop /#(.*)\\n/ <<
+    ${context.comments} ~= match;
+>>
+token a <<
+    ${context.acount}++;
+>>
+Start -> As;
+As -> ;
+As -> a As;
+EOF
+        else
+          write_grammar <<EOF
+<<
+#include <string.h>
+#include <stdlib.h>
+>>
+context <<
+    char * comments;
+    unsigned int acount;
+>>
+drop /\\s+/;
+drop /#(.*)\\n/ <<
+    size_t cur_len = 0u;
+    if (${context.comments} != NULL)
+        cur_len = strlen(${context.comments});
+    char * commentsnew = (char *)malloc(cur_len + match_length + 1);
+    if (${context.comments} != NULL)
+        memcpy(commentsnew, ${context.comments}, cur_len);
+    memcpy(&commentsnew[cur_len], match, match_length);
+    commentsnew[cur_len + match_length] = '\\0';
+    if (${context.comments} != NULL)
+    {
+        free(${context.comments});
+    }
+    ${context.comments} = commentsnew;
+>>
+token a <<
+    ${context.acount}++;
+>>
+Start -> As;
+As -> ;
+As -> a As;
+EOF
+        end
+        run_propane(language: language)
+        compile("spec/test_user_context_fields.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to include %r{comments: # comment 1\n#    comment 2}
+        expect(results.stderr).to include %r{acount: 11\n}
+        expect(results.status).to eq 0
+      end
     end
   end
 end

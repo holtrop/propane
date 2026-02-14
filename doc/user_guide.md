@@ -221,6 +221,41 @@ Parser rule code blocks are not available in tree generation mode.
 In tree generation mode, a full parse tree is automatically constructed in
 memory for user code to traverse after parsing is complete.
 
+### Context code blocks: the `context` statement
+
+Propane uses a context structure for lexer and parser operations.
+Custom fields may be added to the context structure by using the grammar
+`context` statement.
+This allows lexer pattern or parser rule code blocks to access user-defined
+fields within the context structure.
+
+Example:
+
+```
+context <<
+    int mycontextval;
+>>
+```
+
+Lexer user code blocks or parser user code blocks can access user-defined
+context fields by using the `${context.<field>}` syntax.
+
+C++ example:
+
+```
+context <<
+    std::string comments;
+>>
+drop /#(.*)\n/ <<
+    /* Accumulate comments before the next parser tree node. */
+    ${context.comments} += std::string((const char *)match, match_length);
+>>
+```
+
+If a pointer to any allocated memory is stored in a user-defined context field,
+it is up to the user to free any memory when the program is finished using the
+context structure.
+
 ##> Tree generation mode - the `tree` statement
 
 To activate tree generation mode, place the `tree` statement in your grammar file:
