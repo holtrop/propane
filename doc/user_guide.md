@@ -221,18 +221,18 @@ Parser rule code blocks are not available in tree generation mode.
 In tree generation mode, a full parse tree is automatically constructed in
 memory for user code to traverse after parsing is complete.
 
-### Context code blocks: the `context` statement
+### Context code blocks: the `context_user_fields` statement
 
 Propane uses a context structure for lexer and parser operations.
 Custom fields may be added to the context structure by using the grammar
-`context` statement.
+`context_user_fields` statement.
 This allows lexer pattern or parser rule code blocks to access user-defined
 fields within the context structure.
 
 Example:
 
 ```
-context <<
+context_user_fields <<
     int mycontextval;
 >>
 ```
@@ -243,7 +243,7 @@ context fields by using the `${context.<field>}` syntax.
 C++ example:
 
 ```
-context <<
+context_user_fields <<
     std::string comments;
 >>
 drop /#(.*)\n/ <<

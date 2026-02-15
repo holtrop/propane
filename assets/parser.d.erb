@@ -103,6 +103,7 @@ public struct <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>
     /* TreeNode fields must be present in the same order here. */
     <%= @grammar.prefix %>position_t position;
     <%= @grammar.prefix %>position_t end_position;
+<%= @grammar.token_user_fields %>
     <%= @grammar.prefix %>token_t token;
     <%= @grammar.prefix %>value_t pvalue;
 }
@@ -184,7 +185,7 @@ public struct <%= @grammar.prefix %>context_t
     /** User terminate code. */
     size_t user_terminate_code;
 
-<%= @grammar.context_user_code %>
+<%= @grammar.context_user_fields %>
 }
 
 /**************************************************************************

@@ -80,6 +80,7 @@ typedef struct <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>
     <%= @grammar.prefix %>position_t end_position;
     uint16_t n_fields;
     uint8_t is_token;
+<%= @grammar.token_user_fields %>
     <%= @grammar.prefix %>token_t token;
     <%= @grammar.prefix %>value_t pvalue;
 } <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>;
@@ -173,7 +174,7 @@ typedef struct
     /** User terminate code. */
     size_t user_terminate_code;
 
-<%= @grammar.context_user_code %>
+<%= @grammar.context_user_fields %>
 } <%= @grammar.prefix %>context_t;
 
 /**************************************************************************

@@ -1548,7 +1548,7 @@ EOF
       it "allows user-defined context fields" do
         if language == "d"
           write_grammar <<EOF
-context <<
+context_user_fields <<
     string comments;
     uint acount;
 >>
@@ -1569,7 +1569,7 @@ EOF
 #include <string.h>
 #include <stdlib.h>
 >>
-context <<
+context_user_fields <<
     char * comments;
     unsigned int acount;
 >>

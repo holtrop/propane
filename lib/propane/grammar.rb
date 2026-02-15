@@ -5,7 +5,7 @@ class Propane
     # Reserve identifiers beginning with a double-underscore for internal use.
     IDENTIFIER_REGEX = /(?:[a-zA-Z]|_[a-zA-Z0-9])[a-zA-Z_0-9]*/
 
-    attr_reader :context_user_code
+    attr_reader :context_user_fields
     attr_reader :tree
     attr_reader :tree_prefix
     attr_reader :tree_suffix
@@ -18,6 +18,8 @@ class Propane
     attr_reader :code_blocks
     attr_reader :ptypes
     attr_reader :prefix
+    attr_reader :token_node
+    attr_reader :token_user_fields
 
     def initialize(input)
       @patterns = []
@@ -35,7 +37,9 @@ class Propane
       @tree_prefix = ""
       @tree_suffix = ""
       @free_token_node = nil
-      @context_user_code = ""
+      @context_user_fields = nil
+      @token_node = nil
+      @token_user_fields = nil
       parse_grammar!
       @start_rules << "Start" if @start_rules.empty?
     end
@@ -64,12 +68,14 @@ class Propane
       if parse_white_space!
       elsif parse_comment_line!
       elsif @modeline.nil? && parse_mode_label!
-      elsif parse_context_statement!
+      elsif parse_context_user_fields_statement!
       elsif parse_tree_statement!
       elsif parse_tree_prefix_statement!
       elsif parse_tree_suffix_statement!
       elsif parse_free_token_node_statement!
       elsif parse_module_statement!
+      elsif parse_token_node_statement!
+      elsif parse_token_user_fields_statement!
       elsif parse_ptype_statement!
       elsif parse_pattern_statement!
       elsif parse_start_statement!
@@ -101,12 +107,13 @@ class Propane
       consume!(/#.*\n/)
     end
 
-    def parse_context_statement!
-      if md = consume!(/context\b\s*/)
+    def parse_context_user_fields_statement!
+      if md = consume!(/context_user_fields\b\s*/)
         unless code = parse_code_block!
           raise Error.new("Line #{@line_number}: expected code block")
         end
-        @context_user_code += code
+        @context_user_fields ||= ""
+        @context_user_fields += code
       end
     end
 
@@ -141,6 +148,26 @@ class Propane
         consume!(/;/, "expected `;'")
         @modeline = nil
         true
+      end
+    end
+
+    def parse_token_node_statement!
+      if md = consume!(/token_node\b\s*/)
+        unless code = parse_code_block!
+          raise Error.new("Line #{@line_number}: expected code block")
+        end
+        @token_node ||= ""
+        @token_node += code
+      end
+    end
+
+    def parse_token_user_fields_statement!
+      if md = consume!(/token_user_fields\b\s*/)
+        unless code = parse_code_block!
+          raise Error.new("Line #{@line_number}: expected code block")
+        end
+        @token_user_fields ||= ""
+        @token_user_fields += code
       end
     end
 

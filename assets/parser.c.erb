@@ -694,6 +694,7 @@ typedef struct
 <% end %>
 } state_value_t;
 
+<% if @grammar.tree %>
 /** Common tree node structure. */
 typedef struct TreeNode_s
 {
@@ -703,6 +704,7 @@ typedef struct TreeNode_s
     uint8_t is_token;
     struct TreeNode_s * fields[];
 } TreeNode;
+<% end %>
 
 /** Parser shift table. */
 static const shift_t parser_shift_table[] = {
