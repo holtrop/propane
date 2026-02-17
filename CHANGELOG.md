@@ -1,3 +1,9 @@
+## v4.0.0
+
+### Breaking Changes
+
+- Replace `p_context_init()` with `p_context_new()` and `p_context_delete()`.
+
 ## v3.0.0
 
 ### New Features
@@ -12,7 +18,7 @@
 
 - Document `p_lex()` and `p_token_info_t` in user guide (#37)
 
-### Breaking changes
+### Breaking Changes
 
 - Rename AST generation mode to tree generation mode (see [UPGRADING.md](UPGRADING.md))
 

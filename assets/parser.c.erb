@@ -43,30 +43,48 @@ const char * <%= @grammar.prefix %>token_names[] = {
  *************************************************************************/
 
 /**
- * Initialize lexer/parser context structure.
+ * Allocate and initialize lexer/parser context structure.
  *
- * @param[out] context
- *   Lexer/parser context structure.
+ * Deinitialize and deallocate with <%= @grammar.prefix %>context_delete().
+ *
  * @param input
  *   Text input.
  * @param input_length
  *   Text input length.
+ *
+ * @return Context structure for lexer/parser.
  */
-void <%= @grammar.prefix %>context_init(<%= @grammar.prefix %>context_t * context, uint8_t const * input, size_t input_length)
+<%= @grammar.prefix %>context_t * <%= @grammar.prefix %>context_new(uint8_t const * input, size_t input_length)
 {
-    /* New default-initialized context structure. */
-    <%= @grammar.prefix %>context_t newcontext;
-    memset(&newcontext, 0, sizeof(newcontext));
+<% if @cpp %>
+    <%= @grammar.prefix %>context_t * context = new <%= @grammar.prefix %>context_t();
+<% else %>
+    <%= @grammar.prefix %>context_t * context = (<%= @grammar.prefix %>context_t *)calloc(1, sizeof(<%= @grammar.prefix %>context_t));
+<% end %>
 
     /* Lexer initialization. */
-    newcontext.input = input;
-    newcontext.input_length = input_length;
-    newcontext.text_position.row = 1u;
-    newcontext.text_position.col = 1u;
-    newcontext.mode = <%= @lexer.mode_id("default") %>;
+    context->input = input;
+    context->input_length = input_length;
+    context->text_position.row = 1u;
+    context->text_position.col = 1u;
+    context->mode = <%= @lexer.mode_id("default") %>;
 
-    /* Copy to the user's context structure. */
-    *context = newcontext;
+    return context;
+}
+
+/**
+ * Deinitialize and deallocate lexer/parser context structure.
+ *
+ * @param context
+ *   Lexer/parser context structure allocated with <%= @grammar.prefix %>context_new().
+ */
+void <%= @grammar.prefix %>context_delete(<%= @grammar.prefix %>context_t * context)
+{
+<% if @cpp %>
+    delete context;
+<% else %>
+    free(context);
+<% end %>
 }
 
 /**************************************************************************

@@ -374,11 +374,11 @@ def main() -> int
         Expected("size_t_to_ulong", TOKEN_ulong),
         Expected("main", TOKEN_int),
     ];
-    p_context_t context;
-    p_context_init(&context, input);
-    size_t result = p_parse(&context);
+    p_context_t * context;
+    context = p_context_new(input);
+    size_t result = p_parse(context);
     assert_eq(P_SUCCESS, result);
-    PModule * pmod = p_result(&context);
+    PModule * pmod = p_result(context);
     PModuleItems * pmis = pmod.pModuleItems;
     PFunctionDefinition *[] pfds;
     while (pmis !is null)

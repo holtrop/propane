@@ -369,11 +369,11 @@ int main(int argc, char * argv[])
         {"size_t_to_ulong", TOKEN_ulong},
         {"main", TOKEN_int},
     };
-    p_context_t context;
-    p_context_init(&context, (const uint8_t *)input, strlen(input));
-    size_t result = p_parse(&context);
+    p_context_t * context;
+    context = p_context_new((const uint8_t *)input, strlen(input));
+    size_t result = p_parse(context);
     assert_eq(P_SUCCESS, result);
-    PModule * pmod = p_result(&context);
+    PModule * pmod = p_result(context);
     PModuleItems * pmis = pmod->pModuleItems;
     PFunctionDefinition ** pfds;
     size_t n_pfds = 0u;
@@ -413,6 +413,7 @@ int main(int argc, char * argv[])
 
     free(pfds);
     p_free_tree(pmod);
+    p_context_delete(context);
 
     return 0;
 }

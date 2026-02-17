@@ -9,8 +9,8 @@ int main()
 unittest
 {
     string input = `identifier_123`;
-    p_context_t context;
-    p_context_init(&context, input);
-    assert(p_parse(&context) == P_SUCCESS);
+    p_context_t * context;
+    context = p_context_new(input);
+    assert(p_parse(context) == P_SUCCESS);
     writeln("pass1");
 }

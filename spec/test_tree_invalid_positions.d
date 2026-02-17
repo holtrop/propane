@@ -10,10 +10,10 @@ int main()
 unittest
 {
     string input = "\na\n  bb ccc";
-    p_context_t context;
-    p_context_init(&context, input);
-    assert(p_parse(&context) == P_SUCCESS);
-    Start * start = p_result(&context);
+    p_context_t * context;
+    context = p_context_new(input);
+    assert(p_parse(context) == P_SUCCESS);
+    Start * start = p_result(context);
 
     assert_eq(2, start.pT1.pToken.position.row);
     assert_eq(1, start.pT1.pToken.position.col);
@@ -35,9 +35,9 @@ unittest
     assert_eq(8, start.end_position.col);
 
     input = "a\nbb";
-    p_context_init(&context, input);
-    assert(p_parse(&context) == P_SUCCESS);
-    start = p_result(&context);
+    context = p_context_new(input);
+    assert(p_parse(context) == P_SUCCESS);
+    start = p_result(context);
 
     assert_eq(1, start.pT1.pToken.position.row);
     assert_eq(1, start.pT1.pToken.position.col);
@@ -59,9 +59,9 @@ unittest
     assert_eq(2, start.end_position.col);
 
     input = "a\nc\nc";
-    p_context_init(&context, input);
-    assert(p_parse(&context) == P_SUCCESS);
-    start = p_result(&context);
+    context = p_context_new(input);
+    assert(p_parse(context) == P_SUCCESS);
+    start = p_result(context);
 
     assert_eq(1, start.pT1.pToken.position.row);
     assert_eq(1, start.pT1.pToken.position.col);
@@ -83,9 +83,9 @@ unittest
     assert_eq(1, start.end_position.col);
 
     input = "a";
-    p_context_init(&context, input);
-    assert(p_parse(&context) == P_SUCCESS);
-    start = p_result(&context);
+    context = p_context_new(input);
+    assert(p_parse(context) == P_SUCCESS);
+    start = p_result(context);
 
     assert_eq(1, start.pT1.pToken.position.row);
     assert_eq(1, start.pT1.pToken.position.col);

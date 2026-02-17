@@ -6,10 +6,10 @@
 int main()
 {
     char const * input = "\na\n  bb ccc";
-    p_context_t context;
-    p_context_init(&context, (uint8_t const *)input, strlen(input));
-    assert(p_parse(&context) == P_SUCCESS);
-    Start * start = p_result(&context);
+    p_context_t * context;
+    context = p_context_new((uint8_t const *)input, strlen(input));
+    assert(p_parse(context) == P_SUCCESS);
+    Start * start = p_result(context);
 
     assert_eq(2, start->pT1->pToken->position.row);
     assert_eq(1, start->pT1->pToken->position.col);
@@ -31,11 +31,12 @@ int main()
     assert_eq(8, start->end_position.col);
 
     p_free_tree(start);
+    p_context_delete(context);
 
     input = "a\nbb";
-    p_context_init(&context, (uint8_t const *)input, strlen(input));
-    assert(p_parse(&context) == P_SUCCESS);
-    start = p_result(&context);
+    context = p_context_new((uint8_t const *)input, strlen(input));
+    assert(p_parse(context) == P_SUCCESS);
+    start = p_result(context);
 
     assert_eq(1, start->pT1->pToken->position.row);
     assert_eq(1, start->pT1->pToken->position.col);
@@ -57,11 +58,12 @@ int main()
     assert_eq(2, start->end_position.col);
 
     p_free_tree(start);
+    p_context_delete(context);
 
     input = "a\nc\nc";
-    p_context_init(&context, (uint8_t const *)input, strlen(input));
-    assert(p_parse(&context) == P_SUCCESS);
-    start = p_result(&context);
+    context = p_context_new((uint8_t const *)input, strlen(input));
+    assert(p_parse(context) == P_SUCCESS);
+    start = p_result(context);
 
     assert_eq(1, start->pT1->pToken->position.row);
     assert_eq(1, start->pT1->pToken->position.col);
@@ -83,11 +85,12 @@ int main()
     assert_eq(1, start->end_position.col);
 
     p_free_tree(start);
+    p_context_delete(context);
 
     input = "a";
-    p_context_init(&context, (uint8_t const *)input, strlen(input));
-    assert(p_parse(&context) == P_SUCCESS);
-    start = p_result(&context);
+    context = p_context_new((uint8_t const *)input, strlen(input));
+    assert(p_parse(context) == P_SUCCESS);
+    start = p_result(context);
 
     assert_eq(1, start->pT1->pToken->position.row);
     assert_eq(1, start->pT1->pToken->position.col);
@@ -105,6 +108,7 @@ int main()
     assert_eq(1, start->end_position.col);
 
     p_free_tree(start);
+    p_context_delete(context);
 
     return 0;
 }

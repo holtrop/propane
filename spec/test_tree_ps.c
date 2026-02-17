@@ -6,10 +6,10 @@
 int main()
 {
     char const * input = "a, ((b)), b";
-    p_context_t context;
-    p_context_init(&context, (uint8_t const *)input, strlen(input));
-    assert_eq(P_SUCCESS, p_parse(&context));
-    PStartS * start = p_result(&context);
+    p_context_t * context;
+    context = p_context_new((uint8_t const *)input, strlen(input));
+    assert_eq(P_SUCCESS, p_parse(context));
+    PStartS * start = p_result(context);
     assert(start->pItems1 != NULL);
     assert(start->pItems != NULL);
     PItemsS * items = start->pItems;
@@ -34,19 +34,21 @@ int main()
     assert(itemsmore->pItemsMore == NULL);
 
     p_free_tree(start);
+    p_context_delete(context);
 
     input = "";
-    p_context_init(&context, (uint8_t const *)input, strlen(input));
-    assert_eq(P_SUCCESS, p_parse(&context));
-    start = p_result(&context);
+    context = p_context_new((uint8_t const *)input, strlen(input));
+    assert_eq(P_SUCCESS, p_parse(context));
+    start = p_result(context);
     assert(start->pItems == NULL);
 
     p_free_tree(start);
+    p_context_delete(context);
 
     input = "2 1";
-    p_context_init(&context, (uint8_t const *)input, strlen(input));
-    assert_eq(P_SUCCESS, p_parse(&context));
-    start = p_result(&context);
+    context = p_context_new((uint8_t const *)input, strlen(input));
+    assert_eq(P_SUCCESS, p_parse(context));
+    start = p_result(context);
     assert(start->pItems != NULL);
     assert(start->pItems->pItem != NULL);
     assert(start->pItems->pItem->pDual != NULL);
@@ -56,6 +58,7 @@ int main()
     assert(start->pItems->pItem->pDual->pOne1 == NULL);
 
     p_free_tree(start);
+    p_context_delete(context);
 
     return 0;
 }

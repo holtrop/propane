@@ -225,26 +225,28 @@ private enum size_t INVALID_ID = cast(size_t)-1;
  *************************************************************************/
 
 /**
- * Initialize lexer/parser context structure.
  *
- * @param[out] context
- *   Lexer/parser context structure.
+ * Deinitialize and deallocate with <%= @grammar.prefix %>context_delete().
+ *
  * @param input
  *   Text input.
+ * @param input_length
+ *   Text input length.
+ *
+ * @return Context structure for lexer/parser.
  */
-public void <%= @grammar.prefix %>context_init(<%= @grammar.prefix %>context_t * context, string input)
+<%= @grammar.prefix %>context_t * <%= @grammar.prefix %>context_new(string input)
 {
     /* New default-initialized context structure. */
-    <%= @grammar.prefix %>context_t newcontext;
+    <%= @grammar.prefix %>context_t * context = new <%= @grammar.prefix %>context_t;
 
     /* Lexer initialization. */
-    newcontext.input = input;
-    newcontext.text_position.row = 1u;
-    newcontext.text_position.col = 1u;
-    newcontext.mode = <%= @lexer.mode_id("default") %>;
+    context.input = input;
+    context.text_position.row = 1u;
+    context.text_position.col = 1u;
+    context.mode = <%= @lexer.mode_id("default") %>;
 
-    /* Copy to the user's context structure. */
-    *context = newcontext;
+    return context;
 }
 
 /**************************************************************************

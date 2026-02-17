@@ -319,10 +319,9 @@ example parse:
 
 ```
 string input = "a, ((b)), b";
-p_context_t context;
-p_context_init(&context, input);
-assert_eq(P_SUCCESS, p_parse(&context));
-Start * start = p_result(&context);
+p_context_t * context = p_context_new(input);
+assert_eq(P_SUCCESS, p_parse(context));
+Start * start = p_result(context);
 assert(start.pItems1 !is null);
 assert(start.pItems !is null);
 Items * items = start.pItems;
@@ -370,10 +369,9 @@ Then the types would be used as such instead:
 
 ```
 string input = "a, ((b)), b";
-p_context_t context;
-p_context_init(&context, input);
-assert_eq(P_SUCCESS, p_parse(&context));
-ABCStartXYZ * start = p_result(&context);
+p_context_t * context = p_context_new(input);
+assert_eq(P_SUCCESS, p_parse(context));
+ABCStartXYZ * start = p_result(context);
 assert(start.pItems1 !is null);
 assert(start.pItems !is null);
 ABCItemsXYZ * items = start.pItems;
@@ -843,7 +841,7 @@ prefix myparser_;
 ```
 
 With a parser generated with this `prefix` statement, instead of calling
-`p_context_init()` you would call `myparser_context_init()`.
+`p_context_new()` you would call `myparser_context_new()`.
 
 The `prefix` statement can be optionally used if you would like to change the
 prefix used by your generated lexer and parser to something other than the
@@ -1025,26 +1023,31 @@ fields `pExpB`, `pExpB3`, and `right` will all point to the same child node
 
 ##> Functions
 
-### `p_context_init`
+### `p_context_new`
 
-The `p_context_init()` function must be called to initialize the context
-structure.
+The `p_context_new()` function must be called to allocate and initialize the
+context structure.
 The input to be used for lexing/parsing is passed in when initializing the
 context structure.
 
 C example:
 
 ```
-p_context_t context;
-p_context_init(&context, input, input_length);
+p_context_t * context = p_context_new(input, input_length);
 ```
 
 D example:
 
 ```
-p_context_t context;
-p_context_init(&context, input);
+p_context_t * context = p_context_new(input);
 ```
+
+### `p_context_delete`
+
+The `p_context_delete()` function must be called to deinitialize and deallocate
+a context structure allocated by `p_context_init()`.
+
+This function is not available for D language since D has a garbage collector.
 
 ### `p_lex`
 
@@ -1057,10 +1060,9 @@ generated lexer in a standalone mode.
 Example:
 
 ```
-p_context_t context;
-p_context_init(&context, input, input_length);
+p_context_t * context = p_context_new(input, input_length);
 p_token_info_t token_info;
-size_t result = p_lex(&context, &token_info);
+size_t result = p_lex(context, &token_info);
 switch (result)
 {
 case P_DECODE_ERROR:
@@ -1092,9 +1094,8 @@ It must be passed a pointer to an initialized context structure.
 Example:
 
 ```
-p_context_t context;
-p_context_init(&context, input, input_length);
-size_t result = p_parse(&context);
+p_context_t * context = p_context_new(input, input_length);
+size_t result = p_parse(context);
 ```
 
 When multiple start rules are specified, a separate parse function is generated
@@ -1102,7 +1103,7 @@ for each which starts parsing at the given rule.
 For example, if `Statement` is specified as a start rule:
 
 ```
-size_t result = p_parse_Statement(&context);
+size_t result = p_parse_Statement(context);
 ```
 
 In this case, the parser will start parsing with the `Statement` rule.
@@ -1133,12 +1134,11 @@ The `p_result()` function can be used to retrieve the final parse value after
 Example:
 
 ```
-p_context_t context;
-p_context_init(&context, input, input_length);
-size_t result = p_parse(&context);
-if (p_parse(&context) == P_SUCCESS)
+p_context_t * context = p_context_new(input, input_length);
+size_t result = p_parse(context);
+if (p_parse(context) == P_SUCCESS)
 {
-    result = p_result(&context);
+    result = p_result(context);
 }
 ```
 
@@ -1150,12 +1150,11 @@ for each which returns the parse result for the corresponding rule.
 For example, if `Statement` is specified as a start rule:
 
 ```
-p_context_t context;
-p_context_init(&context, input, input_length);
-size_t result = p_parse(&context);
-if (p_parse_Statement(&context) == P_SUCCESS)
+p_context_t * context = p_context_new(input, input_length);
+size_t result = p_parse(context);
+if (p_parse_Statement(context) == P_SUCCESS)
 {
-    result = p_result_Statement(&context);
+    result = p_result_Statement(context);
 }
 ```
 
@@ -1170,12 +1169,11 @@ an error occurred.
 Example:
 
 ```
-p_context_t context;
-p_context_init(&context, input, input_length);
-size_t result = p_parse(&context);
-if (p_parse(&context) == P_UNEXPECTED_TOKEN)
+p_context_t * context = p_context_new(input, input_length);
+size_t result = p_parse(context);
+if (p_parse(context) == P_UNEXPECTED_TOKEN)
 {
-    p_position_t error_position = p_position(&context);
+    p_position_t error_position = p_position(context);
     fprintf(stderr, "Error: unexpected token at row %u column %u\n",
         error_position.row + 1, error_position.col + 1);
 }
@@ -1192,9 +1190,9 @@ They have no particular meaning to Propane.
 Example:
 
 ```
-if (p_parse(&context) == P_USER_TERMINATED)
+if (p_parse(context) == P_USER_TERMINATED)
 {
-    size_t user_terminate_code = p_user_terminate_code(&context);
+    size_t user_terminate_code = p_user_terminate_code(context);
 }
 ```
 
@@ -1208,9 +1206,9 @@ indicate what token the parser was not expecting.
 Example:
 
 ```
-if (p_parse(&context) == P_UNEXPECTED_TOKEN)
+if (p_parse(context) == P_UNEXPECTED_TOKEN)
 {
-    p_token_t unexpected_token = p_token(&context);
+    p_token_t unexpected_token = p_token(context);
 }
 ```
 
@@ -1257,7 +1255,7 @@ p_free_tree_Statement(statement_tree);
 ```
 
 In this case, Propane will free a `Statement` tree structure returned by the
-`p_parse_Statement(&context)` function.
+`p_parse_Statement(context)` function.
 
 ##> Data
 
@@ -1269,14 +1267,13 @@ It is indexed by the token ID.
 C example:
 
 ```
-p_context_t context;
-p_context_init(&context, input, input_length);
-size_t result = p_parse(&context);
-if (p_parse(&context) == P_UNEXPECTED_TOKEN)
+p_context_t * context = p_context_new(input, input_length);
+size_t result = p_parse(context);
+if (p_parse(context) == P_UNEXPECTED_TOKEN)
 {
-    p_position_t error_position = p_position(&context);
+    p_position_t error_position = p_position(context);
     fprintf(stderr, "Error: unexpected token `%s' at row %u column %u\n",
-        p_token_names[context.token],
+        p_token_names[context->token],
         error_position.row + 1, error_position.col + 1);
 }
 ```

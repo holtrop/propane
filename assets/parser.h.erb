@@ -184,7 +184,9 @@ typedef struct
 /** Token names. */
 extern const char * <%= @grammar.prefix %>token_names[];
 
-void <%= @grammar.prefix %>context_init(<%= @grammar.prefix %>context_t * context, uint8_t const * input, size_t input_length);
+<%= @grammar.prefix %>context_t * <%= @grammar.prefix %>context_new(uint8_t const * input, size_t input_length);
+
+void <%= @grammar.prefix %>context_delete(<%= @grammar.prefix %>context_t * context);
 
 size_t <%= @grammar.prefix %>decode_code_point(uint8_t const * input, size_t input_length,
         <%= @grammar.prefix %>code_point_t * out_code_point, uint8_t * out_code_point_length);

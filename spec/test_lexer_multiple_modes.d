@@ -9,13 +9,13 @@ int main()
 unittest
 {
     string input = `abc.def`;
-    p_context_t context;
-    p_context_init(&context, input);
-    assert(p_parse(&context) == P_SUCCESS);
+    p_context_t * context;
+    context = p_context_new(input);
+    assert(p_parse(context) == P_SUCCESS);
     writeln("pass1");
 
     input = `abc .  abc`;
-    p_context_init(&context, input);
-    assert(p_parse(&context) == P_SUCCESS);
+    context = p_context_new(input);
+    assert(p_parse(context) == P_SUCCESS);
     writeln("pass2");
 }

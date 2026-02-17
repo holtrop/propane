@@ -10,10 +10,10 @@ int main()
 unittest
 {
     string input = "a, ((b)), b";
-    p_context_t context;
-    p_context_init(&context, input);
-    assert_eq(P_SUCCESS, p_parse(&context));
-    PStartS * start = p_result(&context);
+    p_context_t * context;
+    context = p_context_new(input);
+    assert_eq(P_SUCCESS, p_parse(context));
+    PStartS * start = p_result(context);
     assert(start.pItems1 !is null);
     assert(start.pItems !is null);
     PItemsS * items = start.pItems;
@@ -38,15 +38,15 @@ unittest
     assert(itemsmore.pItemsMore is null);
 
     input = "";
-    p_context_init(&context, input);
-    assert_eq(P_SUCCESS, p_parse(&context));
-    start = p_result(&context);
+    context = p_context_new(input);
+    assert_eq(P_SUCCESS, p_parse(context));
+    start = p_result(context);
     assert(start.pItems is null);
 
     input = "2 1";
-    p_context_init(&context, input);
-    assert_eq(P_SUCCESS, p_parse(&context));
-    start = p_result(&context);
+    context = p_context_new(input);
+    assert_eq(P_SUCCESS, p_parse(context));
+    start = p_result(context);
     assert(start.pItems !is null);
     assert(start.pItems.pItem !is null);
     assert(start.pItems.pItem.pDual !is null);
