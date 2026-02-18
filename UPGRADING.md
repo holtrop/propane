@@ -8,6 +8,7 @@
   -> `context`).
 - Add a call to `p_context_delete()` (for C or C++) after lexing/parsing to
   reclaim context memory.
+- Rename `p_free_tree()` calls to `p_tree_delete()`.
 
 ## v3.0.0
 

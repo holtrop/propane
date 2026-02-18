@@ -13,7 +13,7 @@ int main()
     assert(top->pToken != NULL);
     assert_eq(TOKEN_hi, top->pToken->token);
 
-    p_free_tree(top);
+    p_tree_delete(top);
     p_context_delete(context);
 
     return 0;

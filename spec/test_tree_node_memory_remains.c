@@ -412,7 +412,7 @@ int main(int argc, char * argv[])
     }
 
     free(pfds);
-    p_free_tree(pmod);
+    p_tree_delete(pmod);
     p_context_delete(context);
 
     return 0;

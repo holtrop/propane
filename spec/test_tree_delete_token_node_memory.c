@@ -15,6 +15,6 @@ int main()
     assert(start->b != NULL);
     assert(*start->b->pvalue == 2);
 
-    p_free_tree(start);
+    p_tree_delete(start);
     p_context_delete(context);
 }

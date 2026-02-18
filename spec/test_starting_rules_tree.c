@@ -15,7 +15,7 @@ int main()
     assert_not_null(start->bs->bs->b);
     assert_not_null(start->bs->bs->bs->b);
     assert_not_null(start->bs->bs->bs->bs->b);
-    p_free_tree(start);
+    p_tree_delete(start);
     p_context_delete(context);
 
     context = p_context_new((uint8_t const *)input, strlen(input));
@@ -25,7 +25,7 @@ int main()
     assert_not_null(bs->bs->b);
     assert_not_null(bs->bs->bs->b);
     assert_not_null(bs->bs->bs->bs->b);
-    p_free_tree_Bs(bs);
+    p_tree_delete_Bs(bs);
     p_context_delete(context);
 
     input = "c";
@@ -33,7 +33,7 @@ int main()
     assert(p_parse_R(context) == P_SUCCESS);
     R * r = p_result_R(context);
     assert_not_null(r->c);
-    p_free_tree_R(r);
+    p_tree_delete_R(r);
     p_context_delete(context);
 
     return 0;

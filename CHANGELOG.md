@@ -1,8 +1,13 @@
 ## v4.0.0
 
+### New Features
+
+- Add `p_context_delete()`.
+
 ### Breaking Changes
 
 - Replace `p_context_init()` with `p_context_new()` and `p_context_delete()`.
+- Renamed `p_free_tree()` to `p_tree_delete()`.
 
 ## v3.0.0
 

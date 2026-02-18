@@ -15,7 +15,7 @@ int main()
     assert_eq(TOKEN_b, start->second->pToken->token);
     assert_eq(TOKEN_c, start->third->pToken->token);
 
-    p_free_tree(start);
+    p_tree_delete(start);
     p_context_delete(context);
 
     return 0;

@@ -1206,7 +1206,7 @@ size_t <%= @grammar.prefix %>user_terminate_code(<%= @grammar.prefix %>context_t
 }
 <% if @grammar.tree %>
 
-static void free_tree_node(TreeNode * node)
+static void tree_delete(TreeNode * node)
 {
     if (node->is_token)
     {
@@ -1221,7 +1221,7 @@ static void free_tree_node(TreeNode * node)
         {
             if (node->fields[i] != NULL)
             {
-                free_tree_node(node->fields[i]);
+                tree_delete(node->fields[i]);
             }
         }
     }
@@ -1231,18 +1231,18 @@ static void free_tree_node(TreeNode * node)
 /**
  * Free all tree node memory.
  */
-void <%= @grammar.prefix %>free_tree(<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * tree)
+void <%= @grammar.prefix %>tree_delete(<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * tree)
 {
-    free_tree_node((TreeNode *)tree);
+    tree_delete((TreeNode *)tree);
 }
 <%   @grammar.start_rules.each_with_index do |start_rule, i| %>
 
 /**
  * Free all tree node memory.
  */
-void <%= @grammar.prefix %>free_tree_<%= start_rule %>(<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * tree)
+void <%= @grammar.prefix %>tree_delete_<%= start_rule %>(<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * tree)
 {
-    free_tree_node((TreeNode *)tree);
+    tree_delete((TreeNode *)tree);
 }
 <%   end %>
 <% end %>

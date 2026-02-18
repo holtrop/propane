@@ -391,7 +391,7 @@ assert(itemsmore.pItem.pItem.pItem.pToken1 !is null);
 
 If user lexer code block allocates memory to store in a token node's `pvalue`,
 the `free_token_node` grammar statement can be used to specify the name of a
-function which will be called during the `p_free_tree()` call to free the memory
+function which will be called during the `p_tree_delete()` call to free the memory
 associated with a token node.
 
 Example:
@@ -808,12 +808,12 @@ start Module ModuleItem Statement Expression;
 ```
 
 When multiple start rules are specified, multiple `p_parse_*()` functions,
-`p_result_*()`, and `p_free_tree_*()` functions (in tree mode) are generated.
-A default `p_parse()`, `p_result()`, `p_free_tree()` are generated corresponding
+`p_result_*()`, and `p_tree_delete_*()` functions (in tree mode) are generated.
+A default `p_parse()`, `p_result()`, `p_tree_delete()` are generated corresponding
 to the first start rule.
 Additionally, each start rule causes the generation of another version of each
 of these functions, for example `p_parse_Statement()`, `p_result_Statement()`,
-and `p_free_tree_Statement()`.
+and `p_tree_delete_Statement()`.
 
 ##> Specifying the parser module name - the `module` statement
 
@@ -1232,26 +1232,26 @@ assert(code_point == 0x1F9E1u);
 assert(code_point_length == 4u);
 ```
 
-### `p_free_tree`
+### `p_tree_delete`
 
-The `p_free_tree()` function can be used to free the memory used by the tree.
+The `p_tree_delete()` function can be used to free the memory used by the tree.
 It should be passed the same value that is returned by `p_result()`.
 
-The `p_free_tree()` function is only available for C/C++ output targets.
+The `p_tree_delete()` function is only available for C/C++ output targets.
 
 Note that if any lexer user code block allocates memory to store in a token's
 `pvalue`, in order to properly free this memory a `free_token_node` function
 should be specified in the grammar file.
 If specified, the `free_token_node` function will be called during the
-`p_free_tree()` process to allow user code to free any memory associated with
+`p_tree_delete()` process to allow user code to free any memory associated with
 a token node's `pvalue`.
 
-When multiple start rules are specified, a separate `p_free_tree` function is
+When multiple start rules are specified, a separate `p_tree_delete` function is
 generated for each which frees the tree resulting from parsing the given rule.
 For example, if `Statement` is specified as a start rule:
 
 ```
-p_free_tree_Statement(statement_tree);
+p_tree_delete_Statement(statement_tree);
 ```
 
 In this case, Propane will free a `Statement` tree structure returned by the

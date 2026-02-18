@@ -17,7 +17,7 @@ int main()
     assert(start->pR == NULL);
     assert(start->r == NULL);
 
-    p_free_tree(start);
+    p_tree_delete(start);
     p_context_delete(context);
 
     input = "abcd";
@@ -34,7 +34,7 @@ int main()
     assert(start->pR == start->r);
     assert_eq(TOKEN_c, start->pR->pToken1->token);
 
-    p_free_tree(start);
+    p_tree_delete(start);
     p_context_delete(context);
 
     input = "bdc";
@@ -46,7 +46,7 @@ int main()
     assert(start->r != NULL);
     assert_eq(TOKEN_d, start->pR->pToken1->token);
 
-    p_free_tree(start);
+    p_tree_delete(start);
     p_context_delete(context);
 
     return 0;

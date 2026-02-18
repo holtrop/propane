@@ -1504,7 +1504,7 @@ token b <<
 Start -> a:a b:b;
 EOF
           run_propane(language: language)
-          compile("spec/test_free_tree_token_node_memory.#{language}", language: language)
+          compile("spec/test_tree_delete_token_node_memory.#{language}", language: language)
           results = run_test(language: language)
           expect(results.stderr).to eq ""
           expect(results.status).to eq 0

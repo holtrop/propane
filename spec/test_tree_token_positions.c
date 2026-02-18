@@ -43,7 +43,7 @@ int main()
     assert_eq(1, start->end_position.row);
     assert_eq(6, start->end_position.col);
 
-    p_free_tree(start);
+    p_tree_delete(start);
     p_context_delete(context);
 
     input = "\n\n  bb\nc\ncc\n\n     a";
@@ -83,7 +83,7 @@ int main()
     assert_eq(7, start->end_position.row);
     assert_eq(6, start->end_position.col);
 
-    p_free_tree(start);
+    p_tree_delete(start);
     p_context_delete(context);
 
     return 0;

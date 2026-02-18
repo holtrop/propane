@@ -211,9 +211,9 @@ size_t <%= @grammar.prefix %>parse_<%= start_rule %>(<%= @grammar.prefix %>conte
 <% end %>
 
 <% if @grammar.tree %>
-void <%= @grammar.prefix %>free_tree(<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * tree);
+void <%= @grammar.prefix %>tree_delete(<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * tree);
 <%   @grammar.start_rules.each_with_index do |start_rule, i| %>
-void <%= @grammar.prefix %>free_tree_<%= start_rule %>(<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * tree);
+void <%= @grammar.prefix %>tree_delete_<%= start_rule %>(<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * tree);
 <%   end %>
 <% end %>
 

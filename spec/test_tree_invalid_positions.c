@@ -30,7 +30,7 @@ int main()
     assert_eq(3, start->end_position.row);
     assert_eq(8, start->end_position.col);
 
-    p_free_tree(start);
+    p_tree_delete(start);
     p_context_delete(context);
 
     input = "a\nbb";
@@ -57,7 +57,7 @@ int main()
     assert_eq(2, start->end_position.row);
     assert_eq(2, start->end_position.col);
 
-    p_free_tree(start);
+    p_tree_delete(start);
     p_context_delete(context);
 
     input = "a\nc\nc";
@@ -84,7 +84,7 @@ int main()
     assert_eq(3, start->end_position.row);
     assert_eq(1, start->end_position.col);
 
-    p_free_tree(start);
+    p_tree_delete(start);
     p_context_delete(context);
 
     input = "a";
@@ -107,7 +107,7 @@ int main()
     assert_eq(1, start->end_position.row);
     assert_eq(1, start->end_position.col);
 
-    p_free_tree(start);
+    p_tree_delete(start);
     p_context_delete(context);
 
     return 0;
