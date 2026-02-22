@@ -75,6 +75,10 @@ const char * <%= @grammar.prefix %>token_names[] = {
 /**
  * Deinitialize and deallocate lexer/parser context structure.
  *
+ * For C++, destructors will be called for any context user fields. However, if
+ * pointers are used to store allocated resources, the user should free them
+ * before calling this function.
+ *
  * @param context
  *   Lexer/parser context structure allocated with <%= @grammar.prefix %>context_new().
  */
@@ -1014,13 +1018,18 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
             {
                 /* We shifted a token, mark it consumed. */
 <% if @grammar.tree %>
+<%   if @cpp %>
+                <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> * token_tree_node = new <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>();
+<%   else %>
                 <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> * token_tree_node = (<%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> *)malloc(sizeof(<%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>));
+<%   end %>
                 token_tree_node->position = token_info.position;
                 token_tree_node->end_position = token_info.end_position;
                 token_tree_node->n_fields = 0u;
                 token_tree_node->is_token = 1u;
                 token_tree_node->token = token;
                 token_tree_node->pvalue = token_info.pvalue;
+<%= expand_code(@grammar.on_token_node, false, nil, nil) %>
                 state_values_stack_index(&statevalues, -1)->tree_node = token_tree_node;
 <% else %>
                 state_values_stack_index(&statevalues, -1)->pvalue = token_info.pvalue;
@@ -1210,10 +1219,16 @@ static void tree_delete(TreeNode * node)
 {
     if (node->is_token)
     {
+        <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> * token_tree_node = (<%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> *) node;
 <%   if @grammar.free_token_node %>
-        <%= @grammar.free_token_node %>((<%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> *) node);
+        <%= @grammar.free_token_node %>(token_tree_node);
 <%   end %>
-        /* TODO: free value_t */
+<%= expand_code(@grammar.free_token_user_fields, false, nil, nil) %>
+<%   if @cpp %>
+        delete token_tree_node;
+<%   else %>
+        free(token_tree_node);
+<%   end %>
     }
     else if (node->n_fields > 0u)
     {
@@ -1224,8 +1239,8 @@ static void tree_delete(TreeNode * node)
                 tree_delete(node->fields[i]);
             }
         }
+        free(node);
     }
-    free(node);
 }
 
 /**

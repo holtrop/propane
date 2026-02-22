@@ -18,8 +18,9 @@ class Propane
     attr_reader :code_blocks
     attr_reader :ptypes
     attr_reader :prefix
-    attr_reader :token_node
+    attr_reader :on_token_node
     attr_reader :token_user_fields
+    attr_reader :free_token_user_fields
 
     def initialize(input)
       @patterns = []
@@ -38,8 +39,9 @@ class Propane
       @tree_suffix = ""
       @free_token_node = nil
       @context_user_fields = nil
-      @token_node = nil
+      @on_token_node = ""
       @token_user_fields = nil
+      @free_token_user_fields = ""
       parse_grammar!
       @start_rules << "Start" if @start_rules.empty?
     end
@@ -74,8 +76,9 @@ class Propane
       elsif parse_tree_suffix_statement!
       elsif parse_free_token_node_statement!
       elsif parse_module_statement!
-      elsif parse_token_node_statement!
+      elsif parse_on_token_node_statement!
       elsif parse_token_user_fields_statement!
+      elsif parse_free_token_user_fields_statement!
       elsif parse_ptype_statement!
       elsif parse_pattern_statement!
       elsif parse_start_statement!
@@ -151,13 +154,12 @@ class Propane
       end
     end
 
-    def parse_token_node_statement!
-      if md = consume!(/token_node\b\s*/)
+    def parse_on_token_node_statement!
+      if md = consume!(/on_token_node\b\s*/)
         unless code = parse_code_block!
           raise Error.new("Line #{@line_number}: expected code block")
         end
-        @token_node ||= ""
-        @token_node += code
+        @on_token_node += code
       end
     end
 
@@ -168,6 +170,15 @@ class Propane
         end
         @token_user_fields ||= ""
         @token_user_fields += code
+      end
+    end
+
+    def parse_free_token_user_fields_statement!
+      if md = consume!(/free_token_user_fields\b\s*/)
+        unless code = parse_code_block!
+          raise Error.new("Line #{@line_number}: expected code block")
+        end
+        @free_token_user_fields += code
       end
     end
 

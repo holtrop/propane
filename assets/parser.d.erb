@@ -103,9 +103,9 @@ public struct <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>
     /* TreeNode fields must be present in the same order here. */
     <%= @grammar.prefix %>position_t position;
     <%= @grammar.prefix %>position_t end_position;
-<%= @grammar.token_user_fields %>
     <%= @grammar.prefix %>token_t token;
     <%= @grammar.prefix %>value_t pvalue;
+<%= @grammar.token_user_fields %>
 }
 
 <%   @parser.rule_sets.each do |name, rule_set| %>
@@ -1055,6 +1055,7 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
                 /* We shifted a token, mark it consumed. */
 <% if @grammar.tree %>
                 <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> * token_tree_node = new <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>(token_info.position, token_info.end_position, token, token_info.pvalue);
+<%= expand_code(@grammar.on_token_node, false, nil, nil) %>
                 statevalues[$-1].tree_node = token_tree_node;
 <% else %>
                 statevalues[$-1].pvalue = token_info.pvalue;

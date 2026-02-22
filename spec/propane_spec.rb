@@ -14,6 +14,7 @@ describe Propane do
   end
 
   def run_propane(options = {})
+    options[:language] ||= "d"
     @statics[:build_test_id] ||= 0
     @statics[:build_test_id] += 1
     if ENV["dist_specs"]
@@ -1602,6 +1603,103 @@ EOF
         results = run_test(language: language)
         expect(results.stderr).to include %r{comments: # comment 1\n#    comment 2}
         expect(results.stderr).to include %r{acount: 11\n}
+        expect(results.status).to eq 0
+      end
+
+      it "allows custom token user fields" do
+        if language == "d"
+          write_grammar <<EOF
+context_user_fields <<
+    string comments;
+>>
+token_user_fields <<
+    string comments;
+>>
+on_token_node <<
+    ${token.comments} = ${context.comments};
+    ${context.comments} = "";
+>>
+tree;
+drop /\\s+/;
+drop /#(.*)\\n/ <<
+    ${context.comments} ~= match;
+>>
+token id /\\w+/;
+Start -> IDs;
+IDs -> ;
+IDs -> id IDs;
+EOF
+        elsif language == "c"
+          write_grammar <<EOF
+<<
+#include <string.h>
+#include <stdlib.h>
+>>
+context_user_fields <<
+    char * comments;
+>>
+token_user_fields <<
+    char * comments;
+>>
+free_token_user_fields <<
+    free(${token.comments});
+>>
+on_token_node <<
+    ${token.comments} = ${context.comments};
+    ${context.comments} = (char *)malloc(1);
+    ${context.comments}[0] = '\\0';
+>>
+tree;
+drop /\\s+/;
+drop /#(.*)\\n/ <<
+    size_t cur_len = 0u;
+    if (${context.comments} != NULL)
+        cur_len = strlen(${context.comments});
+    char * commentsnew = (char *)malloc(cur_len + match_length + 1);
+    if (${context.comments} != NULL)
+        memcpy(commentsnew, ${context.comments}, cur_len);
+    memcpy(&commentsnew[cur_len], match, match_length);
+    commentsnew[cur_len + match_length] = '\\0';
+    if (${context.comments} != NULL)
+    {
+        free(${context.comments});
+    }
+    ${context.comments} = commentsnew;
+>>
+token id /\\w+/;
+Start -> IDs;
+IDs -> ;
+IDs -> id IDs;
+EOF
+        else # C++
+          write_grammar <<EOF
+<<header
+#include <string>
+>>
+context_user_fields <<
+    std::string comments;
+>>
+token_user_fields <<
+    std::string comments;
+>>
+on_token_node <<
+    ${token.comments} = ${context.comments};
+    ${context.comments} = "";
+>>
+tree;
+drop /\\s+/;
+drop /#(.*)\\n/ <<
+    ${context.comments} += std::string((const char *)match, match_length);
+>>
+token id /\\w+/;
+Start -> IDs;
+IDs -> ;
+IDs -> id IDs;
+EOF
+        end
+        run_propane(language: language)
+        compile("spec/test_token_user_fields.#{language}", language: language)
+        results = run_test(language: language)
         expect(results.status).to eq 0
       end
     end

@@ -13,8 +13,13 @@ class Propane
       @language =
         if output_file.end_with?(".d")
           "d"
-        else
+        elsif output_file.end_with?(".c")
           "c"
+        elsif output_file =~ %r{\.(cc|cpp|cxx)$}
+          @cpp = true
+          "c"
+        else
+          raise Error.new("Could not determine target language from output file name (#{output_file})")
         end
       @options = options
       process_grammar!
@@ -272,6 +277,15 @@ class Propane
           "context->#{fieldname}"
         when "d"
           "context.#{fieldname}"
+        end
+      end
+      code = code.gsub(/\$\{token\.(\w+)\}/) do |match|
+        fieldname = $1
+        case @language
+        when "c"
+          "token_tree_node->#{fieldname}"
+        when "d"
+          "token_tree_node.#{fieldname}"
         end
       end
       if parser
