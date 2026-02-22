@@ -19,6 +19,22 @@ int main()
     context = p_context_new((uint8_t const *)input, strlen(input));
     assert(p_parse(context) == P_SUCCESS);
     Start * start = p_result(context);
+    assert(start->pIDs);
+    assert(start->pIDs->id);
+#ifdef __cplusplus
+    assert(start->pIDs->id->comments == "# c1\n#  c2\n");
+#else
+    assert(start->pIDs->id->comments);
+    assert(strcmp(start->pIDs->id->comments, "# c1\n#  c2\n") == 0);
+#endif
+    assert(start->pIDs->pIDs);
+    assert(start->pIDs->pIDs->id);
+#ifdef __cplusplus
+    assert(start->pIDs->pIDs->id->comments == "# s1\n#   s2\n");
+#else
+    assert(start->pIDs->pIDs->id->comments);
+    assert(strcmp(start->pIDs->pIDs->id->comments, "# s1\n#   s2\n") == 0);
+#endif
 
 #ifndef __cplusplus
     free(context->comments);

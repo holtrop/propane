@@ -1623,7 +1623,7 @@ drop /#(.*)\\n/ <<
 token id /\\w+/;
 Start -> IDs;
 IDs -> ;
-IDs -> id IDs;
+IDs -> id:id IDs;
 EOF
         elsif language == "c"
           write_grammar <<EOF
@@ -1665,7 +1665,7 @@ drop /#(.*)\\n/ <<
 token id /\\w+/;
 Start -> IDs;
 IDs -> ;
-IDs -> id IDs;
+IDs -> id:id IDs;
 EOF
         else # C++
           write_grammar <<EOF
@@ -1690,7 +1690,7 @@ drop /#(.*)\\n/ <<
 token id /\\w+/;
 Start -> IDs;
 IDs -> ;
-IDs -> id IDs;
+IDs -> id:id IDs;
 EOF
         end
         run_propane(language: language)
