@@ -1219,11 +1219,8 @@ static void tree_delete(TreeNode * node)
 {
     if (node->is_token)
     {
-        <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> * token_tree_node = (<%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> *) node;
-<%   if @grammar.free_token_node %>
-        <%= @grammar.free_token_node %>(token_tree_node);
-<%   end %>
-<%= expand_code(@grammar.free_token_user_fields, false, nil, nil) %>
+        <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> * token_tree_node = (<%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> *)node;
+<%= expand_code(@grammar.free_token_node, false, nil, nil) %>
 <%   if @cpp %>
         delete token_tree_node;
 <%   else %>

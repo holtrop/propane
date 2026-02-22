@@ -297,7 +297,7 @@ drop /#(.*)\n/ <<
 ```
 
 If a pointer to any allocated memory is stored in a user-defined context field,
-the `free_token_user_fields` statement can be used to supply a code block which
+the `free_token_node` statement can be used to supply a code block which
 will be executed immediately before the token node is freed.
 For C++, the `delete` statement is used to free the token tree node, so the
 destructor for any custom token user fields will be called.
@@ -323,25 +323,6 @@ on_token_node <<
 drop /#(.*)\n/ <<
     /* Accumulate comments before the next parser tree node. */
     ${context.comments} += std::string((const char *)match, match_length);
->>
-```
-
-### Freeing allocated memory in a custom token user field - the `free_token_user_fields` statement
-
-The `free_token_user_fields` statement allows the user to provide a code block
-which will be executed immediately prior to freeing the token tree node.
-
-For example (C):
-
-```
-token_user_fields <<
-    char * comments;
->>
-on_token_node <<
-    ${token.comments} = (char *)malloc(some_len);
->>
-free_token_user_fields <<
-    free(${token.comments});
 >>
 ```
 
@@ -478,22 +459,18 @@ assert(itemsmore.pItem.pItem.pItem.pToken1 !is null);
 
 ## Freeing user-allocated memory in token node `pvalue`: the `free_token_node` statement
 
-If user lexer code block allocates memory to store in a token node's `pvalue`,
-the `free_token_node` grammar statement can be used to specify the name of a
-function which will be called during the `p_tree_delete()` call to free the memory
-associated with a token node.
+If user lexer code block allocates memory to store in a token node's `pvalue`
+or any custom token user fields store pointers to allocated memory, the
+`free_token_node` grammar statement can be used to provide a code block which
+can be used to free memory properly.
 
-Example:
+Example freeing `pvalue` (C):
 
 ```
-<<
-static void free_token(Token * token)
-{
-    free(token->pvalue);
-}
->>
 tree;
-free_token_node free_token;
+free_token_node <<
+    free(${token.pvalue});
+>>
 ptype int *;
 token a <<
   $$ = (int *)malloc(sizeof(int));
@@ -505,6 +482,23 @@ token b <<
 >>
 Start -> a:a b:b;
 ```
+
+Example freeing custom token user fields (C):
+
+```
+token_user_fields <<
+    char * comments;
+>>
+on_token_node <<
+    ${token.comments} = (char *)malloc(some_len);
+>>
+free_token_node <<
+    free(${token.comments});
+>>
+```
+
+The `free_token_node` statement user code block is not emitted for D language
+since D has a garbage collector.
 
 ##> Specifying tokens - the `token` statement
 
@@ -1329,9 +1323,9 @@ It should be passed the same value that is returned by `p_result()`.
 The `p_tree_delete()` function is only available for C/C++ output targets.
 
 Note that if any lexer user code block allocates memory to store in a token's
-`pvalue`, in order to properly free this memory a `free_token_node` function
-should be specified in the grammar file.
-If specified, the `free_token_node` function will be called during the
+`pvalue`, in order to properly free this memory the `free_token_node` statement
+should be used to provide a code block that frees this memory.
+If specified, the `free_token_node` code block will be executed during the
 `p_tree_delete()` process to allow user code to free any memory associated with
 a token node's `pvalue`.
 

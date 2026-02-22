@@ -1485,14 +1485,10 @@ EOF
       if %w[c cpp].include?(language)
         it "allows a user function to free token node memory in tree mode" do
           write_grammar <<EOF
-<<
-static void free_token(Token * token)
-{
-    free(token->pvalue);
-}
->>
 tree;
-free_token_node free_token;
+free_token_node <<
+    free(${token.pvalue});
+>>
 ptype int *;
 token a <<
   $$ = (int *)malloc(sizeof(int));
@@ -1641,7 +1637,7 @@ context_user_fields <<
 token_user_fields <<
     char * comments;
 >>
-free_token_user_fields <<
+free_token_node <<
     free(${token.comments});
 >>
 on_token_node <<
