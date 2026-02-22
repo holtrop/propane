@@ -221,7 +221,7 @@ Parser rule code blocks are not available in tree generation mode.
 In tree generation mode, a full parse tree is automatically constructed in
 memory for user code to traverse after parsing is complete.
 
-### Context code blocks: the `context_user_fields` statement
+##> `context_user_fields` statement - adding custom fields to the context
 
 Propane uses a context structure for lexer and parser operations.
 Custom fields may be added to the context structure by using the grammar
@@ -256,7 +256,273 @@ If a pointer to any allocated memory is stored in a user-defined context field,
 it is up to the user to free any memory when the program is finished using the
 context structure.
 
-### Custom token fields code blocks: the `token_user_fields` statement
+##> `drop` statement - ignoring input patterns
+
+A `drop` statement can be used to specify a lexer pattern that when matched
+should result in the matched input being dropped and lexing continuing after
+the matched input.
+
+A common use for a `drop` statement would be to ignore whitespace sequences in
+the user input.
+
+Example:
+
+```
+drop /\s+/;
+```
+
+See also ${#Regular expression syntax}.
+
+## `free_token_node` statement - freeing user-allocated memory in token node fields
+
+If user lexer code block allocates memory to store in a token node's `pvalue`
+or any custom token user fields store pointers to allocated memory, the
+`free_token_node` grammar statement can be used to provide a code block which
+can be used to free memory properly.
+
+Example freeing `pvalue` (C):
+
+```
+tree;
+free_token_node <<
+    free(${token.pvalue});
+>>
+ptype int *;
+token a <<
+  $$ = (int *)malloc(sizeof(int));
+  *$$ = 1;
+>>
+token b <<
+  $$ = (int *)malloc(sizeof(int));
+  *$$ = 2;
+>>
+Start -> a:a b:b;
+```
+
+Example freeing custom token user fields (C):
+
+```
+token_user_fields <<
+    char * comments;
+>>
+on_token_node <<
+    ${token.comments} = (char *)malloc(some_len);
+>>
+free_token_node <<
+    free(${token.comments});
+>>
+```
+
+The `free_token_node` statement user code block is not emitted for D language
+since D has a garbage collector.
+
+##> `module` statement - specifying the generated parser module name
+
+The `module` statement can be used to specify the module name for a generated
+D module.
+
+```
+module proj.parser;
+```
+
+If a module statement is not present, then the generated D module will not
+contain a module statement and the default module name will be used.
+
+##> `on_tree_node` statement -  custom initialization of a token tree node
+
+The `on_token_node` statement can be used to provide code that initializes
+any token user fields when a token tree node instance is created.
+
+For example (C++):
+
+```
+context_user_fields <<
+    std::string comments;
+>>
+token_user_fields <<
+    std::string comments;
+>>
+on_token_node <<
+    ${token.comments} = ${context.comments};
+    ${context.comments} = "";
+>>
+drop /#(.*)\n/ <<
+    /* Accumulate comments before the next parser tree node. */
+    ${context.comments} += std::string((const char *)match, match_length);
+>>
+```
+
+##> `prefix` statement - specifying the generated API prefix
+
+By default the public API (types, constants, and functions) of the generated
+lexer and parser uses a prefix of `p_`.
+
+This prefix can be changed with the `prefix` statement.
+
+Example:
+
+```
+prefix myparser_;
+```
+
+With a parser generated with this `prefix` statement, instead of calling
+`p_context_new()` you would call `myparser_context_new()`.
+
+The `prefix` statement can be optionally used if you would like to change the
+prefix used by your generated lexer and parser to something other than the
+default.
+
+It can also be used when generating multiple lexers/parsers to be used in the
+same program to avoid symbol collisions.
+
+##> `ptype` statement - specifying parser value types
+
+The `ptype` statement is used to define parser value type(s).
+Example:
+
+```
+ptype void *;
+```
+
+This defines the default parser value type to be `void *` (this is, in fact,
+the default parser value type if the grammar file does not specify otherwise).
+
+Each defined lexer token type and parser rule has an associated parser value
+type.
+When the lexer runs, each lexed token has a parser value associated with it.
+When the parser runs, each instance of a reduced rule has a parser value
+associated with it.
+Propane supports using different parser value types for different rules and
+token types.
+The example `ptype` statement above defines the default parser value type.
+A parser value type name can optionally be specified following the `ptype`
+keyword.
+For example:
+
+```
+ptype Value;
+ptype array = Value[];
+ptype dict = Value[string];
+
+Object -> lbrace rbrace << $$ = new Value(); >>
+
+Values (array) -> Value << $$ = [$1]; >>
+Values -> Values comma Value << $$ = $1 ~ [$3]; >>
+
+KeyValue (dict) -> string colon Value << $$ = [$1: $3]; >>
+```
+
+In this example, the default parser value type is `Value`.
+A parser value type named `array` is defined to mean `Value[]`.
+A parser value type named `dict` is defined to mean `Value[string]`.
+Any defined tokens or rules that do not specify a parser value type will have
+the default parser value type associated with them.
+To associate a different parser value type with a token or rule, write the
+parser value type name in parentheses following the name of the token or rule.
+In this example:
+
+  * a reduced `Object`'s parser value has a type of `Value`.
+  * a reduced `Values`'s parser value has a type of `Value[]`.
+  * a reduced `KeyValue`'s parser value has a type of `Value[string]`.
+
+When tree generation mode is active, the `ptype` functionality works differently.
+In this mode, only one `ptype` is used by the parser.
+Lexer user code blocks may assign a parse value to the generated `Token` node
+by assigning to `$$` within a lexer code block.
+The type of the parse value `$$` is given by the global `ptype` type.
+
+##> `start` statement - specifying the parser start rule name
+
+The start rule can be changed from the default of `Start` by using the `start`
+statement.
+Example:
+
+```
+start MyStartRule;
+```
+
+Multiple start rules can be specified, either with multiple `start` statements
+or one `start` statement listing multiple start rules.
+Example:
+
+```
+start Module ModuleItem Statement Expression;
+```
+
+When multiple start rules are specified, multiple `p_parse_*()` functions,
+`p_result_*()`, and `p_tree_delete_*()` functions (in tree mode) are generated.
+A default `p_parse()`, `p_result()`, `p_tree_delete()` are generated corresponding
+to the first start rule.
+Additionally, each start rule causes the generation of another version of each
+of these functions, for example `p_parse_Statement()`, `p_result_Statement()`,
+and `p_tree_delete_Statement()`.
+
+##> `token` statement - specifying tokens
+
+The `token` statement allows defining a lexer token and a pattern to match that
+token.
+The name of the token must be specified immediately following the `token`
+keyword.
+A regular expression pattern may optionally follow the token name.
+If a regular expression pattern is not specified, the name of the token is
+taken to be the pattern.
+See also: ${#Regular expression syntax}.
+
+Example:
+
+```
+token for;
+```
+
+In this example, the token name is `for` and the pattern to match it is
+`/for/`.
+
+Example:
+
+```
+token lbrace /\{/;
+```
+
+In this example, the token name is `lbrace` and a single left curly brace will
+match it.
+
+The `token` statement can also include a user code block.
+The user code block will be executed whenever the token is matched by the
+lexer.
+
+Example:
+
+```
+token if << writeln("'if' keyword lexed"); >>
+```
+
+The `token` statement is actually a shortcut statement for a combination of a
+`tokenid` statement and a pattern statement.
+To define a lexer token without an associated pattern to match it, use a
+`tokenid` statement.
+To define a lexer pattern that may or may not result in a matched token, use
+a pattern statement.
+
+##> `tokenid` statement - defining tokens without a matching pattern
+
+The `tokenid` statement can be used to define a token without associating it
+with a lexer pattern that matches it.
+
+Example:
+
+```
+tokenid string;
+```
+
+The `tokenid` statement can be useful when defining a token that may optionally
+be returned by user code associated with a pattern.
+
+It is also useful when lexer modes and multiple lexer patterns are required to
+build up a full token.
+A common example is parsing a string.
+See the ${#Lexer modes} chapter for more information.
+
+##> `token_user_fields` statement - adding custom token fields
 
 When tree generation mode is active, Propane generates a tree node structure
 and a token node structure for each matching rule and token instance in the
@@ -302,31 +568,7 @@ will be executed immediately before the token node is freed.
 For C++, the `delete` statement is used to free the token tree node, so the
 destructor for any custom token user fields will be called.
 
-### Custom initialization of a token tree node - the `on_tree_node` statement
-
-The `on_token_node` statement can be used to provide code that initializes
-any token user fields when a token tree node instance is created.
-
-For example (C++):
-
-```
-context_user_fields <<
-    std::string comments;
->>
-token_user_fields <<
-    std::string comments;
->>
-on_token_node <<
-    ${token.comments} = ${context.comments};
-    ${context.comments} = "";
->>
-drop /#(.*)\n/ <<
-    /* Accumulate comments before the next parser tree node. */
-    ${context.comments} += std::string((const char *)match, match_length);
->>
-```
-
-##> Tree generation mode - the `tree` statement
+##> `tree` statement - tree generation mode
 
 To activate tree generation mode, place the `tree` statement in your grammar file:
 
@@ -457,115 +699,7 @@ assert(itemsmore.pItem.pItem.pItem !is null);
 assert(itemsmore.pItem.pItem.pItem.pToken1 !is null);
 ```
 
-## Freeing user-allocated memory in token node `pvalue`: the `free_token_node` statement
-
-If user lexer code block allocates memory to store in a token node's `pvalue`
-or any custom token user fields store pointers to allocated memory, the
-`free_token_node` grammar statement can be used to provide a code block which
-can be used to free memory properly.
-
-Example freeing `pvalue` (C):
-
-```
-tree;
-free_token_node <<
-    free(${token.pvalue});
->>
-ptype int *;
-token a <<
-  $$ = (int *)malloc(sizeof(int));
-  *$$ = 1;
->>
-token b <<
-  $$ = (int *)malloc(sizeof(int));
-  *$$ = 2;
->>
-Start -> a:a b:b;
-```
-
-Example freeing custom token user fields (C):
-
-```
-token_user_fields <<
-    char * comments;
->>
-on_token_node <<
-    ${token.comments} = (char *)malloc(some_len);
->>
-free_token_node <<
-    free(${token.comments});
->>
-```
-
-The `free_token_node` statement user code block is not emitted for D language
-since D has a garbage collector.
-
-##> Specifying tokens - the `token` statement
-
-The `token` statement allows defining a lexer token and a pattern to match that
-token.
-The name of the token must be specified immediately following the `token`
-keyword.
-A regular expression pattern may optionally follow the token name.
-If a regular expression pattern is not specified, the name of the token is
-taken to be the pattern.
-See also: ${#Regular expression syntax}.
-
-Example:
-
-```
-token for;
-```
-
-In this example, the token name is `for` and the pattern to match it is
-`/for/`.
-
-Example:
-
-```
-token lbrace /\{/;
-```
-
-In this example, the token name is `lbrace` and a single left curly brace will
-match it.
-
-The `token` statement can also include a user code block.
-The user code block will be executed whenever the token is matched by the
-lexer.
-
-Example:
-
-```
-token if << writeln("'if' keyword lexed"); >>
-```
-
-The `token` statement is actually a shortcut statement for a combination of a
-`tokenid` statement and a pattern statement.
-To define a lexer token without an associated pattern to match it, use a
-`tokenid` statement.
-To define a lexer pattern that may or may not result in a matched token, use
-a pattern statement.
-
-##> Defining tokens without a matching pattern - the `tokenid` statement
-
-The `tokenid` statement can be used to define a token without associating it
-with a lexer pattern that matches it.
-
-Example:
-
-```
-tokenid string;
-```
-
-The `tokenid` statement can be useful when defining a token that may optionally
-be returned by user code associated with a pattern.
-
-It is also useful when lexer modes and multiple lexer patterns are required to
-build up a full token.
-A common example is parsing a string.
-See the ${#Lexer modes} chapter for more information.
-
-##> Specifying a lexer pattern - the pattern statement
+##> Specifying a lexer pattern
 
 A pattern statement is used to define a lexer pattern that can execute user
 code but may not result in a matched token.
@@ -577,23 +711,6 @@ Example:
 ```
 
 This can be especially useful with ${#Lexer modes}.
-
-See also ${#Regular expression syntax}.
-
-##> Ignoring input sections - the `drop` statement
-
-A `drop` statement can be used to specify a lexer pattern that when matched
-should result in the matched input being dropped and lexing continuing after
-the matched input.
-
-A common use for a `drop` statement would be to ignore whitespace sequences in
-the user input.
-
-Example:
-
-```
-drop /\s+/;
-```
 
 See also ${#Regular expression syntax}.
 
@@ -735,63 +852,7 @@ token dot /\./ <<
 default, identonly: drop /\s+/;
 ```
 
-##> Specifying parser value types - the `ptype` statement
-
-The `ptype` statement is used to define parser value type(s).
-Example:
-
-```
-ptype void *;
-```
-
-This defines the default parser value type to be `void *` (this is, in fact,
-the default parser value type if the grammar file does not specify otherwise).
-
-Each defined lexer token type and parser rule has an associated parser value
-type.
-When the lexer runs, each lexed token has a parser value associated with it.
-When the parser runs, each instance of a reduced rule has a parser value
-associated with it.
-Propane supports using different parser value types for different rules and
-token types.
-The example `ptype` statement above defines the default parser value type.
-A parser value type name can optionally be specified following the `ptype`
-keyword.
-For example:
-
-```
-ptype Value;
-ptype array = Value[];
-ptype dict = Value[string];
-
-Object -> lbrace rbrace << $$ = new Value(); >>
-
-Values (array) -> Value << $$ = [$1]; >>
-Values -> Values comma Value << $$ = $1 ~ [$3]; >>
-
-KeyValue (dict) -> string colon Value << $$ = [$1: $3]; >>
-```
-
-In this example, the default parser value type is `Value`.
-A parser value type named `array` is defined to mean `Value[]`.
-A parser value type named `dict` is defined to mean `Value[string]`.
-Any defined tokens or rules that do not specify a parser value type will have
-the default parser value type associated with them.
-To associate a different parser value type with a token or rule, write the
-parser value type name in parentheses following the name of the token or rule.
-In this example:
-
-  * a reduced `Object`'s parser value has a type of `Value`.
-  * a reduced `Values`'s parser value has a type of `Value[]`.
-  * a reduced `KeyValue`'s parser value has a type of `Value[string]`.
-
-When tree generation mode is active, the `ptype` functionality works differently.
-In this mode, only one `ptype` is used by the parser.
-Lexer user code blocks may assign a parse value to the generated `Token` node
-by assigning to `$$` within a lexer code block.
-The type of the parse value `$$` is given by the global `ptype` type.
-
-##> Specifying a parser rule - the rule statement
+##> Specifying parser rules
 
 Rule statements create parser rules which define the grammar that will be
 parsed by the generated parser.
@@ -871,67 +932,6 @@ can be used to produce the parser value for the accepted rule.
 
 Parser rule code blocks are not allowed and not used when tree generation mode
 is active.
-
-##> Specifying the parser start rule name - the `start` statement
-
-The start rule can be changed from the default of `Start` by using the `start`
-statement.
-Example:
-
-```
-start MyStartRule;
-```
-
-Multiple start rules can be specified, either with multiple `start` statements
-or one `start` statement listing multiple start rules.
-Example:
-
-```
-start Module ModuleItem Statement Expression;
-```
-
-When multiple start rules are specified, multiple `p_parse_*()` functions,
-`p_result_*()`, and `p_tree_delete_*()` functions (in tree mode) are generated.
-A default `p_parse()`, `p_result()`, `p_tree_delete()` are generated corresponding
-to the first start rule.
-Additionally, each start rule causes the generation of another version of each
-of these functions, for example `p_parse_Statement()`, `p_result_Statement()`,
-and `p_tree_delete_Statement()`.
-
-##> Specifying the parser module name - the `module` statement
-
-The `module` statement can be used to specify the module name for a generated
-D module.
-
-```
-module proj.parser;
-```
-
-If a module statement is not present, then the generated D module will not
-contain a module statement and the default module name will be used.
-
-##> Specifying the generated API prefix - the `prefix` statement
-
-By default the public API (types, constants, and functions) of the generated
-lexer and parser uses a prefix of `p_`.
-
-This prefix can be changed with the `prefix` statement.
-
-Example:
-
-```
-prefix myparser_;
-```
-
-With a parser generated with this `prefix` statement, instead of calling
-`p_context_new()` you would call `myparser_context_new()`.
-
-The `prefix` statement can be optionally used if you would like to change the
-prefix used by your generated lexer and parser to something other than the
-default.
-
-It can also be used when generating multiple lexers/parsers to be used in the
-same program to avoid symbol collisions.
 
 ##> User termination of the lexer or parser
 
