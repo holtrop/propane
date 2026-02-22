@@ -9,6 +9,8 @@
 - Add a call to `p_context_delete()` (for C or C++) after lexing/parsing to
   reclaim context memory.
 - Rename `p_free_tree()` calls to `p_tree_delete()`.
+- Change `free_token_node` statement calls from taking a function name argument
+  to taking a user code block.
 
 ## v3.0.0
 

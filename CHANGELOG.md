@@ -2,12 +2,19 @@
 
 ### New Features
 
+- Add `context_user_fields` statement to allow custom context user fields.
+- Add `token_user_fields` statement to allow custom token user fields.
+- Add `on_token_node` statement to allow custom code when constructing token nodes.
+- Add `free_token_node` statement to allow custom code when freeing token nodes.
 - Add `p_context_delete()`.
+- Allow `drop` patterns to execute lexer user code blocks.
 
 ### Breaking Changes
 
 - Replace `p_context_init()` with `p_context_new()` and `p_context_delete()`.
 - Renamed `p_free_tree()` to `p_tree_delete()`.
+- The `free_token_node` statement now takes a user code block instead of a
+  function name parameter.
 
 ## v3.0.0
 
