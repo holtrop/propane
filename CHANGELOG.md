@@ -1,3 +1,9 @@
+## v4.1.0
+
+### New Features
+
+- Add `p_context_delete()` and `p_tree_delete()` for D targets.
+
 ## v4.0.0
 
 ### New Features
