@@ -10,8 +10,7 @@ int main()
 unittest
 {
     string input = "b";
-    p_context_t * context;
-    context = p_context_new(input);
+    p_context_t * context = p_context_new(input);
     assert(p_parse(context) == P_SUCCESS);
     Start * start = p_result(context);
     assert(start.pToken1 is null);
@@ -19,6 +18,8 @@ unittest
     assert_eq(TOKEN_b, start.pToken2.token);
     assert(start.pR3 is null);
     assert(start.pR is null);
+
+    p_tree_delete(start);
 
     input = "abcd";
     context = p_context_new(input);
@@ -32,6 +33,8 @@ unittest
     assert(start.pR == start.pR3);
     assert_eq(TOKEN_c, start.pR.pToken1.token);
 
+    p_tree_delete(start);
+
     input = "bdc";
     context = p_context_new(input);
     assert(p_parse(context) == P_SUCCESS);
@@ -40,4 +43,6 @@ unittest
     assert(start.pToken2 !is null);
     assert(start.pR !is null);
     assert_eq(TOKEN_d, start.pR.pToken1.token);
+
+    p_tree_delete(start);
 }

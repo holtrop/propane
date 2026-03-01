@@ -17,8 +17,7 @@ unittest
         "  # s1\n" ~
         "   #   s2\n" ~
         "second\n";
-    p_context_t * context;
-    context = p_context_new(input);
+    p_context_t * context = p_context_new(input);
     assert(p_parse(context) == P_SUCCESS);
     Start * start = p_result(context);
     assert(start.pIDs);
@@ -27,4 +26,6 @@ unittest
     assert(start.pIDs.pIDs);
     assert(start.pIDs.pIDs.id);
     assert(start.pIDs.pIDs.id.comments == "# s1\n#   s2\n");
+
+    p_tree_delete(start);
 }

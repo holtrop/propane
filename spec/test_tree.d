@@ -10,8 +10,7 @@ int main()
 unittest
 {
     string input = "a, ((b)), b";
-    p_context_t * context;
-    context = p_context_new(input);
+    p_context_t * context = p_context_new(input);
     assert_eq(P_SUCCESS, p_parse(context));
     Start * start = p_result(context);
     assert(start.pItems1 !is null);
@@ -37,11 +36,15 @@ unittest
     assert_eq(22, itemsmore.pItem.pToken1.pvalue);
     assert(itemsmore.pItemsMore is null);
 
+    p_tree_delete(start);
+
     input = "";
     context = p_context_new(input);
     assert_eq(P_SUCCESS, p_parse(context));
     start = p_result(context);
     assert(start.pItems is null);
+
+    p_tree_delete(start);
 
     input = "2 1";
     context = p_context_new(input);
@@ -54,4 +57,6 @@ unittest
     assert(start.pItems.pItem.pDual.pOne2 !is null);
     assert(start.pItems.pItem.pDual.pTwo2 is null);
     assert(start.pItems.pItem.pDual.pOne1 is null);
+
+    p_tree_delete(start);
 }

@@ -9,7 +9,7 @@ module <%= @grammar.modulename %>;
 <% end %>
 
 import core.memory;
-import core.stdc.stdlib : malloc;
+import core.stdc.stdlib : malloc, free;
 
 /**************************************************************************
  * User code blocks
@@ -94,6 +94,8 @@ private struct TreeNode
 {
     <%= @grammar.prefix %>position_t position;
     <%= @grammar.prefix %>position_t end_position;
+    ushort n_fields;
+    bool is_token;
     void *[0] fields;
 }
 
@@ -103,6 +105,8 @@ public struct <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>
     /* TreeNode fields must be present in the same order here. */
     <%= @grammar.prefix %>position_t position;
     <%= @grammar.prefix %>position_t end_position;
+    ushort n_fields;
+    bool is_token;
     <%= @grammar.prefix %>token_t token;
     <%= @grammar.prefix %>value_t pvalue;
 <%= @grammar.token_user_fields %>
@@ -115,6 +119,8 @@ public struct <%= @grammar.tree_prefix %><%= name %><%= @grammar.tree_suffix %>
 {
     <%= @grammar.prefix %>position_t position;
     <%= @grammar.prefix %>position_t end_position;
+    ushort n_fields;
+    bool is_token;
 <%     rule_set.tree_fields.each do |fields| %>
     union
     {
@@ -225,6 +231,7 @@ private enum size_t INVALID_ID = cast(size_t)-1;
  *************************************************************************/
 
 /**
+ * Allocate and initialize lexer/parser context structure.
  *
  * Deinitialize and deallocate with <%= @grammar.prefix %>context_delete().
  *
@@ -247,6 +254,16 @@ private enum size_t INVALID_ID = cast(size_t)-1;
     context.mode = <%= @lexer.mode_id("default") %>;
 
     return context;
+}
+
+/**
+ * Deinitialize and deallocate lexer/parser context structure.
+ *
+ * @param context
+ *   Lexer/parser context structure allocated with <%= @grammar.prefix %>context_new().
+ */
+void <%= @grammar.prefix %>context_delete(<%= @grammar.prefix %>context_t * context)
+{
 }
 
 /**************************************************************************
@@ -1054,7 +1071,7 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
             {
                 /* We shifted a token, mark it consumed. */
 <% if @grammar.tree %>
-                <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> * token_tree_node = new <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>(token_info.position, token_info.end_position, token, token_info.pvalue);
+                <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> * token_tree_node = new <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>(token_info.position, token_info.end_position, 0u, true, token, token_info.pvalue);
 <%= expand_code(@grammar.on_token_node, false, nil, nil) %>
                 statevalues[$-1].tree_node = token_tree_node;
 <% else %>
@@ -1094,6 +1111,8 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
                 GC.addRange(node, node_size);
                 node.position = <%= @grammar.prefix %>position_t.INVALID;
                 node.end_position = <%= @grammar.prefix %>position_t.INVALID;
+                node.n_fields = cast(ushort)n_fields;
+                node.is_token = false;
                 foreach (i; 0..n_fields)
                 {
                     node.fields[i] = null;
@@ -1197,6 +1216,35 @@ public <%= start_rule_type[1] %> <%= @grammar.prefix %>result(<%= @grammar.prefi
 public <%= start_rule_type(i)[1] %> <%= @grammar.prefix %>result_<%= start_rule %>(<%= @grammar.prefix %>context_t * context)
 {
     return context.parse_result.v_<%= start_rule_type(i)[0] %>;
+}
+<%   end %>
+<% end %>
+
+<% if @grammar.tree %>
+private void tree_delete(TreeNode * node)
+{
+    if (!node.is_token)
+    {
+        for (size_t i = 0u; i < node.n_fields; i++)
+        {
+            if (node.fields[i])
+            {
+                tree_delete(cast(TreeNode *)node.fields[i]);
+            }
+        }
+        GC.removeRange(node);
+        free(node);
+    }
+}
+
+void <%= @grammar.prefix %>tree_delete(<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * tree)
+{
+    tree_delete(cast(TreeNode *)tree);
+}
+<%   @grammar.start_rules.each_with_index do |start_rule, i| %>
+void <%= @grammar.prefix %>tree_delete_<%= start_rule %>(<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * tree)
+{
+    tree_delete(cast(TreeNode *)tree);
 }
 <%   end %>
 <% end %>

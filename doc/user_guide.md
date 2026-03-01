@@ -1130,8 +1130,6 @@ p_context_t * context = p_context_new(input);
 The `p_context_delete()` function must be called to deinitialize and deallocate
 a context structure allocated by `p_context_init()`.
 
-This function is not available for D language since D has a garbage collector.
-
 ### `p_lex`
 
 The `p_lex()` function is the main entry point to the lexer.
@@ -1319,8 +1317,6 @@ assert(code_point_length == 4u);
 
 The `p_tree_delete()` function can be used to free the memory used by the tree.
 It should be passed the same value that is returned by `p_result()`.
-
-The `p_tree_delete()` function is only available for C/C++ output targets.
 
 Note that if any lexer user code block allocates memory to store in a token's
 `pvalue`, in order to properly free this memory the `free_token_node` statement

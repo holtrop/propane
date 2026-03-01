@@ -10,8 +10,7 @@ int main()
 unittest
 {
     string input = "bbbb";
-    p_context_t * context;
-    context = p_context_new(input);
+    p_context_t * context = p_context_new(input);
     assert(p_parse(context) == P_SUCCESS);
     Start * start = p_result(context);
     assert(start.bs);
@@ -19,6 +18,8 @@ unittest
     assert(start.bs.bs.b);
     assert(start.bs.bs.bs.b);
     assert(start.bs.bs.bs.bs.b);
+
+    p_tree_delete(start);
 
     context = p_context_new(input);
     assert(p_parse_Bs(context) == P_SUCCESS);
@@ -28,9 +29,13 @@ unittest
     assert(bs.bs.bs.b);
     assert(bs.bs.bs.bs.b);
 
+    p_tree_delete_Bs(bs);
+
     input = "c";
     context = p_context_new(input);
     assert(p_parse_R(context) == P_SUCCESS);
     R * r = p_result_R(context);
     assert(r.c);
+
+    p_tree_delete_R(r);
 }
