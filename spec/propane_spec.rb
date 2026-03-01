@@ -95,15 +95,13 @@ EOF
     File.binwrite("spec/run/.stdout", stdout)
     stderr.sub!(/^.*modules passed unittests\n/, "")
     results = Results.new(stdout, stderr, status)
-    if %w[c cpp].include?(options[:language])
-      stdout, stderr, status = Open3.capture3("valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose spec/run/testparser")
-      vgout = stdout + stderr
-      File.binwrite("spec/run/.vgout", vgout)
-      vgout.scan(/lost: (\d+) bytes/) do |match|
-        bytes = $1.to_i
-        if bytes > 0
-          raise "Valgrind detected memory leak"
-        end
+    stdout, stderr, status = Open3.capture3("valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose spec/run/testparser")
+    vgout = stdout + stderr
+    File.binwrite("spec/run/.vgout", vgout)
+    vgout.scan(/(?:definitely|indirectly) lost: (\d+) bytes/) do |match|
+      bytes = $1.to_i
+      if bytes > 0
+        raise "Valgrind detected memory leak"
       end
     end
     results
@@ -1431,6 +1429,9 @@ EOF
         expect(results.stdout).to match /first is foo1.*second is bar2/m
       end
 
+      # D garbage collector was freeing memory for nodes when it should not
+      # have been. This was due to pointers being in the TreeNode that was
+      # allocated by C malloc() function instead of allocated using D.
       it "does not free memory allocated for tree nodes" do
         ext = language == "cpp" ? "c" : language
         write_grammar(File.read("spec/tree_node_memory_remains.#{ext}.propane"))

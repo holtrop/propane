@@ -405,4 +405,5 @@ def main() -> int
             stderr.writeln("Index ", i, ": expected ", expected[i].name, "/", expected[i].token, ", got ", pfds[i].name.pvalue.s, "/", pfds[i].returntype.pType.pTypeBase.pToken1.token);
         }
     }
+    p_tree_delete(pmod);
 }
