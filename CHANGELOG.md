@@ -1,3 +1,9 @@
+## v4.2.0
+
+### New Features
+
+- Add support for a custom lex function.
+
 ## v4.1.0
 
 ### New Features
