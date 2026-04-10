@@ -981,7 +981,7 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
     {
         if (token == INVALID_TOKEN_ID)
         {
-            size_t lexer_result = <%= @grammar.prefix %>lex(context, &token_info);
+            size_t lexer_result = <%= lex_fn %>(context, &token_info);
             if (lexer_result != P_SUCCESS)
             {
                 result = lexer_result;

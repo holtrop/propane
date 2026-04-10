@@ -69,6 +69,14 @@ typedef union
     <%= typestring %> v_<%= name %>;
 <%   end %>
 } <%= @grammar.prefix %>value_t;
+
+/** Parser value constructor(s). */
+<%   @grammar.ptypes.each do |name, typestring| %>
+static inline <%= @grammar.prefix %>value_t <%= @grammar.prefix %>value<%= name == "default" ? "" : "_#{name}" %>(<%= typestring %> v)
+{
+    return (<%= @grammar.prefix %>value_t){.v_<%= name %> = v};
+}
+<%   end %>
 <% end %>
 
 <% if @grammar.tree %>

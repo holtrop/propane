@@ -6,6 +6,7 @@ class Propane
     IDENTIFIER_REGEX = /(?:[a-zA-Z]|_[a-zA-Z0-9])[a-zA-Z_0-9]*/
 
     attr_reader :context_user_fields
+    attr_reader :lex_fn
     attr_reader :tree
     attr_reader :tree_prefix
     attr_reader :tree_suffix
@@ -69,6 +70,7 @@ class Propane
       elsif parse_comment_line!
       elsif @modeline.nil? && parse_mode_label!
       elsif parse_context_user_fields_statement!
+      elsif parse_lex_fn!
       elsif parse_tree_statement!
       elsif parse_tree_prefix_statement!
       elsif parse_tree_suffix_statement!
@@ -114,6 +116,12 @@ class Propane
         end
         @context_user_fields ||= ""
         @context_user_fields += code
+      end
+    end
+
+    def parse_lex_fn!
+      if md = consume!(/lex_fn\b\s*(\w+)\s*;/)
+        @lex_fn = md[1]
       end
     end
 

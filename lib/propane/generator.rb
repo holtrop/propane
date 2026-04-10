@@ -354,6 +354,14 @@ class Propane
       code
     end
 
+    # Get the lex function to use.
+    #
+    # @return [String]
+    #   Lex function to use.
+    def lex_fn
+      @grammar.lex_fn || "#{@grammar.prefix}lex"
+    end
+
     # Get the parser value type for the start rule.
     #
     # @return [Array<String>]

@@ -1699,6 +1699,88 @@ EOF
         results = run_test(language: language)
         expect(results.status).to eq 0
       end
+
+      it "allows a custom lex function" do
+        if language == "d"
+          write_grammar <<EOF
+<<
+private size_t mylexfn(p_context_t * context, p_token_info_t * out_token_info)
+{
+    static size_t count;
+    size_t result = P_SUCCESS;
+    if (count > 0)
+    {
+        out_token_info.token = TOKEN_a;
+        out_token_info.pvalue = p_value(count);
+        count--;
+    }
+    else
+    {
+        result = p_lex(context, out_token_info);
+        if (out_token_info.token == TOKEN_c)
+        {
+            count = 3;
+        }
+    }
+    return result;
+}
+>>
+
+ptype size_t;
+lex_fn mylexfn;
+
+token a << $$ = 7; >>
+token b << $$ = 8; >>
+token c << $$ = 9; >>
+Start -> << $$ = 0; >>
+Start -> Start ID << $$ = ($1 << 4) | $2; >>
+ID -> a << $$ = $1; >>
+ID -> b << $$ = $1; >>
+ID -> c << $$ = $1; >>
+EOF
+        else
+          write_grammar <<EOF
+<<
+static size_t mylexfn(p_context_t * context, p_token_info_t * out_token_info)
+{
+    static size_t count;
+    size_t result = P_SUCCESS;
+    if (count > 0)
+    {
+        out_token_info->token = TOKEN_a;
+        out_token_info->pvalue = p_value(count);
+        count--;
+    }
+    else
+    {
+        result = p_lex(context, out_token_info);
+        if (out_token_info->token == TOKEN_c)
+        {
+            count = 3;
+        }
+    }
+    return result;
+}
+>>
+
+ptype size_t;
+lex_fn mylexfn;
+
+token a << $$ = 7; >>
+token b << $$ = 8; >>
+token c << $$ = 9; >>
+Start -> << $$ = 0; >>
+Start -> Start ID << $$ = ($1 << 4) | $2; >>
+ID -> a << $$ = $1; >>
+ID -> b << $$ = $1; >>
+ID -> c << $$ = $1; >>
+EOF
+        end
+        run_propane(language: language)
+        compile("spec/test_custom_lex_fn.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.status).to eq 0
+      end
     end
   end
 end

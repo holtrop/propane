@@ -86,6 +86,14 @@ public union <%= @grammar.prefix %>value_t
     <%= typestring %> v_<%= name %>;
 <%   end %>
 }
+
+/** Parser value constructor(s). */
+<%   @grammar.ptypes.each do |name, typestring| %>
+public <%= @grammar.prefix %>value_t <%= @grammar.prefix %>value<%= name == "default" ? "" : "_#{name}" %>(T)(T v)
+{
+    return <%= @grammar.prefix %>value_t(v_<%= name %>: v);
+}
+<%   end %>
 <% end %>
 
 <% if @grammar.tree %>
@@ -1037,7 +1045,7 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
     {
         if (token == INVALID_TOKEN_ID)
         {
-            size_t lexer_result = <%= @grammar.prefix %>lex(context, &token_info);
+            size_t lexer_result = <%= lex_fn %>(context, &token_info);
             if (lexer_result != P_SUCCESS)
             {
                 return lexer_result;

@@ -316,6 +316,61 @@ free_token_node <<
 The `free_token_node` statement user code block is not emitted for D language
 since D has a garbage collector.
 
+##> `lex_fn` statement - specifying a custom lexer function
+
+Propane generates both a lexer and a parser.
+By default, the parser uses the generated `p_lex()` function directly to
+return information for the next lexed token from the input stream.
+
+However, the user can specify a custom lex function.
+This function may or may not use the Propane generated `p_lex()` function under
+the hood.
+For example, a token sequence could be injected or repeated from a previously
+saved macro definition.
+
+Example (C/C++):
+
+```
+<<
+static size_t mylexfn(p_context_t * context, p_token_info_t * out_token_info)
+{
+    static size_t count;
+    size_t result = P_SUCCESS;
+    if (count > 0)
+    {
+        out_token_info->token = TOKEN_a;
+        out_token_info->pvalue = p_value(count);
+        count--;
+    }
+    else
+    {
+        result = p_lex(context, out_token_info);
+        if (out_token_info->token == TOKEN_c)
+        {
+            count = 3;
+        }
+    }
+    return result;
+}
+>>
+
+lex_fn mylexfn;
+```
+
+The `lex_fn` statement takes one argument specifying the name of the custom
+lexer function.
+The user must supply a value for the `token` field of the `p_token_info_t`
+output structure so that the parser knows what token was lexed.
+
+Additionally, if the parser user code makes use of the token's pvalue, then
+the lexer function must supply a value for the `pvalue` field of the
+`p_token_info_t` structure.
+The `p_value()` generated API function could be useful for specifying
+parser values to associate with the lexed token when tree generation is not
+enabled.
+When tree generation is enabled, the `pvalue` field can be set to an instance
+of whatever type the user has defined as the `ptype` type.
+
 ##> `module` statement - specifying the generated parser module name
 
 The `module` statement can be used to specify the module name for a generated
@@ -1007,6 +1062,17 @@ For C targets, the `p_position_t` structure can be checked for validity by
 calling `p_position_valid(pos)` where `pos` is a `p_position_t` structure
 instance.
 
+### `p_value_t`
+
+If tree generation mode is enabled, the `p_value_t` type is defined to be the
+type given to the `ptype` statement in the grammar file.
+
+If tree generation mode is not enabled, there could be more than one `ptype`
+given, so the `p_value_t` type is a union of all possible `ptype` types.
+In this case, the API functions `p_value()` and `p_value_XXX()` for each given
+`ptype` name `XXX` are generated to return `p_value_t` instances holding the
+corresponding `ptype`.
+
 ### `p_token_info_t`
 
 The `p_token_info_t` structure contains the following fields:
@@ -1335,6 +1401,20 @@ p_tree_delete_Statement(statement_tree);
 
 In this case, Propane will free a `Statement` tree structure returned by the
 `p_parse_Statement(context)` function.
+
+### `p_value`
+
+When tree generation mode is not active, the `p_value_t` union can hold one of
+several different possible value types.
+
+The `p_value(v)` function returns an instance of the `p_value_t` with the
+default member set to the value of `v`.
+
+A `p_value_XXX(v)` function is set for each user-defined `ptype` name with
+the user-given name in place of the `XXX`.
+
+These functions are useful for custom lexer functions which need to return a
+parser value corresponding to a lexed token.
 
 ##> Data
 
