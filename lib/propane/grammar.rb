@@ -22,7 +22,8 @@ class Propane
     attr_reader :on_token_node
     attr_reader :token_user_fields
 
-    def initialize(input)
+    def initialize(input, filename)
+      @filename = filename
       @patterns = []
       @start_rules = []
       @tokens = []
@@ -304,8 +305,12 @@ class Propane
     def parse_code_block_statement!
       if md = consume!(/<<([a-z]*)(.*?)>>\n/m)
         name, code = md[1..2]
-        code.sub!(/\A\n/, "")
-        code += "\n" unless code.end_with?("\n")
+        code = code.chomp
+        if code.start_with?("\n")
+          code = %[#line #{@line_number + 1} "#{@filename}"#{code}\n#linereset\n]
+        else
+          code = %[#line #{@line_number} "#{@filename}"\n#{code}\n#linereset\n]
+        end
         if @code_blocks[name]
           @code_blocks[name] += code
         else
@@ -346,9 +351,12 @@ class Propane
 
     def parse_code_block!
       if md = consume!(/<<(.*?)>>\n/m)
-        code = md[1]
-        code.sub!(/\A\n/, "")
-        code += "\n" unless code.end_with?("\n")
+        code = md[1].chomp
+        if code.start_with?("\n")
+          code = %[#line #{@line_number + 1} "#{@filename}"#{code}\n#linereset\n]
+        else
+          code = %[#line #{@line_number} "#{@filename}"\n#{code}\n#linereset\n]
+        end
         code
       end
     end

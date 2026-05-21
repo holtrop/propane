@@ -28,7 +28,7 @@ B -> <<
   b = 0;
 >>
 EOF
-      grammar = Grammar.new(input)
+      grammar = Grammar.new(input, "test.propane")
       expect(grammar.modulename).to eq "a.b"
       expect(grammar.ptype).to eq "XYZ  *"
       expect(grammar.ptypes).to eq("default" => "XYZ  *")
@@ -62,7 +62,7 @@ EOF
       expect(o).to_not be_nil
       expect(o.pattern).to eq "token_with_code"
       expect(o.line_number).to eq 11
-      expect(o.code).to eq "Code for the token\n"
+      expect(o.code).to eq %[#line 12 "test.propane"\nCode for the token\n#linereset\n]
 
       o = grammar.tokens.find {|token| token.name == "token_with_no_pattern"}
       expect(o).to_not be_nil
@@ -83,7 +83,7 @@ EOF
       expect(o.name).to eq "A"
       expect(o.components).to eq %w[B]
       expect(o.line_number).to eq 19
-      expect(o.code).to eq "  a = 42;\n"
+      expect(o.code).to eq %[#line 20 "test.propane"\n  a = 42;\n#linereset\n]
 
       o = grammar.rules[1]
       expect(o.name).to eq "B"
@@ -95,7 +95,7 @@ EOF
       expect(o.name).to eq "B"
       expect(o.components).to eq []
       expect(o.line_number).to eq 23
-      expect(o.code).to eq "  b = 0;\n"
+      expect(o.code).to eq %[#line 24 "test.propane"\n  b = 0;\n#linereset\n]
     end
 
     it "parses code segments with semicolons" do
@@ -113,7 +113,7 @@ tokenid token_with_no_pattern;
 
 prefix myparser_;
 EOF
-      grammar = Grammar.new(input)
+      grammar = Grammar.new(input, "test.propane")
       expect(grammar.prefix).to eq "myparser_"
 
       o = grammar.tokens.find {|token| token.name == "code1"}
@@ -122,7 +122,7 @@ EOF
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
       expect(o).to_not be_nil
-      expect(o.code).to eq "  a = b;\n  return c;\n"
+      expect(o.code).to eq %[#line 2 "test.propane"\n  a = b;\n  return c;\n#linereset\n]
 
       o = grammar.tokens.find {|token| token.name == "code2"}
       expect(o).to_not be_nil
@@ -130,7 +130,7 @@ EOF
 
       o = grammar.patterns.find {|pattern| pattern.token == o}
       expect(o).to_not be_nil
-      expect(o.code).to eq %[  writeln("Hello there");\n]
+      expect(o.code).to eq %[#line 7 "test.propane"\n  writeln("Hello there");\n#linereset\n]
     end
 
     it "supports mode labels" do
@@ -144,7 +144,7 @@ m2: /bar/ <<
 drop /q/;
 m3: drop /r/;
 EOF
-      grammar = Grammar.new(input)
+      grammar = Grammar.new(input, "test.propane")
 
       o = grammar.tokens.find {|token| token.name == "a"}
       expect(o).to_not be_nil
@@ -197,7 +197,7 @@ tokenid int(integer);
 Start (node) -> R;
 R -> abc int;
 EOF
-      grammar = Grammar.new(input)
+      grammar = Grammar.new(input, "test.propane")
 
       o = grammar.tokens.find {|token| token.name == "abc"}
       expect(o).to_not be_nil

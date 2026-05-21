@@ -38,7 +38,13 @@ class Propane
           output_file = @output_file
         end
         erb = ERB.new(template, trim_mode: "<>")
-        result = erb.result(binding.clone)
+        result = erb.result(binding.clone).lines.each_with_index.map do |line, i|
+          if line == "#linereset\n"
+            "#line #{i + 2}\n"
+          else
+            line
+          end
+        end.join
         File.open(output_file, "wb") do |fh|
           fh.write(result)
         end

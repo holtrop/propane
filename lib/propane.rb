@@ -33,7 +33,7 @@ class Propane
 
     def run(input_file, output_file, log_file, options)
       begin
-        grammar = Grammar.new(File.read(input_file))
+        grammar = Grammar.new(File.read(input_file), input_file)
         generator = Generator.new(grammar, output_file, log_file, options)
         generator.generate
       rescue Error => e
