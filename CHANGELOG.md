@@ -1,3 +1,9 @@
+## v4.3.0
+
+### New Features
+
+- Use #line for user code blocks to report input grammar position for errors.
+
 ## v4.2.0
 
 ### New Features
