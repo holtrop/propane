@@ -1082,6 +1082,9 @@ The `p_token_info_t` structure contains the following fields:
 * `length` (`size_t`) holds the number of input bytes used by the token.
 * `token` (`p_token_t`) holds the token ID of the lexed token
 * `pvalue` (`p_value_t`) holds the parser value associated with the token.
+  The actual user value can be extracted with `p_value_get(&token_info.pvalue)`
+  for the default value or `p_value_get_XXX(&token_info.pvalue)` for named
+  `ptype` values.
 
 ### Tree Node Types
 
@@ -1404,17 +1407,34 @@ In this case, Propane will free a `Statement` tree structure returned by the
 
 ### `p_value`
 
-When tree generation mode is not active, the `p_value_t` union can hold one of
-several different possible value types.
-
-The `p_value(v)` function returns an instance of the `p_value_t` with the
+The `p_value(v)` function builds an instance of the `p_value_t` with the
 default member set to the value of `v`.
 
-A `p_value_XXX(v)` function is set for each user-defined `ptype` name with
+A `p_value_XXX(v)` function is defined for each user-defined `ptype` name with
 the user-given name in place of the `XXX`.
 
 These functions are useful for custom lexer functions which need to return a
 parser value corresponding to a lexed token.
+
+They are especially useful when tree generation mode is not active.
+In that case, the `p_value_t` union can hold one of several different possible
+value types.
+
+### `p_value_get`
+
+The `p_value_get()` accessor functions can be used to extract a user value
+from a `p_value_t` union.
+
+The `p_value_get(pvalue)` function accepts a pointer to a `p_value_t` and
+returns the value of its default member.
+
+A `p_value_get_XXX(pvalue)` function is generated for each user-defined `ptype`
+name with the user-given name in place of the `XXX`, returning the value of the
+corresponding member.
+
+These functions are the counterpart to `p_value()` constructor functions and
+are useful for reading the parser value associated with a lexed token, for
+example `p_value_get(&token_info.pvalue)`.
 
 ##> Data
 

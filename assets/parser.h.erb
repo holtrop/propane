@@ -77,6 +77,14 @@ static inline <%= @grammar.prefix %>value_t <%= @grammar.prefix %>value<%= name 
     return (<%= @grammar.prefix %>value_t){.v_<%= name %> = v};
 }
 <%   end %>
+
+/** Parser value accessor(s). */
+<%   @grammar.ptypes.each do |name, typestring| %>
+static inline <%= typestring %> <%= @grammar.prefix %>value_get<%= name == "default" ? "" : "_#{name}" %>(<%= @grammar.prefix %>value_t const * pvalue)
+{
+    return pvalue->v_<%= name %>;
+}
+<%   end %>
 <% end %>
 
 <% if @grammar.tree %>

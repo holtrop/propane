@@ -1781,6 +1781,39 @@ EOF
         results = run_test(language: language)
         expect(results.status).to eq 0
       end
+
+      it "provides accessor functions to extract user values from a parser value" do
+        if language == "d"
+          write_grammar <<EOF
+ptype int;
+ptype float = float;
+ptype string = string;
+
+drop /\\s+/;
+token num /\\d+/ << $$ = 42; >>
+token flt (float) /f/ << $$ = 1.5; >>
+token str (string) /s/ << $$ = "hello"; >>
+Start -> num flt str;
+EOF
+        else
+          write_grammar <<EOF
+ptype int;
+ptype float = float;
+ptype string = char *;
+
+drop /\\s+/;
+token num /\\d+/ << $$ = 42; >>
+token flt (float) /f/ << $$ = 1.5; >>
+token str (string) /s/ << $$ = (char *)"hello"; >>
+Start -> num flt str;
+EOF
+        end
+        run_propane(language: language)
+        compile("spec/test_value_accessors.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
     end
   end
 end
