@@ -40,7 +40,7 @@ class Propane
         erb = ERB.new(template, trim_mode: "<>")
         result = erb.result(binding.clone).lines.each_with_index.map do |line, i|
           if line == "#linereset\n"
-            "#line #{i + 2}\n"
+            %[#line #{i + 2} "#{output_file}"\n]
           else
             line
           end

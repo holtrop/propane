@@ -1,3 +1,9 @@
+## v4.5.0
+
+### Fixes
+
+- Fix #line reset directives
+
 ## v4.4.0
 
 ### New Features
