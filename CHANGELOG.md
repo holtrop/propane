@@ -9,6 +9,7 @@
 
 - Fix #line reset directives
 - Update keyword list in extra/vim/syntax/propane.vim
+- Fix propane.vim keyword detection
 
 ## v4.4.0
 

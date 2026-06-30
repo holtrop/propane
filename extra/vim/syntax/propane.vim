@@ -24,12 +24,19 @@ syn match propaneOperator "->"
 syn match propaneFieldAlias ":[a-zA-Z0-9_]\+" contains=propaneFieldOperator
 syn match propaneFieldOperator ":" contained
 syn match propaneOperator "?"
-syn keyword propaneKeyword context_user_fields drop free_token_node lex_fn module noline on_token_node prefix ptype start token token_user_fields tokenid tree tree_prefix tree_suffix
+" Keywords that introduce a user-defined name. The name is consumed by
+" propaneName via nextgroup so a name matching a keyword (e.g. 'token start')
+" is not highlighted as a keyword. These must be a match (not syn keyword)
+" because a syn keyword always wins over a contained nextgroup match.
+syn match propaneNameDecl "\<\%(tokenid\|token\|lex_fn\|module\|start\|tree_prefix\|tree_suffix\)\>" nextgroup=propaneName skipwhite
+syn match propaneName "\<\h\w*\>" contained
+syn match propaneKeyword "\<\%(context_user_fields\|drop\|free_token_node\|noline\|on_token_node\|prefix\|ptype\|token_user_fields\|tree\)\>"
 
 syn region propaneRegex start="/" end="/" skip="\v\\\\|\\/"
 
 hi def link propaneComment Comment
 hi def link propaneKeyword Keyword
+hi def link propaneNameDecl Keyword
 hi def link propaneRegex String
 hi def link propaneOperator Operator
 hi def link propaneFieldOperator Operator
