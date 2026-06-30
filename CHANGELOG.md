@@ -1,3 +1,9 @@
+## v4.4.0
+
+### New Features
+
+- Add p_value_get() / p_value_get_XXX() accessors
+
 ## v4.3.0
 
 ### New Features
