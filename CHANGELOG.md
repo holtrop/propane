@@ -7,6 +7,7 @@
 ### Fixes
 
 - Fix #line reset directives
+- Update keyword list in extra/vim/syntax/propane.vim
 
 ## v4.4.0
 
