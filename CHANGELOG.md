@@ -1,5 +1,9 @@
 ## v4.5.0
 
+### New Features
+
+- Add `noline` grammar statement to skip emitting `#line` directives
+
 ### Fixes
 
 - Fix #line reset directives

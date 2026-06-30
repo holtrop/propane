@@ -88,6 +88,7 @@ class Propane
       elsif parse_rule_statement!
       elsif parse_code_block_statement!
       elsif parse_prefix_statement!
+      elsif parse_noline_statement!
       else
         if @input.size > 25
           @input = @input.slice(0..20) + "..."
@@ -306,10 +307,12 @@ class Propane
       if md = consume!(/<<([a-z]*)(.*?)>>\n/m)
         name, code = md[1..2]
         code = code.chomp
-        if code.start_with?("\n")
-          code = %[#line #{@line_number + 1} "#{@filename}"#{code}\n#linereset\n]
-        else
-          code = %[#line #{@line_number} "#{@filename}"\n#{code}\n#linereset\n]
+        unless @noline
+          if code.start_with?("\n")
+            code = %[#line #{@line_number + 1} "#{@filename}"#{code}\n#linereset\n]
+          else
+            code = %[#line #{@line_number} "#{@filename}"\n#{code}\n#linereset\n]
+          end
         end
         if @code_blocks[name]
           @code_blocks[name] += code
@@ -324,6 +327,13 @@ class Propane
     def parse_prefix_statement!
       if md = consume!(/prefix\s+(#{IDENTIFIER_REGEX})\s*;/)
         @prefix = md[1]
+        true
+      end
+    end
+
+    def parse_noline_statement!
+      if md = consume!(/noline\s*;/)
+        @noline = true
         true
       end
     end
@@ -352,10 +362,12 @@ class Propane
     def parse_code_block!
       if md = consume!(/<<(.*?)>>\n/m)
         code = md[1].chomp
-        if code.start_with?("\n")
-          code = %[#line #{@line_number + 1} "#{@filename}"#{code}\n#linereset\n]
-        else
-          code = %[#line #{@line_number} "#{@filename}"\n#{code}\n#linereset\n]
+        unless @noline
+          if code.start_with?("\n")
+            code = %[#line #{@line_number + 1} "#{@filename}"#{code}\n#linereset\n]
+          else
+            code = %[#line #{@line_number} "#{@filename}"\n#{code}\n#linereset\n]
+          end
         end
         code
       end

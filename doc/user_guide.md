@@ -383,6 +383,27 @@ module proj.parser;
 If a module statement is not present, then the generated D module will not
 contain a module statement and the default module name will be used.
 
+##> `noline` statement - disabling `#line` directives
+
+By default, Propane emits `#line` directives into the generated output around
+user code blocks.
+These directives instruct the compiler to report any warnings or errors in the
+user code using the file name and line number of the original grammar file,
+rather than the generated output file.
+This makes it easier to locate the source of a compiler diagnostic in the
+grammar file.
+
+The `noline` statement disables the emission of these `#line` directives.
+
+```
+noline;
+```
+
+When the `noline` statement is present, user code blocks are copied to the
+generated output without any surrounding `#line` directives.
+This can be useful when debugging the generated parser itself, or when the
+`#line` directives interfere with other tooling.
+
 ##> `on_tree_node` statement -  custom initialization of a token tree node
 
 The `on_token_node` statement can be used to provide code that initializes

@@ -133,6 +133,41 @@ EOF
       expect(o.code).to eq %[#line 7 "test.propane"\n  writeln("Hello there");\n#linereset\n]
     end
 
+    it "does not emit #line directives with noline statement" do
+      input = <<EOF
+noline;
+
+token code1 <<
+  a = b;
+  return c;
+>>
+
+token code2 <<
+  writeln("Hello there");
+>>
+
+tokenid token_with_no_pattern;
+
+prefix myparser_;
+EOF
+      grammar = Grammar.new(input, "test.propane")
+      expect(grammar.prefix).to eq "myparser_"
+
+      o = grammar.tokens.find {|token| token.name == "code1"}
+      expect(o).to_not be_nil
+
+      o = grammar.patterns.find {|pattern| pattern.token == o}
+      expect(o).to_not be_nil
+      expect(o.code).to eq %[\n  a = b;\n  return c;]
+
+      o = grammar.tokens.find {|token| token.name == "code2"}
+      expect(o).to_not be_nil
+
+      o = grammar.patterns.find {|pattern| pattern.token == o}
+      expect(o).to_not be_nil
+      expect(o.code).to eq %[\n  writeln("Hello there");]
+    end
+
     it "supports mode labels" do
       input = <<EOF
 token a;
