@@ -3,6 +3,7 @@
 ### New Features
 
 - Add `noline` grammar statement to skip emitting `#line` directives
+- Attempt to autodetect target language (D/C++) in extra/vim/syntax/propane.vim
 
 ### Fixes
 

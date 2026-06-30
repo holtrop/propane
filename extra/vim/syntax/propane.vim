@@ -8,7 +8,11 @@ if exists("b:current_syntax")
 endif
 
 if !exists("b:propane_subtype")
-  let b:propane_subtype = "d"
+  if search('\<import\s\+\%(std\|core\)\.', 'nw') > 0
+    let b:propane_subtype = "d"
+  else
+    let b:propane_subtype = "cpp"
+  endif
 endif
 
 exe "syn include @propaneTarget syntax/".b:propane_subtype.".vim"
