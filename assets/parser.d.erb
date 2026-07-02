@@ -59,10 +59,10 @@ public alias <%= @grammar.prefix %>code_point_t = uint;
  */
 public struct <%= @grammar.prefix %>position_t
 {
-    /** Input text row (0-based). */
+    /** Input text row (1-based). */
     uint row;
 
-    /** Input text column (0-based). */
+    /** Input text column (1-based). */
     uint col;
 
     /** Invalid position value. */

@@ -1346,7 +1346,7 @@ if (p_parse(context) == P_UNEXPECTED_TOKEN)
 {
     p_position_t error_position = p_position(context);
     fprintf(stderr, "Error: unexpected token at row %u column %u\n",
-        error_position.row + 1, error_position.col + 1);
+        error_position.row, error_position.col);
 }
 ```
 
@@ -1474,7 +1474,7 @@ if (p_parse(context) == P_UNEXPECTED_TOKEN)
     p_position_t error_position = p_position(context);
     fprintf(stderr, "Error: unexpected token `%s' at row %u column %u\n",
         p_token_names[context->token],
-        error_position.row + 1, error_position.col + 1);
+        error_position.row, error_position.col);
 }
 ```
 
