@@ -882,12 +882,12 @@ private struct state_value_t
     /** Parser state ID. */
     size_t state_id;
 
-    /** Parser value from this state. */
-    <%= @grammar.prefix %>value_t pvalue;
-
 <% if @grammar.tree %>
     /** Tree node. */
     void * tree_node;
+<% else %>
+    /** Parser value from this state. */
+    <%= @grammar.prefix %>value_t pvalue;
 <% end %>
 
     this(size_t state_id)
