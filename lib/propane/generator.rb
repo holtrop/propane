@@ -312,6 +312,14 @@ class Propane
             "statevalues[$-1-n_states+#{index}].pvalue.v_#{rule.components[index - 1].ptypename}"
           end
         end
+        code = code.gsub(/\$\{(\$|\d+)\.position\}/) do |match|
+          index = $1.to_i
+          "get_rule_position(statevalues, #{index}, n_states, false)"
+        end
+        code = code.gsub(/\$\{(\$|\d+)\.end_position\}/) do |match|
+          index = $1.to_i
+          "get_rule_position(statevalues, #{index}, n_states, true)"
+        end
         code = code.gsub(/\$\{(\w+)\}/) do |match|
           aliasname = $1
           if index = rule.aliases[aliasname]

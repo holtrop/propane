@@ -1814,6 +1814,132 @@ EOF
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
       end
+
+      it "allows accessing rule and component text positions" do
+        if language == "d"
+          write_grammar <<EOF
+<<
+import std.stdio;
+>>
+drop /\\s+/;
+token tok1;
+token tok2;
+token ident /[a-zA-Z_]\\w*/;
+token num /\\d+/;
+Num -> num;
+Start -> ident Num <<
+    writeln("ident start: ", ${1.position}.row, ", ", ${1.position}.col);
+    writeln("ident end: ", ${1.end_position}.row, ", ", ${1.end_position}.col);
+    writeln("Num start: ", ${2.position}.row, ", ", ${2.position}.col);
+    writeln("Num end: ", ${2.end_position}.row, ", ", ${2.end_position}.col);
+    writeln("Start start: ", ${$.position}.row, ", ", ${$.position}.col);
+    writeln("Start end: ", ${$.end_position}.row, ", ", ${$.end_position}.col);
+>>
+R -> Empty tok2 <<
+    writeln("Empty start: ", ${1.position}.row, ", ", ${1.position}.col);
+    writeln("Empty end: ", ${1.end_position}.row, ", ", ${1.end_position}.col);
+    writeln("tok2 start: ", ${2.position}.row, ", ", ${2.position}.col);
+    writeln("tok2 end: ", ${2.end_position}.row, ", ", ${2.end_position}.col);
+    writeln("R start: ", ${$.position}.row, ", ", ${$.position}.col);
+    writeln("R end: ", ${$.end_position}.row, ", ", ${$.end_position}.col);
+>>
+R -> tok1 Empty <<
+    writeln("tok1 start: ", ${1.position}.row, ", ", ${1.position}.col);
+    writeln("tok1 end: ", ${1.end_position}.row, ", ", ${1.end_position}.col);
+    writeln("Empty start: ", ${2.position}.row, ", ", ${2.position}.col);
+    writeln("Empty end: ", ${2.end_position}.row, ", ", ${2.end_position}.col);
+    writeln("R2 start: ", ${$.position}.row, ", ", ${$.position}.col);
+    writeln("R2 end: ", ${$.end_position}.row, ", ", ${$.end_position}.col);
+>>
+Empty -> ;
+Start -> R <<
+    writeln("StartR start: ", ${$.position}.row, ", ", ${$.position}.col);
+    writeln("StartR end: ", ${$.end_position}.row, ", ", ${$.end_position}.col);
+>>
+Start -> Empty <<
+    writeln("StartEmpty start: ", ${$.position}.row, ", ", ${$.position}.col);
+    writeln("StartEmpty end: ", ${$.end_position}.row, ", ", ${$.end_position}.col);
+>>
+EOF
+        else
+          write_grammar <<EOF
+<<
+#include <stdio.h>
+>>
+drop /\\s+/;
+token tok1;
+token tok2;
+token ident /[a-zA-Z_]\\w*/;
+token num /\\d+/;
+Num -> num;
+token pct /%/;
+Start -> ident Num <<
+    printf("ident start: %d, %d\\n", ${1.position}.row, ${1.position}.col);
+    printf("ident end: %d, %d\\n", ${1.end_position}.row, ${1.end_position}.col);
+    printf("Num start: %d, %d\\n", ${2.position}.row, ${2.position}.col);
+    printf("Num end: %d, %d\\n", ${2.end_position}.row, ${2.end_position}.col);
+    printf("Start start: %d, %d\\n", ${$.position}.row, ${$.position}.col);
+    printf("Start end: %d, %d\\n", ${$.end_position}.row, ${$.end_position}.col);
+>>
+R -> Empty tok2 <<
+    printf("Empty start: %d, %d\\n", ${1.position}.row, ${1.position}.col);
+    printf("Empty end: %d, %d\\n", ${1.end_position}.row, ${1.end_position}.col);
+    printf("tok2 start: %d, %d\\n", ${2.position}.row, ${2.position}.col);
+    printf("tok2 end: %d, %d\\n", ${2.end_position}.row, ${2.end_position}.col);
+    printf("R start: %d, %d\\n", ${$.position}.row, ${$.position}.col);
+    printf("R end: %d, %d\\n", ${$.end_position}.row, ${$.end_position}.col);
+>>
+R -> tok1 Empty <<
+    printf("tok1 start: %d, %d\\n", ${1.position}.row, ${1.position}.col);
+    printf("tok1 end: %d, %d\\n", ${1.end_position}.row, ${1.end_position}.col);
+    printf("Empty start: %d, %d\\n", ${2.position}.row, ${2.position}.col);
+    printf("Empty end: %d, %d\\n", ${2.end_position}.row, ${2.end_position}.col);
+    printf("R2 start: %d, %d\\n", ${$.position}.row, ${$.position}.col);
+    printf("R2 end: %d, %d\\n", ${$.end_position}.row, ${$.end_position}.col);
+>>
+Empty -> ;
+Start -> R <<
+    printf("StartR start: %d, %d\\n", ${$.position}.row, ${$.position}.col);
+    printf("StartR end: %d, %d\\n", ${$.end_position}.row, ${$.end_position}.col);
+>>
+Start -> Empty <<
+    printf("StartEmpty start: %d, %d\\n", ${$.position}.row, ${$.position}.col);
+    printf("StartEmpty end: %d, %d\\n", ${$.end_position}.row, ${$.end_position}.col);
+>>
+EOF
+        end
+        run_propane(language: language)
+        compile("spec/test_positions.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+        expect(results.stdout).to eq <<EOF
+ident start: 1, 5
+ident end: 1, 9
+Num start: 3, 9
+Num end: 3, 12
+Start start: 1, 5
+Start end: 3, 12
+
+Empty start: 0, 0
+Empty end: 0, 0
+tok2 start: 2, 2
+tok2 end: 2, 5
+R start: 2, 2
+R end: 2, 5
+StartR start: 2, 2
+StartR end: 2, 5
+
+tok1 start: 1, 3
+tok1 end: 1, 6
+Empty start: 0, 0
+Empty end: 0, 0
+R2 start: 1, 3
+R2 end: 1, 6
+StartR start: 1, 3
+StartR end: 1, 6
+EOF
+      end
     end
   end
 end

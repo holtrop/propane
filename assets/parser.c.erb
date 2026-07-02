@@ -711,6 +711,8 @@ typedef struct
     /** tree node. */
     void * tree_node;
 <% else %>
+    <%= @grammar.prefix %>position_t position;
+    <%= @grammar.prefix %>position_t end_position;
     /** Parser value from this state. */
     <%= @grammar.prefix %>value_t pvalue;
 <% end %>
@@ -867,6 +869,57 @@ static void state_values_stack_free(state_values_stack_t * stack)
 
 <% unless @grammar.tree %>
 /**
+ * Get the rule position (start or end) for the currently matched rule.
+ */
+static <%= @grammar.prefix %>position_t get_rule_position(state_values_stack_t * statevalues, size_t i, size_t n_states, bool get_end)
+{
+    if (n_states > 0u)
+    {
+        if (i == 0u)
+        {
+            if (get_end)
+            {
+                int stack_index = -1;
+                for (size_t j = 0u; j < n_states; j++)
+                {
+                    state_value_t * sv = state_values_stack_index(statevalues, stack_index - (int)j);
+                    if (<%= @grammar.prefix %>position_valid(sv->end_position))
+                    {
+                        return sv->end_position;
+                    }
+                }
+            }
+            else
+            {
+                int stack_index = -(int)n_states;
+                for (size_t j = 0u; j < n_states; j++)
+                {
+                    state_value_t * sv = state_values_stack_index(statevalues, stack_index + (int)j);
+                    if (<%= @grammar.prefix %>position_valid(sv->position))
+                    {
+                        return sv->position;
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (get_end)
+            {
+                return state_values_stack_index(statevalues, -1 - (int)n_states + (int)i)->end_position;
+            }
+            else
+            {
+                return state_values_stack_index(statevalues, -1 - (int)n_states + (int)i)->position;
+            }
+        }
+    }
+    <%= @grammar.prefix %>position_t empty_pos;
+    memset(&empty_pos, 0, sizeof(empty_pos));
+    return empty_pos;
+}
+
+/**
  * Execute user code associated with a parser rule.
  *
  * @param rule The ID of the rule.
@@ -971,6 +1024,8 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
 <% if @grammar.tree %>
     void * reduced_parser_node;
 <% else %>
+    <%= @grammar.prefix %>position_t reduced_position;
+    <%= @grammar.prefix %>position_t reduced_end_position;
     <%= @grammar.prefix %>value_t reduced_parser_value;
 <% end %>
     state_values_stack_init(&statevalues);
@@ -1013,7 +1068,8 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
         {
             /* We have something to shift. */
             state_values_stack_push(&statevalues);
-            state_values_stack_index(&statevalues, -1)->state_id = shift_state;
+            state_value_t * new_state_info = state_values_stack_index(&statevalues, -1);
+            new_state_info->state_id = shift_state;
             if (reduced_rule_set == INVALID_ID)
             {
                 /* We shifted a token, mark it consumed. */
@@ -1030,9 +1086,11 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
                 token_tree_node->token = token;
                 token_tree_node->pvalue = token_info.pvalue;
 <%= expand_code(@grammar.on_token_node, false, nil, nil) %>
-                state_values_stack_index(&statevalues, -1)->tree_node = token_tree_node;
+                new_state_info->tree_node = token_tree_node;
 <% else %>
-                state_values_stack_index(&statevalues, -1)->pvalue = token_info.pvalue;
+                new_state_info->position = token_info.position;
+                new_state_info->end_position = token_info.end_position;
+                new_state_info->pvalue = token_info.pvalue;
 <% end %>
                 token = INVALID_TOKEN_ID;
             }
@@ -1040,9 +1098,11 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
             {
                 /* We shifted a RuleSet. */
 <% if @grammar.tree %>
-                state_values_stack_index(&statevalues, -1)->tree_node = reduced_parser_node;
+                new_state_info->tree_node = reduced_parser_node;
 <% else %>
-                state_values_stack_index(&statevalues, -1)->pvalue = reduced_parser_value;
+                new_state_info->pvalue = reduced_parser_value;
+                new_state_info->position = reduced_position;
+                new_state_info->end_position = reduced_end_position;
                 <%= @grammar.prefix %>value_t new_parse_result;
                 memset(&new_parse_result, 0, sizeof(new_parse_result));
                 reduced_parser_value = new_parse_result;
@@ -1113,6 +1173,16 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
                 return P_USER_TERMINATED;
             }
             reduced_parser_value = reduced_parser_value2;
+            if (parser_reduce_table[reduce_index].n_states > 0u)
+            {
+                reduced_position = get_rule_position(&statevalues, 0u, parser_reduce_table[reduce_index].n_states, false);
+                reduced_end_position = get_rule_position(&statevalues, 0u, parser_reduce_table[reduce_index].n_states, true);
+            }
+            else
+            {
+                memset(&reduced_position, 0, sizeof(reduced_position));
+                memset(&reduced_end_position, 0, sizeof(reduced_end_position));
+            }
 <% end %>
             reduced_rule_set = parser_reduce_table[reduce_index].rule_set;
             state_values_stack_pop(&statevalues, parser_reduce_table[reduce_index].n_states);

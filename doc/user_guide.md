@@ -217,6 +217,41 @@ rule.
 Parser values for the rules or tokens in the rule pattern can be accessed
 positionally with tokens `$1`, `$2`, `$3`, etc...
 
+The input text positions for the reduced rule and for the individual rule
+components can also be accessed from within a parser rule code block.
+Each of these positions is an instance of the `p_position_t` structure (see
+`${#p_position_t}`), which contains 1-based `row` and `col` fields.
+
+The start position of the overall reduced rule is accessed with
+`${$.position}`, and the end position of the overall reduced rule is accessed
+with `${$.end_position}`.
+
+The start and end positions of an individual rule component are accessed
+positionally with `${N.position}` and `${N.end_position}`, where `N` is the
+1-based index of the component (`${1.position}` for the first component,
+`${2.position}` for the second, and so on).
+
+Example:
+
+```
+Assignment -> ident equals Expr <<
+    printf("assignment on row %d, col %d\n",
+        ${$.position}.row, ${$.position}.col);
+    printf("target identifier ends on row %d, col %d\n",
+        ${1.end_position}.row, ${1.end_position}.col);
+    printf("expression starts on row %d, col %d\n",
+        ${3.position}.row, ${3.position}.col);
+>>
+```
+
+A rule or rule component that allows for an empty match may not have valid
+positions.
+In this case the position should be checked for validity before its `row` and
+`col` fields are used (see `${#p_position_valid}`).
+For C targets this can be accomplished with
+`if (p_position_valid(${$.position}))` and for D targets this can be
+accomplished with `if (${$.position}.valid)`.
+
 Parser rule code blocks are not available in tree generation mode.
 In tree generation mode, a full parse tree is automatically constructed in
 memory for user code to traverse after parsing is complete.

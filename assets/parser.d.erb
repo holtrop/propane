@@ -886,6 +886,8 @@ private struct state_value_t
     /** Tree node. */
     void * tree_node;
 <% else %>
+    <%= @grammar.prefix %>position_t position;
+    <%= @grammar.prefix %>position_t end_position;
     /** Parser value from this state. */
     <%= @grammar.prefix %>value_t pvalue;
 <% end %>
@@ -941,6 +943,53 @@ private immutable parser_state_t[] parser_state_table = [
 ];
 
 <% unless @grammar.tree %>
+/**
+ * Get the rule position (start or end) for the currently matched rule.
+ */
+private <%= @grammar.prefix %>position_t get_rule_position(state_value_t[] statevalues, size_t i, size_t n_states, bool get_end)
+{
+    if (n_states > 0u)
+    {
+        if (i == 0u)
+        {
+            if (get_end)
+            {
+                for (size_t j = 0u; j < n_states; j++)
+                {
+                    state_value_t * sv = &statevalues[$-1-j];
+                    if (sv.end_position.valid)
+                    {
+                        return sv.end_position;
+                    }
+                }
+            }
+            else
+            {
+                for (size_t j = 0u; j < n_states; j++)
+                {
+                    state_value_t * sv = &statevalues[$-n_states+j];
+                    if (sv.position.valid)
+                    {
+                        return sv.position;
+                    }
+                }
+            }
+        }
+        else
+        {
+            if (get_end)
+            {
+                return statevalues[$-1-n_states+i].end_position;
+            }
+            else
+            {
+                return statevalues[$-1-n_states+i].position;
+            }
+        }
+    }
+    return <%= @grammar.prefix %>position_t.INVALID;
+}
+
 /**
  * Execute user code associated with a parser rule.
  *
@@ -1047,6 +1096,8 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
 <% if @grammar.tree %>
     void * reduced_parser_node;
 <% else %>
+    <%= @grammar.prefix %>position_t reduced_position;
+    <%= @grammar.prefix %>position_t reduced_end_position;
     <%= @grammar.prefix %>value_t reduced_parser_value;
 <% end %>
     for (;;)
@@ -1091,6 +1142,8 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
 <%= expand_code(@grammar.on_token_node, false, nil, nil) %>
                 statevalues[$-1].tree_node = token_tree_node;
 <% else %>
+                statevalues[$-1].position = token_info.position;
+                statevalues[$-1].end_position = token_info.end_position;
                 statevalues[$-1].pvalue = token_info.pvalue;
 <% end %>
                 token = INVALID_TOKEN_ID;
@@ -1102,6 +1155,8 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
                 statevalues[$-1].tree_node = reduced_parser_node;
 <% else %>
                 statevalues[$-1].pvalue = reduced_parser_value;
+                statevalues[$-1].position = reduced_position;
+                statevalues[$-1].end_position = reduced_end_position;
                 <%= @grammar.prefix %>value_t new_parse_result;
                 reduced_parser_value = new_parse_result;
 <% end %>
@@ -1174,6 +1229,16 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
                 return P_USER_TERMINATED;
             }
             reduced_parser_value = reduced_parser_value2;
+            if (parser_reduce_table[reduce_index].n_states > 0u)
+            {
+                reduced_position = get_rule_position(statevalues, 0u, parser_reduce_table[reduce_index].n_states, false);
+                reduced_end_position = get_rule_position(statevalues, 0u, parser_reduce_table[reduce_index].n_states, true);
+            }
+            else
+            {
+                reduced_position = <%= @grammar.prefix %>position_t.INVALID;
+                reduced_end_position = <%= @grammar.prefix %>position_t.INVALID;
+            }
 <% end %>
             reduced_rule_set = parser_reduce_table[reduce_index].rule_set;
             statevalues.length -= parser_reduce_table[reduce_index].n_states;
