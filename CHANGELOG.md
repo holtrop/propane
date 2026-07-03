@@ -1,3 +1,14 @@
+## v4.6.0
+
+### New Features
+
+- Add lexer user code API to access matched input text positions
+- Track rule component text positions and add parser user code API to access
+
+### Fixes
+
+- Fixed a few user guide and source comments related to text input positions
+
 ## v4.5.0
 
 ### New Features
