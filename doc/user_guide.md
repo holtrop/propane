@@ -151,12 +151,37 @@ needed by a `ptype` directive, for example:
 
 ### Lexer pattern code blocks
 
-#### C/C++
+Lexer code blocks appear between `<<` and `>>` markers following a `drop`,
+`token`, or pattern expression.
+User code in a lexer code block will be executed when the lexer matches the
+given pattern.
+Assignment to the `$$` symbol will associate a parser value with the lexed
+token.
+This parser value can then be used later in a parser rule.
+
+The input text positions of the matched token can also be accessed from within
+a lexer code block.
+Each of these positions is an instance of the `p_position_t` structure (see
+`${#p_position_t}`), which contains 1-based `row` and `col` fields.
+The start position of the matched token is accessed with `${position}`, and
+the end position of the matched token is accessed with `${end_position}`.
+
+Example:
+
+```
+token integer /\d+/ <<
+  printf("integer token on row %d, col %d\n",
+      ${position}.row, ${position}.col);
+  $$ = parse_integer(match, match_length);
+>>
+```
+
+#### C/C++ lexer code block arguments
 
 The lexer code block is passed the following arguments:
 
-  * `match` - a pointer points to the text matched by the lexer pattern.
-  * `match_length` - length of the matched text.
+  * `match` (`uint8_t const`) - the pointer points to the text matched by the lexer pattern.
+  * `match_length` (`size_t`) - length of the matched text.
 
 Example:
 
@@ -174,11 +199,11 @@ token integer /\d+/ <<
 >>
 ```
 
-#### D
+#### D lexer code block arguments
 
 The lexer code block is passed the following arguments:
 
-  * `match` - a slice containing the text matched by the lexer pattern.
+  * `match` (`string`) - a slice containing the text matched by the lexer pattern.
 
 ```
 ptype ulong;
@@ -193,13 +218,6 @@ token integer /\d+/ <<
   $$ = v;
 >>
 ```
-
-Lexer code blocks appear following a `drop`, `token`, or pattern expression.
-User code in a lexer code block will be executed when the lexer matches the
-given pattern.
-Assignment to the `$$` symbol will associate a parser value with the lexed
-token.
-This parser value can then be used later in a parser rule.
 
 ### Parser rule code blocks
 

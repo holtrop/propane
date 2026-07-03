@@ -351,6 +351,22 @@ class Propane
             end
           end
         end
+        code = code.gsub(/\$\{position\}/) do |match|
+          case @language
+          when "c"
+            "out_token_info->position"
+          when "d"
+            "out_token_info.position"
+          end
+        end
+        code = code.gsub(/\$\{end_position\}/) do |match|
+          case @language
+          when "c"
+            "out_token_info->end_position"
+          when "d"
+            "out_token_info.end_position"
+          end
+        end
         code = code.gsub(/\$mode\(([a-zA-Z_][a-zA-Z_0-9]*)\)/) do |match|
           mode_name = $1
           mode_id = @lexer.mode_id(mode_name)

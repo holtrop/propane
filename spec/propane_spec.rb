@@ -910,6 +910,57 @@ EOF
         expect(results.status).to eq 0
       end
 
+      it "allows lexer code blocks to access the matched token positions" do
+        case language
+        when "c", "cpp"
+          write_grammar <<EOF
+<<
+#include <stdio.h>
+>>
+context_user_fields <<
+    p_position_t last_start;
+    p_position_t last_end;
+>>
+drop /\\s+/;
+token word /[a-z]+/ <<
+    ${context.last_start} = ${position};
+    ${context.last_end} = ${end_position};
+>>
+token stop /!/ <<
+    $terminate(42);
+>>
+Start -> Words;
+Words -> ;
+Words -> word Words;
+Words -> stop Words;
+EOF
+        when "d"
+          write_grammar <<EOF
+context_user_fields <<
+    p_position_t last_start;
+    p_position_t last_end;
+>>
+drop /\\s+/;
+token word /[a-z]+/ <<
+    ${context.last_start} = ${position};
+    ${context.last_end} = ${end_position};
+>>
+token stop /!/ <<
+    $terminate(42);
+>>
+Start -> Words;
+Words -> ;
+Words -> word Words;
+Words -> stop Words;
+EOF
+        end
+        run_propane(language: language)
+        compile("spec/test_lexer_positions.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
       it "allows the user to terminate the parser" do
         write_grammar <<EOF
 token a;

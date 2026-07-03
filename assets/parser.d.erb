@@ -665,6 +665,22 @@ private size_t attempt_lex_token(<%= @grammar.prefix %>context_t * context, <%= 
     {
     case P_SUCCESS:
         <%= @grammar.prefix %>token_t token_to_accept = match_info.accepting_state.token;
+        /* Calculate the token length and start/end positions before invoking
+         * the lexer user code so that the user code can access them. The
+         * context input text position tracking is not updated until after the
+         * user code has run so that it is left unchanged if the user code
+         * requests to terminate the lexer. */
+        token_info.length = match_info.length;
+        if (match_info.end_delta_position.row != 0u)
+        {
+            token_info.end_position.row = token_info.position.row + match_info.end_delta_position.row;
+            token_info.end_position.col = match_info.end_delta_position.col;
+        }
+        else
+        {
+            token_info.end_position.row = token_info.position.row;
+            token_info.end_position.col = token_info.position.col + match_info.end_delta_position.col;
+        }
         if (match_info.accepting_state.code_id != INVALID_USER_CODE_ID)
         {
             string match = context.input[context.input_index..(context.input_index + match_info.length)];
@@ -703,17 +719,6 @@ private size_t attempt_lex_token(<%= @grammar.prefix %>context_t * context, <%= 
             return P_DROP;
         }
         token_info.token = token_to_accept;
-        token_info.length = match_info.length;
-        if (match_info.end_delta_position.row != 0u)
-        {
-            token_info.end_position.row = token_info.position.row + match_info.end_delta_position.row;
-            token_info.end_position.col = match_info.end_delta_position.col;
-        }
-        else
-        {
-            token_info.end_position.row = token_info.position.row;
-            token_info.end_position.col = token_info.position.col + match_info.end_delta_position.col;
-        }
         *out_token_info = token_info;
         return P_SUCCESS;
 
