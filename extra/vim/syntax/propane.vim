@@ -20,10 +20,16 @@ exe "syn include @propaneTarget syntax/".b:propane_subtype.".vim"
 syn region propaneTarget matchgroup=propaneDelimiter start="<<" end=">>$" contains=@propaneTarget keepend
 
 syn match propaneComment "#.*"
-syn match propaneOperator "->"
 syn match propaneFieldAlias ":[a-zA-Z0-9_]\+" contains=propaneFieldOperator
 syn match propaneFieldOperator ":" contained
 syn match propaneOperator "?"
+" The right-hand side of a rule (after '->' up to '<<' or ';') lists symbol
+" names that may coincide with propane keywords (e.g. 'start', 'token',
+" 'tree'). Wrap it in a region that excludes keyword matches so those names
+" are not highlighted as keywords. The '<<' is left unconsumed so the
+" propaneTarget region can still match it.
+syn region propaneRuleRhs matchgroup=propaneOperator start="->" end="\ze<<" end=";" contains=propaneFieldAlias,propaneRuleOperator,propaneComment keepend
+syn match propaneRuleOperator "?" contained
 " Keywords that introduce a user-defined name. The name is consumed by
 " propaneName via nextgroup so a name matching a keyword (e.g. 'token start')
 " is not highlighted as a keyword. These must be a match (not syn keyword)
@@ -39,6 +45,7 @@ hi def link propaneKeyword Keyword
 hi def link propaneNameDecl Keyword
 hi def link propaneRegex String
 hi def link propaneOperator Operator
+hi def link propaneRuleOperator Operator
 hi def link propaneFieldOperator Operator
 hi def link propaneDelimiter Delimiter
 hi def link propaneFieldAlias Identifier
