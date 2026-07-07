@@ -923,7 +923,9 @@ static <%= @grammar.prefix %>position_t get_rule_position(state_values_stack_t *
     memset(&empty_pos, 0, sizeof(empty_pos));
     return empty_pos;
 }
+<% end %>
 
+<% if !@grammar.tree || @grammar.parser_user_code_used? %>
 /**
  * Execute user code associated with a parser rule.
  *
@@ -934,7 +936,7 @@ static <%= @grammar.prefix %>position_t get_rule_position(state_values_stack_t *
  * @retval P_USER_TERMINATED
  *   User requested to terminate parsing.
  */
-static size_t parser_user_code(<%= @grammar.prefix %>value_t * _pvalue, uint32_t rule, state_values_stack_t * statevalues, uint32_t n_states, <%= @grammar.prefix %>context_t * context)
+static size_t parser_user_code(<%= @grammar.tree ? "void" : "#{@grammar.prefix}value_t" %> * _pvalue, uint32_t rule, state_values_stack_t * statevalues, uint32_t n_states, <%= @grammar.prefix %>context_t * context)
 {
     switch (rule)
     {
@@ -1169,6 +1171,13 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
             {
                 reduced_parser_node = NULL;
             }
+<%   if @grammar.parser_user_code_used? %>
+            if (parser_user_code(reduced_parser_node, parser_reduce_table[reduce_index].rule, &statevalues, parser_reduce_table[reduce_index].n_states, context) == P_USER_TERMINATED)
+            {
+                state_values_stack_free(&statevalues);
+                return P_USER_TERMINATED;
+            }
+<%   end %>
 <% else %>
             <%= @grammar.prefix %>value_t reduced_parser_value2;
             memset(&reduced_parser_value2, 0, sizeof(reduced_parser_value2));

@@ -185,7 +185,8 @@ class Propane
                 end
               end
               @grammar.rules << Rule.new(component, [], nil, ptypename, rule.line_number)
-              @grammar.rules << Rule.new(component, [c], "$$ = $1;\n", ptypename, rule.line_number)
+              optcode = @grammar.tree ? nil : "$$ = $1;\n"
+              @grammar.rules << Rule.new(component, [c], optcode, ptypename, rule.line_number)
               optional_rules_added << component
             end
           end
@@ -296,21 +297,24 @@ class Propane
       end
       if parser
         code = code.gsub(/\$\$/) do |match|
-          case @language
-          when "c"
-            "_pvalue->v_#{rule.ptypename}"
-          when "d"
-            "_pvalue.v_#{rule.ptypename}"
+          if @grammar.tree
+            case @language
+            when "c"
+              "((#{@grammar.tree_prefix}#{rule.name}#{@grammar.tree_suffix} *)_pvalue)"
+            when "d"
+              "(cast(#{@grammar.tree_prefix}#{rule.name}#{@grammar.tree_suffix} *)_pvalue)"
+            end
+          else
+            case @language
+            when "c"
+              "_pvalue->v_#{rule.ptypename}"
+            when "d"
+              "_pvalue.v_#{rule.ptypename}"
+            end
           end
         end
         code = code.gsub(/\$(\d+)/) do |match|
-          index = $1.to_i
-          case @language
-          when "c"
-            "state_values_stack_index(statevalues, -1 - (int)n_states + #{index})->pvalue.v_#{rule.components[index - 1].ptypename}"
-          when "d"
-            "statevalues[$-1-n_states+#{index}].pvalue.v_#{rule.components[index - 1].ptypename}"
-          end
+          parser_component_reference(rule, $1.to_i)
         end
         code = code.gsub(/\$\{(\$|\d+)\.position\}/) do |match|
           index = $1.to_i
@@ -323,12 +327,11 @@ class Propane
         code = code.gsub(/\$\{(\w+)\}/) do |match|
           aliasname = $1
           if index = rule.aliases[aliasname]
-            case @language
-            when "c"
-              "state_values_stack_index(statevalues, -(int)n_states + #{index})->pvalue.v_#{rule.components[index].ptypename}"
-            when "d"
-              "statevalues[$-n_states+#{index}].pvalue.v_#{rule.components[index].ptypename}"
-            end
+            # Field aliases are just a named reference to a positional rule
+            # component, so reuse the same expansion as `$1', `$2', etc. Note
+            # that rule.aliases stores a 0-based component index, so add 1 to
+            # convert it to the 1-based index used for positional references.
+            parser_component_reference(rule, index + 1)
           else
             raise Error.new("Field alias '#{aliasname}' not found")
           end
@@ -382,6 +385,45 @@ class Propane
         end
       end
       code
+    end
+
+    # Expand a positional reference to a parser rule component.
+    #
+    # This is used to expand `$1', `$2', etc. as well as field aliases (which
+    # are just named references to a positional rule component).
+    #
+    # @param rule [Rule]
+    #   The Rule containing the user code.
+    # @param index [Integer]
+    #   1-based index of the rule component to reference.
+    #
+    # @return [String]
+    #   Expanded rule component reference.
+    def parser_component_reference(rule, index)
+      component = rule.components[index - 1]
+      if @grammar.tree
+        # In tree mode a component reference yields a pointer to that
+        # component's tree node. An optional component propagates its target
+        # node (or null), so use the optional target's node type.
+        if component.is_a?(RuleSet) && component.optional?
+          component = component.option_target
+        end
+        node_name = component.is_a?(Token) ? "Token" : component.name
+        typename = "#{@grammar.tree_prefix}#{node_name}#{@grammar.tree_suffix}"
+        case @language
+        when "c"
+          "((#{typename} *)state_values_stack_index(statevalues, -1 - (int)n_states + #{index})->tree_node)"
+        when "d"
+          "(cast(#{typename} *)statevalues[$-1-n_states+#{index}].tree_node)"
+        end
+      else
+        case @language
+        when "c"
+          "state_values_stack_index(statevalues, -1 - (int)n_states + #{index})->pvalue.v_#{component.ptypename}"
+        when "d"
+          "statevalues[$-1-n_states+#{index}].pvalue.v_#{component.ptypename}"
+        end
+      end
     end
 
     # Get the lex function to use.

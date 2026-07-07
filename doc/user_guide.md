@@ -270,9 +270,38 @@ For C targets this can be accomplished with
 `if (p_position_valid(${$.position}))` and for D targets this can be
 accomplished with `if (${$.position}.valid)`.
 
-Parser rule code blocks are not available in tree generation mode.
 In tree generation mode, a full parse tree is automatically constructed in
 memory for user code to traverse after parsing is complete.
+Parser rule code blocks are still supported in tree generation mode, but they
+behave differently than when tree generation mode is not active.
+The code block for a rule is executed after the rule has been matched and its
+tree node has been fully formed.
+Within the code block, `$$` refers to the tree node for the reduced rule, typed
+as a pointer to that rule's generated tree node structure.
+The tree nodes for the rule components are accessed positionally with `$1`,
+`$2`, `$3`, etc..., each typed as a pointer to the generated tree node structure
+for that component (a rule node or a `Token` node).
+Field aliases (see the "Specifying parser rules" section) may also be used to
+reference a component tree node by name; a field alias behaves identically to
+the positional reference for that component.
+The positional position expansions (`${$.position}`, `${N.position}`, etc...)
+are not available in tree generation mode; the `position` and `end_position`
+fields of the tree nodes can be accessed directly instead.
+
+Example:
+
+```
+tree;
+
+Assignment -> ident equals Expr <<
+    /* $$ is the Assignment tree node, $1 is the ident Token node, and $3 is
+     * the Expr rule node. */
+    printf("assignment on row %d, col %d\n",
+        $$->position.row, $$->position.col);
+    printf("target identifier ends on row %d, col %d\n",
+        $1->end_position.row, $1->end_position.col);
+>>
+```
 
 ##> `context_user_fields` statement - adding custom fields to the context
 
@@ -710,7 +739,9 @@ It is recommended to place this statement early in the grammar.
 In tree generation mode various aspects of propane's behavior are changed:
 
   * Only one `ptype` is allowed.
-  * Parser user code blocks are not supported.
+  * Parser user code blocks execute after the rule's tree node has been formed
+  and access the tree nodes via `$$`, `$1`, `$2`, etc... (see the "Parser rule
+  code blocks" section).
   * Structure types are generated to represent the parsed tokens and rules as
   defined in the grammar.
   * The parse result from `p_result()` points to a `Start` struct containing
@@ -1059,8 +1090,12 @@ The `$$` symbol accesses the output parser value for this rule.
 The above examples demonstrate how the parser values for the rule components
 can be used to produce the parser value for the accepted rule.
 
-Parser rule code blocks are not allowed and not used when tree generation mode
-is active.
+In tree generation mode, parser rule code blocks access the reduced rule tree
+node and its component tree nodes via `$$`, `$1`, `$2`, etc... (see the "Parser
+rule code blocks" section).
+Field aliases may still be used in tree generation mode to reference a component
+tree node by name, behaving identically to the corresponding positional
+reference.
 
 ##> User termination of the lexer or parser
 

@@ -994,7 +994,9 @@ private <%= @grammar.prefix %>position_t get_rule_position(state_value_t[] state
     }
     return <%= @grammar.prefix %>position_t.INVALID;
 }
+<% end %>
 
+<% if !@grammar.tree || @grammar.parser_user_code_used? %>
 /**
  * Execute user code associated with a parser rule.
  *
@@ -1005,7 +1007,7 @@ private <%= @grammar.prefix %>position_t get_rule_position(state_value_t[] state
  * @retval P_USER_TERMINATED
  *   User requested to terminate parsing.
  */
-private size_t parser_user_code(<%= @grammar.prefix %>value_t * _pvalue, uint rule, state_value_t[] statevalues, uint n_states, <%= @grammar.prefix %>context_t * context)
+private size_t parser_user_code(<%= @grammar.tree ? "void" : "#{@grammar.prefix}value_t" %> * _pvalue, uint rule, state_value_t[] statevalues, uint n_states, <%= @grammar.prefix %>context_t * context)
 {
     switch (rule)
     {
@@ -1227,6 +1229,12 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
             {
                 reduced_parser_node = null;
             }
+<%   if @grammar.parser_user_code_used? %>
+            if (parser_user_code(reduced_parser_node, parser_reduce_table[reduce_index].rule, statevalues, parser_reduce_table[reduce_index].n_states, context) == P_USER_TERMINATED)
+            {
+                return P_USER_TERMINATED;
+            }
+<%   end %>
 <% else %>
             <%= @grammar.prefix %>value_t reduced_parser_value2;
             if (parser_user_code(&reduced_parser_value2, parser_reduce_table[reduce_index].rule, statevalues, parser_reduce_table[reduce_index].n_states, context) == P_USER_TERMINATED)

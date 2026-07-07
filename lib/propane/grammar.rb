@@ -58,6 +58,10 @@ class Propane
       @tokens.size + 1
     end
 
+    def parser_user_code_used?
+      @rules.any? {|r| r.code}
+    end
+
     private
 
     def parse_grammar!
@@ -263,12 +267,8 @@ class Propane
         end
         md = consume!(/((?:#{IDENTIFIER_REGEX}\??(?::#{IDENTIFIER_REGEX})?\s*)*)\s*/, "expected rule component list")
         components = md[1].strip.split(/\s+/)
-        if @tree
-          consume!(/;/, "expected `;'")
-        else
-          unless code = parse_code_block!
-            consume!(/;/, "expected `;' or code block")
-          end
+        unless code = parse_code_block!
+          consume!(/;/, "expected `;' or code block")
         end
         @rules << Rule.new(rule_name, components, code, ptypename, @line_number)
         @modeline = nil

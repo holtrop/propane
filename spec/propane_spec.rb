@@ -745,6 +745,78 @@ EOF
         ])
       end
 
+      it "executes user code associated with a parser rule in tree mode" do
+        case language
+        when "c", "cpp"
+          write_grammar <<EOF
+tree;
+context_user_fields <<
+    int start_n_fields;
+    int start_a_value;
+    int a_value;
+    int b_value;
+    p_token_t b_token;
+    int c_is_null;
+    int c_field_is_null;
+    int alias_a_value;
+    int alias_b_value;
+>>
+ptype int;
+token a << $$ = 11; >>
+token b << $$ = 22; >>
+Start -> A:ay B:bee C <<
+  ${context.start_n_fields} = $$->n_fields;
+  ${context.start_a_value} = $$->pA->pToken1->pvalue;
+  ${context.a_value} = $1->pToken1->pvalue;
+  ${context.b_value} = $2->pToken1->pvalue;
+  ${context.b_token} = $2->pToken1->token;
+  ${context.c_field_is_null} = ($$->pC == NULL) ? 1 : 0;
+  ${context.alias_a_value} = ${ay}->pToken1->pvalue;
+  ${context.alias_b_value} = ${bee}->pToken1->pvalue;
+>>
+A -> a;
+B -> b;
+C -> << ${context.c_is_null} = ($$ == NULL) ? 1 : 0; >>
+EOF
+        when "d"
+          write_grammar <<EOF
+tree;
+context_user_fields <<
+    int start_n_fields;
+    int start_a_value;
+    int a_value;
+    int b_value;
+    p_token_t b_token;
+    int c_is_null;
+    int c_field_is_null;
+    int alias_a_value;
+    int alias_b_value;
+>>
+ptype int;
+token a << $$ = 11; >>
+token b << $$ = 22; >>
+Start -> A:ay B:bee C <<
+  ${context.start_n_fields} = $$.n_fields;
+  ${context.start_a_value} = $$.pA.pToken1.pvalue;
+  ${context.a_value} = $1.pToken1.pvalue;
+  ${context.b_value} = $2.pToken1.pvalue;
+  ${context.b_token} = $2.pToken1.token;
+  ${context.c_field_is_null} = ($$.pC is null) ? 1 : 0;
+  ${context.alias_a_value} = ${ay}.pToken1.pvalue;
+  ${context.alias_b_value} = ${bee}.pToken1.pvalue;
+>>
+A -> a;
+B -> b;
+C -> << ${context.c_is_null} = ($$ is null) ? 1 : 0; >>
+EOF
+        end
+        run_propane(language: language)
+        compile("spec/test_parser_user_code_tree.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
       it "parses lists" do
         write_grammar <<EOF
 ptype #{language == "d" ? "uint" : "uint32_t"};

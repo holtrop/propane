@@ -1,3 +1,9 @@
+## Unreleased
+
+### New Features
+
+- Support parser rule user code blocks in tree generation mode.
+
 ## v4.6.0
 
 ### New Features
