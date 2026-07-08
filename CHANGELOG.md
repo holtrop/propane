@@ -1,8 +1,12 @@
-## Unreleased
+## v4.7.0
 
 ### New Features
 
 - Support parser rule user code blocks in tree generation mode.
+
+### Fixes
+
+- propane.vim: do not highlight rule components as propane keywords
 
 ## v4.6.0
 
