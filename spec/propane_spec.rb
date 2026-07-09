@@ -95,13 +95,17 @@ EOF
     File.binwrite("spec/run/.stdout", stdout)
     stderr.sub!(/^.*modules passed unittests\n/, "")
     results = Results.new(stdout, stderr, status)
-    stdout, stderr, status = Open3.capture3("valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose spec/run/testparser")
-    vgout = stdout + stderr
-    File.binwrite("spec/run/.vgout", vgout)
-    vgout.scan(/(?:definitely|indirectly) lost: (\d+) bytes/) do |match|
-      bytes = $1.to_i
-      if bytes > 0
-        raise "Valgrind detected memory leak"
+    # Valgrind is only reliably available on Linux, so limit the leak check to
+    # Linux platforms.
+    if RUBY_PLATFORM =~ /linux/
+      stdout, stderr, status = Open3.capture3("valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose spec/run/testparser")
+      vgout = stdout + stderr
+      File.binwrite("spec/run/.vgout", vgout)
+      vgout.scan(/(?:definitely|indirectly) lost: (\d+) bytes/) do |match|
+        bytes = $1.to_i
+        if bytes > 0
+          raise "Valgrind detected memory leak"
+        end
       end
     end
     results
