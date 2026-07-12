@@ -1493,6 +1493,22 @@ p_set_position(context, start);
 p_parse(context);
 ```
 
+### `p_input_index`
+
+The `p_input_index()` function returns the current input text byte offset,
+measured from the start of the input text passed to `p_context_new()`.
+This is useful for slicing out the remaining input after a partial parse,
+or for locating tokens in the original input buffer.
+
+Example:
+
+```
+p_context_t * context = p_context_new(input, input_length);
+p_parse_inner_Statement(context, follow_tokens, n_follow_tokens);
+size_t offset = p_input_index(context);
+/* Remaining input starts at `input + offset`. */
+```
+
 ### `p_user_terminate_code`
 
 The `p_user_terminate_code()` function can be used to retrieve the user

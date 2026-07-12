@@ -1443,6 +1443,20 @@ public void <%= @grammar.prefix %>set_position(<%= @grammar.prefix %>context_t *
 }
 
 /**
+ * Get the current input text byte offset.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ *
+ * @return Current input text byte offset (measured from the start of the
+ *   input text passed to <%= @grammar.prefix %>context_new()).
+ */
+public size_t <%= @grammar.prefix %>input_index(<%= @grammar.prefix %>context_t * context)
+{
+    return context.input_index;
+}
+
+/**
  * Get the user terminate code.
  *
  * @param context

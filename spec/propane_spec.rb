@@ -951,6 +951,21 @@ EOF
         expect(results.status).to eq 0
       end
 
+      it "exposes the current input byte offset via p_input_index()" do
+        write_grammar <<EOF
+drop /\\s+/;
+token a;
+token b;
+start Start;
+Start -> a b;
+EOF
+        run_propane(language: language)
+        compile("spec/test_input_index.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
       it "allows creating a JSON parser" do
         ext = language == "cpp" ? "c" : language
         write_grammar(File.read("spec/json_parser.#{ext}.propane"))

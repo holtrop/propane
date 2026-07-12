@@ -10,6 +10,7 @@
 - Add `p_set_position()` API to set the current text position stored in the
   context. Useful for setting the initial text position to something other
   than `(1, 1)` for a nested parse operation.
+- Add `p_input_index()` API to get the current input text byte offset.
 
 ## v4.7.0
 
