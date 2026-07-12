@@ -1639,6 +1639,25 @@ EOF
         expect(results.status).to eq 0
       end
 
+      it "parse_inner APIs work in tree generation mode with follow tokens" do
+    write_grammar <<EOF
+tree;
+token a;
+token b;
+start Start;
+start R1;
+Start -> R1 a;
+Start -> R2 b;
+R1 -> a b;
+R2 -> a b;
+EOF
+        run_propane(language: language)
+        compile("spec/test_parse_inner_tree.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
       it "allows multiple starting rules in tree mode" do
     write_grammar <<EOF
 tree;
