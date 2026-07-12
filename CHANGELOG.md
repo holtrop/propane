@@ -7,6 +7,9 @@
   given start rule, but instead of expecting the rest of the input to match
   the start rule they allow specifying a set of tokens that may follow the
   start rule.
+- Add `p_set_position()` API to set the current text position stored in the
+  context. Useful for setting the initial text position to something other
+  than `(1, 1)` for a nested parse operation.
 
 ## v4.7.0
 

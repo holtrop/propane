@@ -938,6 +938,19 @@ EOF
         expect(results.status).to eq 0
       end
 
+      it "allows setting the text position via p_set_position()" do
+        write_grammar <<EOF
+token a;
+token b;
+Start -> a b;
+EOF
+        run_propane(language: language)
+        compile("spec/test_set_position.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
       it "allows creating a JSON parser" do
         ext = language == "cpp" ? "c" : language
         write_grammar(File.read("spec/json_parser.#{ext}.propane"))

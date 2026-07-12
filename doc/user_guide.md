@@ -1474,6 +1474,25 @@ if (p_parse(context) == P_UNEXPECTED_TOKEN)
 }
 ```
 
+### `p_set_position`
+
+The `p_set_position()` function sets the current text position stored in the
+context.
+This is useful when performing a nested parse operation over a slice of a
+larger enclosing document: by setting the initial text position to something
+other than the default `(1, 1)`, any token positions or error positions
+subsequently reported by the lexer/parser are relative to the enclosing
+document rather than the slice.
+
+Example:
+
+```
+p_context_t * context = p_context_new(input, input_length);
+p_position_t start = { .row = 5, .col = 20 };
+p_set_position(context, start);
+p_parse(context);
+```
+
 ### `p_user_terminate_code`
 
 The `p_user_terminate_code()` function can be used to retrieve the user

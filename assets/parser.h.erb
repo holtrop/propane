@@ -237,6 +237,8 @@ void <%= @grammar.prefix %>tree_delete_<%= start_rule %>(<%= @grammar.tree_prefi
 
 <%= @grammar.prefix %>position_t <%= @grammar.prefix %>position(<%= @grammar.prefix %>context_t * context);
 
+void <%= @grammar.prefix %>set_position(<%= @grammar.prefix %>context_t * context, <%= @grammar.prefix %>position_t position);
+
 size_t <%= @grammar.prefix %>user_terminate_code(<%= @grammar.prefix %>context_t * context);
 
 <%= @grammar.prefix %>token_t <%= @grammar.prefix %>token(<%= @grammar.prefix %>context_t * context);

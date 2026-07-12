@@ -1426,6 +1426,23 @@ public <%= @grammar.prefix %>position_t <%= @grammar.prefix %>position(<%= @gram
 }
 
 /**
+ * Set the current text input position.
+ *
+ * This can be used to set the initial text position to something other than
+ * (1, 1) for a nested parse operation so that error positions reported by
+ * subsequent lexer/parser calls are relative to a larger enclosing document.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ * @param position
+ *   Text position to set.
+ */
+public void <%= @grammar.prefix %>set_position(<%= @grammar.prefix %>context_t * context, <%= @grammar.prefix %>position_t position)
+{
+    context.text_position = position;
+}
+
+/**
  * Get the user terminate code.
  *
  * @param context
