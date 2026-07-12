@@ -1367,6 +1367,36 @@ size_t result = p_parse_Statement(context);
 
 In this case, the parser will start parsing with the `Statement` rule.
 
+### `p_parse_inner_XXX`
+
+For each start rule, a `p_parse_inner_XXX()` function is also generated.
+This variant of the parser entry point accepts a caller-provided array of
+"follow tokens" — tokens the caller allows to appear immediately after the
+start rule in some outer grammar context.
+It is useful when embedding a Propane-generated sub-parser within an outer
+parser and the outer parser knows which tokens naturally terminate the
+sub-parse.
+
+For C targets, the signature is (example for a rule named `Statement`):
+
+```
+size_t p_parse_inner_Statement(p_context_t * context,
+    p_token_t const * follow_tokens, size_t n_follow_tokens);
+```
+
+Passing a `NULL` pointer (or a count of zero) makes the function behave
+identically to `p_parse_Statement()`.
+
+For D targets, the signature accepts a slice:
+
+```
+size_t p_parse_inner_Statement(p_context_t * context,
+    const(p_token_t)[] follow_tokens);
+```
+
+Passing `null` for the slice makes the function behave identically to
+`p_parse_Statement()`.
+
 ### `p_position_valid`
 
 The `p_position_valid()` function is only generated for C targets.

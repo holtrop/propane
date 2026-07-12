@@ -1079,8 +1079,16 @@ private size_t check_reduce(size_t state_id, <%= @grammar.prefix %>token_t token
  *
  * @param context
  *   Lexer/parser context structure.
- * @start_state_id
+ * @param start_state_id
  *   ID of the state in which to start.
+ * @param start_rule_set_id
+ *   Rule set ID for the requested start rule. Only used when
+ *   @p follow_tokens is non-empty, to gate follow-token shift success.
+ * @param follow_tokens
+ *   Optional slice of caller-provided follow tokens (tokens expected to
+ *   appear immediately after the start rule in some outer context). Used to
+ *   drive the "parse inner" retry logic. May be null/empty for a standard
+ *   parse.
  *
  * @retval P_SUCCESS
  *   The parser successfully matched the input text. The parse result value
@@ -1093,13 +1101,16 @@ private size_t check_reduce(size_t state_id, <%= @grammar.prefix %>token_t token
  * @reval P_UNEXPECTED_INPUT
  *   Input text does not match any lexer pattern.
  */
-private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start_state_id)
+private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start_state_id,
+    size_t start_rule_set_id,
+    const(<%= @grammar.prefix %>token_t)[] follow_tokens)
 {
     <%= @grammar.prefix %>token_info_t token_info;
     <%= @grammar.prefix %>token_t token = INVALID_TOKEN_ID;
     state_value_t[] statevalues = new state_value_t[](1);
     statevalues[0].state_id = start_state_id;
     size_t reduced_rule_set = INVALID_ID;
+    size_t last_shifted_rule_set_id = INVALID_ID;
 <% if @grammar.tree %>
     void * reduced_parser_node;
 <% else %>
@@ -1117,6 +1128,18 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
                 return lexer_result;
             }
             token = token_info.token;
+        }
+        /* For a "parse inner" operation, determine once per iteration whether
+         * the current token is a member of the caller-provided follow token
+         * set. Used by both the shift-side and reduce-side retries below. */
+        bool token_is_follow = false;
+        foreach (eof_token; follow_tokens)
+        {
+            if (token == eof_token)
+            {
+                token_is_follow = true;
+                break;
+            }
         }
         size_t shift_state = INVALID_ID;
         if (reduced_rule_set != INVALID_ID)
@@ -1136,10 +1159,35 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
 <% end %>
                 return P_SUCCESS;
             }
+            if ((shift_state == INVALID_ID) && token_is_follow)
+            {
+                /* For a "parse inner" operation, if the incoming token is one
+                 * of the caller's follow tokens, retry the shift as
+                 * TOKEN___EOF. Only consider the parse complete if the reduced
+                 * start rule is the only thing on the parse stack (i.e. the
+                 * initial state plus a single shifted start rule set entry). */
+                size_t retry_shift_state = check_shift(statevalues[$-1].state_id, TOKEN___EOF);
+                if ((retry_shift_state != INVALID_ID) &&
+                    (statevalues.length == 2u) &&
+                    (last_shifted_rule_set_id == start_rule_set_id))
+                {
+                    /* Successful parse via follow token. */
+<% if @grammar.tree %>
+                    context.parse_result = statevalues[$-1].tree_node;
+<% else %>
+                    context.parse_result = statevalues[$-1].pvalue;
+<% end %>
+                    return P_SUCCESS;
+                }
+            }
         }
         if (shift_state != INVALID_ID)
         {
-            /* We have something to shift. */
+            /* We have something to shift. Track the last shifted rule set ID
+             * (INVALID_ID if we just shifted a token) so the follow-token
+             * shift retry can gate success on the reduced start rule being the
+             * only thing on top of the initial state. */
+            last_shifted_rule_set_id = reduced_rule_set;
             statevalues ~= state_value_t(shift_state);
             if (reduced_rule_set == INVALID_ID)
             {
@@ -1173,6 +1221,15 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
         }
 
         size_t reduce_index = check_reduce(statevalues[$-1].state_id, token);
+        if ((reduce_index == INVALID_ID) && token_is_follow)
+        {
+            /* For a "parse inner" operation, if the incoming token is one of
+             * the caller's follow tokens, retry the reduce lookup as
+             * TOKEN___EOF. Whatever reduce_index results (if any) is used
+             * regardless of which rule set it reduces to; this allows chains
+             * of reductions leading up to the start rule. */
+            reduce_index = check_reduce(statevalues[$-1].state_id, TOKEN___EOF);
+        }
         if (reduce_index != INVALID_ID)
         {
             /* We have something to reduce. */
@@ -1271,14 +1328,20 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
 
 public size_t <%= @grammar.prefix %>parse(<%= @grammar.prefix %>context_t * context)
 {
-    return parse_from(context, 0u);
+    return parse_from(context, 0u, <%= @parser.rule_sets[@grammar.start_rules[0]].id %>u, null);
 }
 
 <% @grammar.start_rules.each_with_index do |start_rule, i| %>
 
 public size_t <%= @grammar.prefix %>parse_<%= start_rule %>(<%= @grammar.prefix %>context_t * context)
 {
-    return parse_from(context, <%= i %>u);
+    return parse_from(context, <%= i %>u, <%= @parser.rule_sets[start_rule].id %>u, null);
+}
+
+public size_t <%= @grammar.prefix %>parse_inner_<%= start_rule %>(<%= @grammar.prefix %>context_t * context,
+    const(<%= @grammar.prefix %>token_t)[] follow_tokens)
+{
+    return parse_from(context, <%= i %>u, <%= @parser.rule_sets[start_rule].id %>u, follow_tokens);
 }
 <% end %>
 

@@ -1,3 +1,13 @@
+## Unreleased
+
+### New Features
+
+- Add `p_parse_inner_XXX()` APIs that accept a caller-provided set of follow
+  tokens. These behave the same as `p_parse_XXX()` by parsing starting at the
+  given start rule, but instead of expecting the rest of the input to match
+  the start rule they allow specifying a set of tokens that may follow the
+  start rule.
+
 ## v4.7.0
 
 ### New Features

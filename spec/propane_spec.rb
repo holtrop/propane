@@ -1589,6 +1589,56 @@ EOF
         expect(results.status).to eq 0
       end
 
+      it "supports parse_inner APIs that treat provided tokens as follow tokens" do
+    write_grammar <<EOF
+ptype int;
+token a << $$ = 1; >>
+token b << $$ = 2; >>
+Start -> Y << $$ = $1; >>
+Y -> a << $$ = $1; >>
+EOF
+        run_propane(language: language)
+        compile("spec/test_parse_inner.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
+      it "parse_inner APIs block success when the outer rule is unfinished" do
+    write_grammar <<EOF
+ptype int;
+token a << $$ = 1; >>
+token b << $$ = 2; >>
+token c << $$ = 3; >>
+Start -> a Start b << $$ = $2; >>
+Start -> c << $$ = $1; >>
+EOF
+        run_propane(language: language)
+        compile("spec/test_parse_inner_recursive.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
+      it "parse_inner APIs work when the reduce state uses lookahead disambiguation" do
+    write_grammar <<EOF
+ptype int;
+token a;
+token b;
+start Start;
+start R1;
+Start -> R1 a;
+Start -> R2 b;
+R1 -> a b << $$ = 11; >>
+R2 -> a b << $$ = 22; >>
+EOF
+        run_propane(language: language)
+        compile("spec/test_parse_inner_shared.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
       it "allows multiple starting rules in tree mode" do
     write_grammar <<EOF
 tree;
