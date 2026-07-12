@@ -1397,6 +1397,12 @@ size_t p_parse_inner_Statement(p_context_t * context,
 Passing `null` for the slice makes the function behave identically to
 `p_parse_Statement()`.
 
+When the parse is completed via a non-EOF follow token, that follow token is
+**not** consumed from the input stream.
+The parser rewinds the input index and text position to the start of the follow
+token so that a subsequent call to `p_lex()` or another parse function sees the
+same token.
+
 ### `p_position_valid`
 
 The `p_position_valid()` function is only generated for C targets.

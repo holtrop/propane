@@ -1171,7 +1171,13 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
                     (statevalues.length == 2u) &&
                     (last_shifted_rule_set_id == start_rule_set_id))
                 {
-                    /* Successful parse via follow token. */
+                    /* Successful parse via follow token. Rewind the input
+                     * position so that the follow token is not consumed from
+                     * the input stream and remains available for a subsequent
+                     * call to <%= @grammar.prefix %>lex() or a
+                     * <%= @grammar.prefix %>parse*() function. */
+                    context.input_index -= token_info.length;
+                    context.text_position = token_info.position;
 <% if @grammar.tree %>
                     context.parse_result = statevalues[$-1].tree_node;
 <% else %>
