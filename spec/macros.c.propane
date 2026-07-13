@@ -1,0 +1,25 @@
+<<
+#include <stdlib.h>
+size_t mylexfn(p_context_t * context, p_token_info_t * out_token_info);
+void record(int v);
+>>
+
+ptype int;
+
+lex_fn mylexfn;
+
+drop /\s+/;
+token lbrace /\{/;
+token rbrace /\}/;
+token plus /\+/;
+token macro;
+token macroname /@[a-zA-Z_]\w*/;
+token num /\d+/ << char b[100]; memcpy(b, match, match_length); b[match_length] = '\0'; $$ = atoi(b); >>
+
+Start -> Statements;
+Statements -> ;
+Statements -> Statement Statements;
+Statement -> Add;
+Statement -> MacroStart;
+Add -> num plus num << $$ = $1 + $3; record($$); >>
+MacroStart -> macro macroname lbrace;

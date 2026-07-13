@@ -2164,6 +2164,16 @@ StartR start: 1, 3
 StartR end: 1, 6
 EOF
       end
+
+      it "allows nested parses for macro expansions" do
+        ext = language == "cpp" ? "c" : language
+        write_grammar(File.read("spec/macros.#{ext}.propane"))
+        run_propane(language: language)
+        compile("spec/test_macros.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
     end
   end
 end
