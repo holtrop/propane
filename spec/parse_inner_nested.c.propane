@@ -1,0 +1,19 @@
+<<
+#include <stdlib.h>
+#include <string.h>
+size_t mylexfn(p_context_t * context, p_token_info_t * out_token_info);
+>>
+
+ptype int;
+
+lex_fn mylexfn;
+
+drop /\s+/;
+token lparen /\(/;
+token rparen /\)/;
+token plus /\+/;
+token num /\d+/ << char b[32]; memcpy(b, match, match_length); b[match_length] = '\0'; $$ = atoi(b); >>
+
+Start -> Expr << $$ = $1; >>
+Expr -> num << $$ = $1; >>
+Expr -> Expr plus num << $$ = $1 + $3; >>

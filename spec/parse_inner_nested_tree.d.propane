@@ -1,0 +1,17 @@
+<<
+import test_parse_inner_nested_tree;
+>>
+
+tree;
+
+lex_fn mylexfn;
+
+drop /\s+/;
+token lparen /\(/;
+token rparen /\)/;
+token plus /\+/;
+token num /\d+/;
+
+Start -> Expr;
+Expr -> num;
+Expr -> Expr plus num;

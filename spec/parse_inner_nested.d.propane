@@ -1,0 +1,17 @@
+<<
+import test_parse_inner_nested;
+>>
+
+ptype int;
+
+lex_fn mylexfn;
+
+drop /\s+/;
+token lparen /\(/;
+token rparen /\)/;
+token plus /\+/;
+token num /\d+/ << int n = 0; foreach (ch; match) { n *= 10; n += (ch - '0'); } $$ = n; >>
+
+Start -> Expr << $$ = $1; >>
+Expr -> num << $$ = $1; >>
+Expr -> Expr plus num << $$ = $1 + $3; >>

@@ -1686,6 +1686,26 @@ EOF
         expect(results.status).to eq 0
       end
 
+      it "supports a reentrant nested parse driven from a custom lex function" do
+        ext = language == "cpp" ? "c" : language
+        write_grammar(File.read("spec/parse_inner_nested.#{ext}.propane"))
+        run_propane(language: language)
+        compile("spec/test_parse_inner_nested.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
+      it "tracks positions across a lex-function nested parse in tree mode" do
+        ext = language == "cpp" ? "c" : language
+        write_grammar(File.read("spec/parse_inner_nested_tree.#{ext}.propane"))
+        run_propane(language: language)
+        compile("spec/test_parse_inner_nested_tree.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
       it "allows multiple starting rules in tree mode" do
     write_grammar <<EOF
 tree;
