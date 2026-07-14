@@ -453,6 +453,41 @@ enabled.
 When tree generation is enabled, the `pvalue` field can be set to an instance
 of whatever type the user has defined as the `ptype` type.
 
+The custom lex function returns a result code to the parser.
+Returning `P_SUCCESS` indicates that the function has produced a token in the
+`token` output field and the parse should proceed.
+Returning any other result code stops the parse immediately; the parser
+propagates that code out of `p_parse()` (and the `p_parse_XXX()` and
+`p_parse_inner_XXX()` functions) unchanged.
+This allows a custom lex function to surface an error condition, for example by
+propagating a `P_UNEXPECTED_TOKEN`, `P_UNEXPECTED_INPUT`, or `P_DECODE_ERROR`
+result from a nested `p_parse_inner_XXX()` or `p_lex()` call.
+
+Observe the following contract when returning a result code other than
+`P_SUCCESS`:
+
+* Do not return `P_DROP`.
+  This code is an internal lexer signal and is never returned to the parser by
+  the generated `p_lex()` function.
+  Returning it from a custom lex function would be reported as a spurious parse
+  failure. If drop functionality is required, the custom lex function should
+  loop and return the next non-drop token.
+* Do not return `P_EOF` to signal the end of the input.
+  The end of input is communicated to the parser by returning `P_SUCCESS` with
+  the `token` field set to the end-of-input token (`TOKEN___EOF`), which is what
+  the generated `p_lex()` function does.
+  Returning `P_EOF` aborts the parse rather than allowing it to complete.
+* The `p_token()` and `p_position()` accessors are populated by the parser only
+  when the parser itself detects an unexpected token.
+  When a custom lex function returns an error code, `p_token()` is not updated
+  and may not reflect a meaningful token, and `p_position()` reflects the
+  lexer's current text position rather than a parser-identified error location.
+  A custom lex function that wants a specific reported position can set it with
+  `p_set_position()` before returning.
+* Returning `P_USER_TERMINATED` does not populate the user terminate code
+  returned by `p_user_terminate_code()`. This user terminate code is normally
+  populated by the `$terminate()` function in the user code block.
+
 ##> `module` statement - specifying the generated parser module name
 
 The `module` statement can be used to specify the module name for a generated
