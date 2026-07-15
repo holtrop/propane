@@ -104,7 +104,7 @@ typedef struct <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>
 <%   @parser.rule_sets.each do |name, rule_set| %>
 <%     next if name.start_with?("$") %>
 <%     next if rule_set.optional? %>
-struct <%= name %>;
+struct <%= @grammar.tree_prefix %><%= name %><%= @grammar.tree_suffix %>;
 <%   end %>
 
 <%   @parser.rule_sets.each do |name, rule_set| %>
