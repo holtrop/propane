@@ -1,3 +1,9 @@
+## v4.8.1
+
+### Fixes
+
+- Fix tree node struct type forward-declarations for C/C++
+
 ## v4.8.0
 
 ### New Features
