@@ -3,6 +3,7 @@
 #include <string.h>
 #include <assert.h>
 #include <stddef.h>
+#include <stdbool.h>
 
 static p_context_t * context;
 size_t n_tokens;
