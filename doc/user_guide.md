@@ -1544,6 +1544,28 @@ size_t offset = p_input_index(context);
 /* Remaining input starts at `input + offset`. */
 ```
 
+### `p_set_input_index`
+
+The `p_set_input_index()` function sets the current input text byte offset,
+measured from the start of the input text passed to `p_context_new()`.
+This moves the lexer's read cursor, which can be used together with
+`p_set_position()` to rewind the input part-way through a parse in order to
+re-read an earlier section of the input.
+The byte offset is not validated; the caller is responsible for providing an
+offset within the bounds of the input text.
+A value previously returned by `p_input_index()` is a suitable argument.
+
+Example:
+
+```
+/* Save the cursor and text position at the start of a section. */
+size_t saved_index = p_input_index(context);
+p_position_t saved_position = p_position(context);
+/* ... later, rewind to re-read that section. */
+p_set_input_index(context, saved_index);
+p_set_position(context, saved_position);
+```
+
 ### `p_user_terminate_code`
 
 The `p_user_terminate_code()` function can be used to retrieve the user

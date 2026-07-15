@@ -63,4 +63,28 @@ unittest
         assert(err_pos.row == 10);
         assert(err_pos.col == 3);
     }
+
+    /* p_set_input_index() rewinds the lexer's byte cursor. Combined with
+     * p_set_position(), it re-reads an earlier section of the input. */
+    {
+        string input = "ab";
+        p_context_t * context = p_context_new(input);
+        p_token_info_t token_info;
+        size_t start_index = p_input_index(context);
+        p_position_t start_position = p_position(context);
+        assert(start_index == 0);
+        assert(p_lex(context, &token_info) == P_SUCCESS);
+        assert(token_info.token == TOKEN_a);
+        assert(p_lex(context, &token_info) == P_SUCCESS);
+        assert(token_info.token == TOKEN_b);
+        assert(p_input_index(context) == 2);
+        /* Rewind and re-read from the start. */
+        p_set_input_index(context, start_index);
+        p_set_position(context, start_position);
+        assert(p_input_index(context) == 0);
+        assert(p_lex(context, &token_info) == P_SUCCESS);
+        assert(token_info.token == TOKEN_a);
+        assert(token_info.position.row == 1);
+        assert(token_info.position.col == 1);
+    }
 }

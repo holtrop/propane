@@ -31,7 +31,7 @@ size_t mylexfn(p_context_t * context, p_token_info_t * out_token_info)
         /* Replace the '(' token with a synthesized num carrying the nested
          * parse result. */
         out_token_info.token = TOKEN_num;
-        out_token_info.pvalue.v_default = value;
+        out_token_info.pvalue = p_value(value);
     }
     return P_SUCCESS;
 }

@@ -241,6 +241,8 @@ void <%= @grammar.prefix %>set_position(<%= @grammar.prefix %>context_t * contex
 
 size_t <%= @grammar.prefix %>input_index(<%= @grammar.prefix %>context_t * context);
 
+void <%= @grammar.prefix %>set_input_index(<%= @grammar.prefix %>context_t * context, size_t input_index);
+
 size_t <%= @grammar.prefix %>user_terminate_code(<%= @grammar.prefix %>context_t * context);
 
 <%= @grammar.prefix %>token_t <%= @grammar.prefix %>token(<%= @grammar.prefix %>context_t * context);

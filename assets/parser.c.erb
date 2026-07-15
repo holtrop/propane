@@ -1378,6 +1378,27 @@ size_t <%= @grammar.prefix %>input_index(<%= @grammar.prefix %>context_t * conte
 }
 
 /**
+ * Set the current input text byte offset.
+ *
+ * This moves the lexer's read cursor to the given byte offset (measured from
+ * the start of the input text passed to <%= @grammar.prefix %>context_new()).
+ * It can be used together with <%= @grammar.prefix %>set_position() to rewind
+ * the input part-way through a parse in order to re-read an earlier section of
+ * the input. The byte offset is not validated; the caller is responsible for
+ * providing an offset within the bounds of the input text. A value previously
+ * returned by <%= @grammar.prefix %>input_index() is a suitable argument.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ * @param input_index
+ *   Input text byte offset to set.
+ */
+void <%= @grammar.prefix %>set_input_index(<%= @grammar.prefix %>context_t * context, size_t input_index)
+{
+    context->input_index = input_index;
+}
+
+/**
  * Get the user terminate code.
  *
  * @param context

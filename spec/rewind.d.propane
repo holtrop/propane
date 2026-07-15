@@ -1,0 +1,20 @@
+<<
+import test_rewind;
+>>
+
+ptype int;
+
+lex_fn mylexfn;
+
+drop /\s+/;
+token repeat /repeat/;
+token lbrace /\{/;
+token rbrace /\}/;
+token plus /\+/;
+token num /\d+/ << int n = 0; foreach (ch; match) { n *= 10; n += (ch - '0'); } $$ = n; >>
+
+Start -> Statements;
+Statements -> ;
+Statements -> Statement Statements;
+Statement -> Add;
+Add -> num plus num << record($1 + $3); >>

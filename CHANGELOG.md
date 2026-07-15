@@ -11,6 +11,9 @@
   context. Useful for setting the initial text position to something other
   than `(1, 1)` for a nested parse operation.
 - Add `p_input_index()` API to get the current input text byte offset.
+- Add `p_set_input_index()` API to set the current input text byte offset.
+  Useful together with `p_set_position()` to rewind the input part-way through
+  a parse in order to re-read an earlier section of the input.
 
 ## v4.7.0
 

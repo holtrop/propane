@@ -966,6 +966,16 @@ EOF
         expect(results.status).to eq 0
       end
 
+      it "allows rewinding the input to repeat a section during a parse" do
+        ext = language == "cpp" ? "c" : language
+        write_grammar(File.read("spec/rewind.#{ext}.propane"))
+        run_propane(language: language)
+        compile("spec/test_rewind.#{language}", language: language)
+        results = run_test(language: language)
+        expect(results.stderr).to eq ""
+        expect(results.status).to eq 0
+      end
+
       it "allows creating a JSON parser" do
         ext = language == "cpp" ? "c" : language
         write_grammar(File.read("spec/json_parser.#{ext}.propane"))
