@@ -19,13 +19,13 @@ unittest
         "second\n";
     p_context_t * context = p_context_new(input);
     assert(p_parse(context) == P_SUCCESS);
-    Start * start = p_result(context);
-    assert(start.pIDs);
-    assert(start.pIDs.id);
+    Start start = p_result(context);
+    assert(start.pIDs.valid);
+    assert(start.pIDs.id.valid);
     assert(start.pIDs.id.comments == "# c1\n#  c2\n");
-    assert(start.pIDs.pIDs);
-    assert(start.pIDs.pIDs.id);
+    assert(start.pIDs.pIDs.valid);
+    assert(start.pIDs.pIDs.id.valid);
     assert(start.pIDs.pIDs.id.comments == "# s1\n#   s2\n");
 
-    p_tree_delete(start);
+    p_context_delete(context);
 }

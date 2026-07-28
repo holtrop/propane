@@ -12,7 +12,7 @@ unittest
     string input = "abbccc";
     p_context_t * context = p_context_new(input);
     assert(p_parse(context) == P_SUCCESS);
-    Start * start = p_result(context);
+    Start start = p_result(context);
 
     assert_eq(1, start.pT1.pToken.position.row);
     assert_eq(1, start.pT1.pToken.position.col);
@@ -46,7 +46,7 @@ unittest
     assert_eq(1, start.end_position.row);
     assert_eq(6, start.end_position.col);
 
-    p_tree_delete(start);
+    p_context_delete(context);
 
     input = "\n\n  bb\nc\ncc\n\n     a";
     context = p_context_new(input);
@@ -85,5 +85,5 @@ unittest
     assert_eq(7, start.end_position.row);
     assert_eq(6, start.end_position.col);
 
-    p_tree_delete(start);
+    p_context_delete(context);
 }

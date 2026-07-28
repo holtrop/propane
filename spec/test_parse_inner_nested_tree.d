@@ -20,8 +20,8 @@ size_t mylexfn(p_context_t * context, p_token_info_t * out_token_info)
         {
             return inner_result;
         }
-        Start * inner = p_result_Start(context);
-        assert(inner !is null);
+        Start inner = p_result_Start(context);
+        assert(inner.valid);
         /* p_parse_inner rewound the input so that ')' was not consumed; consume
          * it now. */
         p_token_info_t rparen_info;
@@ -31,7 +31,9 @@ size_t mylexfn(p_context_t * context, p_token_info_t * out_token_info)
         /* The subtree covers the region strictly between the parentheses. */
         assert_eq(start_position.col + 1u, inner.position.col);
         assert_eq(rparen_info.position.col - 1u, inner.end_position.col);
-        p_tree_delete_Start(inner);
+        /* The inner subtree is discarded (the lexer synthesizes a num token in
+         * its place), but its nodes remain in the shared context arena and are
+         * freed with the context. */
         /* Synthesize a num token spanning the entire "( ... )" group. */
         out_token_info.token = TOKEN_num;
         out_token_info.position = start_position;
@@ -53,15 +55,15 @@ unittest
     p_context_t * context = p_context_new(input);
     assert(p_parse(context) == P_SUCCESS);
 
-    Start * tree = p_result(context);
-    assert(tree !is null);
+    Start tree = p_result(context);
+    assert(tree.valid);
 
     /* Start -> Expr, where the top Expr is "Expr plus num". */
-    Expr * top = tree.pExpr;
-    assert(top !is null);
-    assert(top.pExpr !is null);
-    assert(top.pToken2 !is null);
-    assert(top.pToken3 !is null);
+    Expr top = tree.pExpr;
+    assert(top.valid);
+    assert(top.pExpr.valid);
+    assert(top.pToken2.valid);
+    assert(top.pToken3.valid);
 
     /* The '+' joining the two groups is at column 9. */
     assert_eq(1u, top.pToken2.position.row);
@@ -75,8 +77,8 @@ unittest
 
     /* Left operand: Expr -> num, the synthesized num for "(3 + 4)", spanning
      * columns 1..7. */
-    Expr * left = top.pExpr;
-    assert(left.pToken1 !is null);
+    Expr left = top.pExpr;
+    assert(left.pToken1.valid);
     assert_eq(1u, left.pToken1.position.row);
     assert_eq(1u, left.pToken1.position.col);
     assert_eq(1u, left.pToken1.end_position.row);
@@ -86,6 +88,5 @@ unittest
     assert_eq(1u, tree.position.col);
     assert_eq(17u, tree.end_position.col);
 
-    p_tree_delete(tree);
     p_context_delete(context);
 }

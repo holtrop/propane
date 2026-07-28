@@ -276,19 +276,40 @@ Parser rule code blocks are still supported in tree generation mode, but they
 behave differently than when tree generation mode is not active.
 The code block for a rule is executed after the rule has been matched and its
 tree node has been fully formed.
-Within the code block, `$$` refers to the tree node for the reduced rule, typed
-as a pointer to that rule's generated tree node structure.
-The tree nodes for the rule components are accessed positionally with `$1`,
-`$2`, `$3`, etc..., each typed as a pointer to the generated tree node structure
-for that component (a rule node or a `Token` node).
+Within the code block, `$$` refers to the tree node handle for the reduced
+rule, and the rule components are accessed positionally with `$1`, `$2`, `$3`,
+etc..., each a tree node handle for that component (a rule node or a `Token`
+node).
 Field aliases (see the "Specifying parser rules" section) may also be used to
 reference a component tree node by name; a field alias behaves identically to
 the positional reference for that component.
-The positional position expansions (`${$.position}`, `${N.position}`, etc...)
-are not available in tree generation mode; the `position` and `end_position`
-fields of the tree nodes can be accessed directly instead.
 
-Example:
+Tree nodes are stored in a compact arena owned by the parser context and are
+referenced by lightweight handles rather than pointers. The whole tree is freed
+together with the context by `p_context_delete()`; there is no separate tree
+delete function, and tree node handles are only valid while the context is
+alive.
+
+Child fields, positions, and token payloads are accessed through per-language
+accessors on a node handle:
+
+  * C: field accessor functions `p_TYPE_field(node)` and tree walk macros
+    `p_tree_walk_TYPE(node, field1, field2, ...)`; generic accessors
+    `p_node_valid(node)`, `p_node_position(node)`, `p_node_end_position(node)`,
+    `p_node_n_fields(node)`, `p_node_data(node)` (a pointer to the node record,
+    for token payload and user fields), and `p_node_id(node)` (for identity
+    comparison).
+  * C++: handle methods called with `()`, e.g. `node.field()`, `node.valid()`,
+    `node.position()`, `node.token()`, `node.pvalue()`, and `node.data()`. The
+    C-style functions and macros above are also available.
+  * D: `@property` accessors, e.g. `node.field`, `node.valid`, `node.position`,
+    `node.token`, `node.pvalue`.
+
+The positional position expansions (`${$.position}`, `${N.position}`, etc...)
+are not available in tree generation mode; use the position accessors above
+instead.
+
+C example:
 
 ```
 tree;
@@ -297,9 +318,9 @@ Assignment -> ident equals Expr <<
     /* $$ is the Assignment tree node, $1 is the ident Token node, and $3 is
      * the Expr rule node. */
     printf("assignment on row %d, col %d\n",
-        $$->position.row, $$->position.col);
+        p_node_position($$).row, p_node_position($$).col);
     printf("target identifier ends on row %d, col %d\n",
-        $1->end_position.row, $1->end_position.col);
+        p_node_end_position($1).row, p_node_end_position($1).col);
 >>
 ```
 
@@ -1406,7 +1427,7 @@ In this case, the parser will start parsing with the `Statement` rule.
 
 For each start rule, a `p_parse_inner_XXX()` function is also generated.
 This variant of the parser entry point accepts a caller-provided array of
-"follow tokens" — tokens the caller allows to appear immediately after the
+"follow tokens" -- tokens the caller allows to appear immediately after the
 start rule in some outer grammar context.
 It is useful when embedding a Propane-generated sub-parser within an outer
 parser and the outer parser knows which tokens naturally terminate the

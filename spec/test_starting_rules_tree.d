@@ -12,30 +12,30 @@ unittest
     string input = "bbbb";
     p_context_t * context = p_context_new(input);
     assert(p_parse(context) == P_SUCCESS);
-    Start * start = p_result(context);
-    assert(start.bs);
-    assert(start.bs.b);
-    assert(start.bs.bs.b);
-    assert(start.bs.bs.bs.b);
-    assert(start.bs.bs.bs.bs.b);
+    Start start = p_result(context);
+    assert(start.bs.valid);
+    assert(start.bs.b.valid);
+    assert(start.bs.bs.b.valid);
+    assert(start.bs.bs.bs.b.valid);
+    assert(start.bs.bs.bs.bs.b.valid);
 
-    p_tree_delete(start);
+    p_context_delete(context);
 
     context = p_context_new(input);
     assert(p_parse_Bs(context) == P_SUCCESS);
-    Bs * bs = p_result_Bs(context);
-    assert(bs.b);
-    assert(bs.bs.b);
-    assert(bs.bs.bs.b);
-    assert(bs.bs.bs.bs.b);
+    Bs bs = p_result_Bs(context);
+    assert(bs.b.valid);
+    assert(bs.bs.b.valid);
+    assert(bs.bs.bs.b.valid);
+    assert(bs.bs.bs.bs.b.valid);
 
-    p_tree_delete_Bs(bs);
+    p_context_delete(context);
 
     input = "c";
     context = p_context_new(input);
     assert(p_parse_R(context) == P_SUCCESS);
-    R * r = p_result_R(context);
-    assert(r.c);
+    R r = p_result_R(context);
+    assert(r.c.valid);
 
-    p_tree_delete_R(r);
+    p_context_delete(context);
 }

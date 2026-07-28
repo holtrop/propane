@@ -12,7 +12,7 @@ unittest
     string input = "\na\n  bb ccc";
     p_context_t * context = p_context_new(input);
     assert(p_parse(context) == P_SUCCESS);
-    Start * start = p_result(context);
+    Start start = p_result(context);
 
     assert_eq(2, start.pT1.pToken.position.row);
     assert_eq(1, start.pT1.pToken.position.col);
@@ -33,7 +33,7 @@ unittest
     assert_eq(3, start.end_position.row);
     assert_eq(8, start.end_position.col);
 
-    p_tree_delete(start);
+    p_context_delete(context);
 
     input = "a\nbb";
     context = p_context_new(input);
@@ -59,7 +59,7 @@ unittest
     assert_eq(2, start.end_position.row);
     assert_eq(2, start.end_position.col);
 
-    p_tree_delete(start);
+    p_context_delete(context);
 
     input = "a\nc\nc";
     context = p_context_new(input);
@@ -85,7 +85,7 @@ unittest
     assert_eq(3, start.end_position.row);
     assert_eq(1, start.end_position.col);
 
-    p_tree_delete(start);
+    p_context_delete(context);
 
     input = "a";
     context = p_context_new(input);
@@ -107,5 +107,5 @@ unittest
     assert_eq(1, start.end_position.row);
     assert_eq(1, start.end_position.col);
 
-    p_tree_delete(start);
+    p_context_delete(context);
 }

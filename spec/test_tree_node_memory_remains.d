@@ -378,19 +378,19 @@ def main() -> int
     context = p_context_new(input);
     size_t result = p_parse(context);
     assert_eq(P_SUCCESS, result);
-    PModule * pmod = p_result(context);
-    PModuleItems * pmis = pmod.pModuleItems;
-    PFunctionDefinition *[] pfds;
-    while (pmis !is null)
+    PModule pmod = p_result(context);
+    PModuleItems pmis = pmod.pModuleItems;
+    PFunctionDefinition[] pfds;
+    while (pmis.valid)
     {
-        PModuleItem * pmi = pmis.pModuleItem;
-        if (pmi is null)
+        PModuleItem pmi = pmis.pModuleItem;
+        if (!pmi.valid)
         {
             stderr.writeln("pmi is null!!!?");
             assert(0);
         }
-        PFunctionDefinition * pfd = pmi.pFunctionDefinition;
-        if (pfd !is null)
+        PFunctionDefinition pfd = pmi.pFunctionDefinition;
+        if (pfd.valid)
         {
             pfds = [pfd] ~ pfds;
         }
@@ -405,5 +405,5 @@ def main() -> int
             stderr.writeln("Index ", i, ": expected ", expected[i].name, "/", expected[i].token, ", got ", pfds[i].name.pvalue.s, "/", pfds[i].returntype.pType.pTypeBase.pToken1.token);
         }
     }
-    p_tree_delete(pmod);
+    p_context_delete(context);
 }

@@ -105,22 +105,23 @@ public <%= typestring %> <%= @grammar.prefix %>value_get<%= name == "default" ? 
 <% end %>
 
 <% if @grammar.tree %>
-/** Common tree node structure. */
-private struct TreeNode
-{
-    <%= @grammar.prefix %>position_t position;
-    <%= @grammar.prefix %>position_t end_position;
-    ushort n_fields;
-    bool is_token;
-    void *[0] fields;
-}
+/** Tree node ID type (index into the context node arena). ID 0 is null. */
+public alias <%= @grammar.prefix %>node_id_t = uint;
 
-/** Tree node types. @{ */
-public struct <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>
+/**
+ * Tree node record.
+ *
+ * All tree nodes are stored contiguously in the context node arena. Child
+ * links are stored in a shared children array: a node's children
+ * occupy children[child_offset .. child_offset + n_fields]. Token payload
+ * fields (token, pvalue, and any user fields) are only meaningful when
+ * is_token is true.
+ */
+private struct <%= @grammar.prefix %>node_data_t
 {
-    /* TreeNode fields must be present in the same order here. */
     <%= @grammar.prefix %>position_t position;
     <%= @grammar.prefix %>position_t end_position;
+    <%= @grammar.prefix %>node_id_t child_offset;
     ushort n_fields;
     bool is_token;
     <%= @grammar.prefix %>token_t token;
@@ -128,22 +129,84 @@ public struct <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>
 <%= @grammar.token_user_fields %>
 }
 
-<%   @parser.rule_sets.each do |name, rule_set| %>
-<%     next if name.start_with?("$") %>
-<%     next if rule_set.optional? %>
-public struct <%= @grammar.tree_prefix %><%= name %><%= @grammar.tree_suffix %>
+/** Tree node handle types. @{ */
+
+/** Token tree node handle. */
+public struct <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>
 {
-    <%= @grammar.prefix %>position_t position;
-    <%= @grammar.prefix %>position_t end_position;
-    ushort n_fields;
-    bool is_token;
-<%     rule_set.tree_fields.each do |fields| %>
-    union
+    private <%= @grammar.prefix %>context_t * __context;
+    private <%= @grammar.prefix %>node_id_t __id;
+
+    this(<%= @grammar.prefix %>context_t * context, <%= @grammar.prefix %>node_id_t id)
     {
-<%       fields.each do |field_name, type| %>
-        <%= type %> * <%= field_name %>;
-<%       end %>
+        this.__context = context;
+        this.__id = id;
     }
+
+    /** Return whether this handle refers to a valid (non-null) node. */
+    @property bool valid()
+    {
+        return __id != 0u;
+    }
+
+    /** Access the underlying node record (token, pvalue, and user fields). */
+    @property ref <%= @grammar.prefix %>node_data_t __node()
+    {
+        return __context.<%= @grammar.prefix %>tree_nodes[__id];
+    }
+
+    alias __node this;
+}
+
+<%   tree_node_rule_sets.each do |rule_set| %>
+/** <%= rule_set.name %> tree node handle. */
+public struct <%= @grammar.tree_prefix %><%= rule_set.name %><%= @grammar.tree_suffix %>
+{
+    private <%= @grammar.prefix %>context_t * __context;
+    private <%= @grammar.prefix %>node_id_t __id;
+
+    this(<%= @grammar.prefix %>context_t * context, <%= @grammar.prefix %>node_id_t id)
+    {
+        this.__context = context;
+        this.__id = id;
+    }
+
+    /** Return whether this handle refers to a valid (non-null) node. */
+    @property bool valid()
+    {
+        return __id != 0u;
+    }
+
+    /** Text position of the first code point spanned by this node. */
+    @property <%= @grammar.prefix %>position_t position()
+    {
+        return __context.<%= @grammar.prefix %>tree_nodes[__id].position;
+    }
+
+    /** Text position of the last code point spanned by this node. */
+    @property <%= @grammar.prefix %>position_t end_position()
+    {
+        return __context.<%= @grammar.prefix %>tree_nodes[__id].end_position;
+    }
+
+    /** Number of child fields in this node. */
+    @property ushort n_fields()
+    {
+        return __id ? __context.<%= @grammar.prefix %>tree_nodes[__id].n_fields : cast(ushort)0u;
+    }
+<%     rule_set.tree_fields.each_with_index do |fields, i| %>
+<%       fields.each do |field_name, type| %>
+
+    /** Access the <%= field_name %> child node. */
+    @property <%= type %> <%= field_name %>()
+    {
+        if (__id == 0u)
+        {
+            return <%= type %>(__context, 0u);
+        }
+        return <%= type %>(__context, __context.<%= @grammar.prefix %>tree_children[__context.<%= @grammar.prefix %>tree_nodes[__id].child_offset + <%= i %>u]);
+    }
+<%       end %>
 <%     end %>
 }
 
@@ -196,7 +259,13 @@ public struct <%= @grammar.prefix %>context_t
 
     /** Parse result value. */
 <% if @grammar.tree %>
-    void * parse_result;
+    <%= @grammar.prefix %>node_id_t parse_result;
+
+    /** Tree node arena. Node ID 0 is reserved as the null node. */
+    <%= @grammar.prefix %>node_data_t[] <%= @grammar.prefix %>tree_nodes;
+
+    /** Shared tree child links. */
+    <%= @grammar.prefix %>node_id_t[] <%= @grammar.prefix %>tree_children;
 <% else %>
     <%= @grammar.prefix %>value_t parse_result;
 <% end %>
@@ -268,6 +337,11 @@ private enum size_t INVALID_ID = cast(size_t)-1;
     context.text_position.row = 1u;
     context.text_position.col = 1u;
     context.mode = <%= @lexer.mode_id("default") %>;
+<% if @grammar.tree %>
+
+    /* Reserve node ID 0 as the null tree node. */
+    context.<%= @grammar.prefix %>tree_nodes = new <%= @grammar.prefix %>node_data_t[](1);
+<% end %>
 
     return context;
 }
@@ -280,6 +354,16 @@ private enum size_t INVALID_ID = cast(size_t)-1;
  */
 void <%= @grammar.prefix %>context_delete(<%= @grammar.prefix %>context_t * context)
 {
+<% if @grammar.tree && @grammar.free_token_node != "" %>
+    foreach (ref node; context.<%= @grammar.prefix %>tree_nodes)
+    {
+        if (node.is_token)
+        {
+            <%= @grammar.prefix %>node_data_t * token_tree_node = &node;
+<%= expand_code(@grammar.free_token_node, false, nil, nil) %>
+        }
+    }
+<% end %>
 }
 
 /**************************************************************************
@@ -888,8 +972,8 @@ private struct state_value_t
     size_t state_id;
 
 <% if @grammar.tree %>
-    /** Tree node. */
-    void * tree_node;
+    /** Tree node ID. */
+    <%= @grammar.prefix %>node_id_t node_id;
 <% else %>
     <%= @grammar.prefix %>position_t position;
     <%= @grammar.prefix %>position_t end_position;
@@ -1007,7 +1091,7 @@ private <%= @grammar.prefix %>position_t get_rule_position(state_value_t[] state
  * @retval P_USER_TERMINATED
  *   User requested to terminate parsing.
  */
-private size_t parser_user_code(<%= @grammar.tree ? "void" : "#{@grammar.prefix}value_t" %> * _pvalue, uint rule, state_value_t[] statevalues, uint n_states, <%= @grammar.prefix %>context_t * context)
+private size_t parser_user_code(<%= @grammar.tree ? "#{@grammar.prefix}node_id_t _node_id" : "#{@grammar.prefix}value_t * _pvalue" %>, uint rule, state_value_t[] statevalues, uint n_states, <%= @grammar.prefix %>context_t * context)
 {
     switch (rule)
     {
@@ -1112,7 +1196,7 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
     size_t reduced_rule_set = INVALID_ID;
     size_t last_shifted_rule_set_id = INVALID_ID;
 <% if @grammar.tree %>
-    void * reduced_parser_node;
+    <%= @grammar.prefix %>node_id_t reduced_parser_node;
 <% else %>
     <%= @grammar.prefix %>position_t reduced_position;
     <%= @grammar.prefix %>position_t reduced_end_position;
@@ -1153,7 +1237,7 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
             {
                 /* Successful parse. */
 <% if @grammar.tree %>
-                context.parse_result = statevalues[$-1].tree_node;
+                context.parse_result = statevalues[$-1].node_id;
 <% else %>
                 context.parse_result = statevalues[$-1].pvalue;
 <% end %>
@@ -1179,7 +1263,7 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
                     context.input_index -= token_info.length;
                     context.text_position = token_info.position;
 <% if @grammar.tree %>
-                    context.parse_result = statevalues[$-1].tree_node;
+                    context.parse_result = statevalues[$-1].node_id;
 <% else %>
                     context.parse_result = statevalues[$-1].pvalue;
 <% end %>
@@ -1199,9 +1283,17 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
             {
                 /* We shifted a token, mark it consumed. */
 <% if @grammar.tree %>
-                <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> * token_tree_node = new <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>(token_info.position, token_info.end_position, 0u, true, token, token_info.pvalue);
+                <%= @grammar.prefix %>node_id_t token_node_id = cast(<%= @grammar.prefix %>node_id_t)context.<%= @grammar.prefix %>tree_nodes.length;
+                context.<%= @grammar.prefix %>tree_nodes ~= <%= @grammar.prefix %>node_data_t.init;
+                <%= @grammar.prefix %>node_data_t * token_tree_node = &context.<%= @grammar.prefix %>tree_nodes[token_node_id];
+                token_tree_node.position = token_info.position;
+                token_tree_node.end_position = token_info.end_position;
+                token_tree_node.n_fields = 0u;
+                token_tree_node.is_token = true;
+                token_tree_node.token = token;
+                token_tree_node.pvalue = token_info.pvalue;
 <%= expand_code(@grammar.on_token_node, false, nil, nil) %>
-                statevalues[$-1].tree_node = token_tree_node;
+                statevalues[$-1].node_id = token_node_id;
 <% else %>
                 statevalues[$-1].position = token_info.position;
                 statevalues[$-1].end_position = token_info.end_position;
@@ -1213,7 +1305,7 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
             {
                 /* We shifted a RuleSet. */
 <% if @grammar.tree %>
-                statevalues[$-1].tree_node = reduced_parser_node;
+                statevalues[$-1].node_id = reduced_parser_node;
 <% else %>
                 statevalues[$-1].pvalue = reduced_parser_value;
                 statevalues[$-1].position = reduced_position;
@@ -1242,55 +1334,56 @@ private size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t star
 <% if @grammar.tree %>
             if (parser_reduce_table[reduce_index].propagate_optional_target)
             {
-                reduced_parser_node = statevalues[$ - 1].tree_node;
+                reduced_parser_node = statevalues[$ - 1].node_id;
             }
             else if (parser_reduce_table[reduce_index].n_states > 0)
             {
-                size_t n_fields = parser_reduce_table[reduce_index].rule_set_node_field_array_size;
-                size_t node_size = TreeNode.sizeof + n_fields * (void *).sizeof;
-                TreeNode * node = cast(TreeNode *)malloc(node_size);
-                GC.addRange(node, node_size);
-                node.position = <%= @grammar.prefix %>position_t.INVALID;
-                node.end_position = <%= @grammar.prefix %>position_t.INVALID;
-                node.n_fields = cast(ushort)n_fields;
-                node.is_token = false;
-                foreach (i; 0..n_fields)
-                {
-                    node.fields[i] = null;
-                }
+                ushort n_fields = parser_reduce_table[reduce_index].rule_set_node_field_array_size;
+                /* Reserve child slots. New slots are zero-initialized
+                 * (null node ID) so absent optional children remain null. */
+                <%= @grammar.prefix %>node_id_t child_offset = cast(<%= @grammar.prefix %>node_id_t)context.<%= @grammar.prefix %>tree_children.length;
+                context.<%= @grammar.prefix %>tree_children.length += n_fields;
                 if (parser_reduce_table[reduce_index].rule_set_node_field_index_map is null)
                 {
                     foreach (i; 0..parser_reduce_table[reduce_index].n_states)
                     {
-                        node.fields[i] = statevalues[$ - parser_reduce_table[reduce_index].n_states + i].tree_node;
+                        context.<%= @grammar.prefix %>tree_children[child_offset + i] = statevalues[$ - parser_reduce_table[reduce_index].n_states + i].node_id;
                     }
                 }
                 else
                 {
                     foreach (i; 0..parser_reduce_table[reduce_index].n_states)
                     {
-                        node.fields[parser_reduce_table[reduce_index].rule_set_node_field_index_map[i]] = statevalues[$ - parser_reduce_table[reduce_index].n_states + i].tree_node;
+                        context.<%= @grammar.prefix %>tree_children[child_offset + parser_reduce_table[reduce_index].rule_set_node_field_index_map[i]] = statevalues[$ - parser_reduce_table[reduce_index].n_states + i].node_id;
                     }
                 }
+                <%= @grammar.prefix %>node_id_t node_id = cast(<%= @grammar.prefix %>node_id_t)context.<%= @grammar.prefix %>tree_nodes.length;
+                context.<%= @grammar.prefix %>tree_nodes ~= <%= @grammar.prefix %>node_data_t.init;
+                <%= @grammar.prefix %>node_data_t * node = &context.<%= @grammar.prefix %>tree_nodes[node_id];
+                node.position = <%= @grammar.prefix %>position_t.INVALID;
+                node.end_position = <%= @grammar.prefix %>position_t.INVALID;
+                node.child_offset = child_offset;
+                node.n_fields = n_fields;
+                node.is_token = false;
                 bool position_found = false;
                 foreach (i; 0..n_fields)
                 {
-                    TreeNode * child = cast(TreeNode *)node.fields[i];
-                    if (child && child.position.valid)
+                    <%= @grammar.prefix %>node_id_t child_id = context.<%= @grammar.prefix %>tree_children[child_offset + i];
+                    if (child_id != 0u && context.<%= @grammar.prefix %>tree_nodes[child_id].position.valid)
                     {
                         if (!position_found)
                         {
-                            node.position = child.position;
+                            node.position = context.<%= @grammar.prefix %>tree_nodes[child_id].position;
                             position_found = true;
                         }
-                        node.end_position = child.end_position;
+                        node.end_position = context.<%= @grammar.prefix %>tree_nodes[child_id].end_position;
                     }
                 }
-                reduced_parser_node = node;
+                reduced_parser_node = node_id;
             }
             else
             {
-                reduced_parser_node = null;
+                reduced_parser_node = 0u;
             }
 <%   if @grammar.parser_user_code_used? %>
             if (parser_user_code(reduced_parser_node, parser_reduce_table[reduce_index].rule, statevalues, parser_reduce_table[reduce_index].n_states, context) == P_USER_TERMINATED)
@@ -1360,14 +1453,14 @@ public size_t <%= @grammar.prefix %>parse_inner_<%= start_rule %>(<%= @grammar.p
  * @return Parse result value.
  */
 <% if @grammar.tree %>
-public <%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
+public <%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
 {
-    return cast(<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> *)context.parse_result;
+    return <%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %>(context, context.parse_result);
 }
 <%   @grammar.start_rules.each_with_index do |start_rule, i| %>
-public <%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * <%= @grammar.prefix %>result_<%= start_rule %>(<%= @grammar.prefix %>context_t * context)
+public <%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> <%= @grammar.prefix %>result_<%= start_rule %>(<%= @grammar.prefix %>context_t * context)
 {
-    return cast(<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> *)context.parse_result;
+    return <%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %>(context, context.parse_result);
 }
 <%   end %>
 <% else %>
@@ -1383,34 +1476,6 @@ public <%= start_rule_type(i)[1] %> <%= @grammar.prefix %>result_<%= start_rule 
 <%   end %>
 <% end %>
 
-<% if @grammar.tree %>
-private void tree_delete(TreeNode * node)
-{
-    if (!node.is_token)
-    {
-        for (size_t i = 0u; i < node.n_fields; i++)
-        {
-            if (node.fields[i])
-            {
-                tree_delete(cast(TreeNode *)node.fields[i]);
-            }
-        }
-        GC.removeRange(node);
-        free(node);
-    }
-}
-
-void <%= @grammar.prefix %>tree_delete(<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * tree)
-{
-    tree_delete(cast(TreeNode *)tree);
-}
-<%   @grammar.start_rules.each_with_index do |start_rule, i| %>
-void <%= @grammar.prefix %>tree_delete_<%= start_rule %>(<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * tree)
-{
-    tree_delete(cast(TreeNode *)tree);
-}
-<%   end %>
-<% end %>
 
 /**
  * Get the current text input position.

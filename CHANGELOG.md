@@ -1,3 +1,30 @@
+## v5.0.0
+
+### API Changes
+
+- Tree generation mode now stores all tree nodes in a compact arena owned by
+  the parser context (a flat node array plus a shared child-link array).
+  This replaces the previous design of one heap allocation per node with
+  layout-punned typed structs.
+- Tree nodes are now referenced by lightweight handles rather than pointers.
+  `p_result()` and the field accessors return handle values.
+- The whole tree is freed together with the context by `p_context_delete()`.
+  The `p_tree_delete()` / `p_tree_delete_XXX()` functions have been removed;
+  tree node handles are only valid while the context is alive.
+- Tree node field access changed per target language:
+  - C: per-field accessor functions (e.g. `p_Start_pItems(node)`) plus tree
+    walk macros (e.g. `p_tree_walk_Start(node, pItems, pItem, pToken1, token)`),
+    and generic accessors `p_node_valid()`, `p_node_position()`,
+    `p_node_end_position()`, `p_node_n_fields()`, `p_node_data()`, `p_node_id()`.
+  - C++: handle methods called with `()` (e.g. `node.pItems().pToken1().token()`),
+    plus the same C-style functions/macros for convenience.
+  - D: `@property` accessors preserving the previous field-access syntax
+    (e.g. `node.pItems.pToken1.token`); null checks use `.valid` instead of
+    `is null`.
+- Tree-mode parser rule user code: `$$` and `$1` etc. now yield node handles.
+  Reference child fields through the target-language accessors described above
+  rather than through struct pointer members.
+
 ## v4.8.1
 
 ### Fixes

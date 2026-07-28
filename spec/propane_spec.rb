@@ -751,7 +751,7 @@ EOF
 
       it "executes user code associated with a parser rule in tree mode" do
         case language
-        when "c", "cpp"
+        when "c"
           write_grammar <<EOF
 tree;
 context_user_fields <<
@@ -769,18 +769,49 @@ ptype int;
 token a << $$ = 11; >>
 token b << $$ = 22; >>
 Start -> A:ay B:bee C <<
-  ${context.start_n_fields} = $$->n_fields;
-  ${context.start_a_value} = $$->pA->pToken1->pvalue;
-  ${context.a_value} = $1->pToken1->pvalue;
-  ${context.b_value} = $2->pToken1->pvalue;
-  ${context.b_token} = $2->pToken1->token;
-  ${context.c_field_is_null} = ($$->pC == NULL) ? 1 : 0;
-  ${context.alias_a_value} = ${ay}->pToken1->pvalue;
-  ${context.alias_b_value} = ${bee}->pToken1->pvalue;
+  ${context.start_n_fields} = p_node_n_fields($$);
+  ${context.start_a_value} = p_tree_walk_Start($$, pA, pToken1, pvalue);
+  ${context.a_value} = p_tree_walk_A($1, pToken1, pvalue);
+  ${context.b_value} = p_tree_walk_B($2, pToken1, pvalue);
+  ${context.b_token} = p_tree_walk_B($2, pToken1, token);
+  ${context.c_field_is_null} = p_node_valid(p_Start_pC($$)) ? 0 : 1;
+  ${context.alias_a_value} = p_tree_walk_A(${ay}, pToken1, pvalue);
+  ${context.alias_b_value} = p_tree_walk_B(${bee}, pToken1, pvalue);
 >>
 A -> a;
 B -> b;
-C -> << ${context.c_is_null} = ($$ == NULL) ? 1 : 0; >>
+C -> << ${context.c_is_null} = p_node_valid($$) ? 0 : 1; >>
+EOF
+        when "cpp"
+          write_grammar <<EOF
+tree;
+context_user_fields <<
+    int start_n_fields;
+    int start_a_value;
+    int a_value;
+    int b_value;
+    p_token_t b_token;
+    int c_is_null;
+    int c_field_is_null;
+    int alias_a_value;
+    int alias_b_value;
+>>
+ptype int;
+token a << $$ = 11; >>
+token b << $$ = 22; >>
+Start -> A:ay B:bee C <<
+  ${context.start_n_fields} = $$.n_fields();
+  ${context.start_a_value} = $$.pA().pToken1().pvalue();
+  ${context.a_value} = $1.pToken1().pvalue();
+  ${context.b_value} = $2.pToken1().pvalue();
+  ${context.b_token} = $2.pToken1().token();
+  ${context.c_field_is_null} = $$.pC().valid() ? 0 : 1;
+  ${context.alias_a_value} = ${ay}.pToken1().pvalue();
+  ${context.alias_b_value} = ${bee}.pToken1().pvalue();
+>>
+A -> a;
+B -> b;
+C -> << ${context.c_is_null} = $$.valid() ? 0 : 1; >>
 EOF
         when "d"
           write_grammar <<EOF
@@ -805,13 +836,13 @@ Start -> A:ay B:bee C <<
   ${context.a_value} = $1.pToken1.pvalue;
   ${context.b_value} = $2.pToken1.pvalue;
   ${context.b_token} = $2.pToken1.token;
-  ${context.c_field_is_null} = ($$.pC is null) ? 1 : 0;
+  ${context.c_field_is_null} = ($$.pC.valid) ? 0 : 1;
   ${context.alias_a_value} = ${ay}.pToken1.pvalue;
   ${context.alias_b_value} = ${bee}.pToken1.pvalue;
 >>
 A -> a;
 B -> b;
-C -> << ${context.c_is_null} = ($$ is null) ? 1 : 0; >>
+C -> << ${context.c_is_null} = ($$.valid) ? 0 : 1; >>
 EOF
         end
         run_propane(language: language)

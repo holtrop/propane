@@ -373,46 +373,45 @@ int main(int argc, char * argv[])
     context = p_context_new((const uint8_t *)input, strlen(input));
     size_t result = p_parse(context);
     assert_eq(P_SUCCESS, result);
-    PModule * pmod = p_result(context);
-    PModuleItems * pmis = pmod->pModuleItems;
-    PFunctionDefinition ** pfds;
+    PModule pmod = p_result(context);
+    PModuleItems pmis = p_PModule_pModuleItems(pmod);
+    PFunctionDefinition * pfds;
     size_t n_pfds = 0u;
-    while (pmis != NULL)
+    while (p_node_valid(pmis))
     {
-        PModuleItem * pmi = pmis->pModuleItem;
-        if (pmi->pFunctionDefinition != NULL)
+        PModuleItem pmi = p_PModuleItems_pModuleItem(pmis);
+        if (p_node_valid(p_PModuleItem_pFunctionDefinition(pmi)))
         {
             n_pfds++;
         }
-        pmis = pmis->pModuleItems;
+        pmis = p_PModuleItems_pModuleItems(pmis);
     }
-    pfds = (PFunctionDefinition **)malloc(n_pfds * sizeof(PModuleItems *));
-    pmis = pmod->pModuleItems;
+    pfds = (PFunctionDefinition *)malloc(n_pfds * sizeof(PFunctionDefinition));
+    pmis = p_PModule_pModuleItems(pmod);
     size_t pfd_i = n_pfds;
-    while (pmis != NULL)
+    while (p_node_valid(pmis))
     {
-        PModuleItem * pmi = pmis->pModuleItem;
-        PFunctionDefinition * pfd = pmi->pFunctionDefinition;
-        if (pfd != NULL)
+        PModuleItem pmi = p_PModuleItems_pModuleItem(pmis);
+        PFunctionDefinition pfd = p_PModuleItem_pFunctionDefinition(pmi);
+        if (p_node_valid(pfd))
         {
             pfd_i--;
             assert(pfd_i < n_pfds);
             pfds[pfd_i] = pfd;
         }
-        pmis = pmis->pModuleItems;
+        pmis = p_PModuleItems_pModuleItems(pmis);
     }
     assert_eq(51, n_pfds);
     for (size_t i = 0; i < n_pfds; i++)
     {
-        if (strncmp(expected[i].name, (const char *)pfds[i]->name->pvalue.s, strlen(expected[i].name)) != 0 ||
-            (expected[i].token != pfds[i]->returntype->pType->pTypeBase->pToken1->token))
+        if (strncmp(expected[i].name, (const char *)p_node_data(p_PFunctionDefinition_name(pfds[i]))->pvalue.s, strlen(expected[i].name)) != 0 ||
+            (expected[i].token != p_tree_walk_PFunctionDefinition(pfds[i], returntype, pType, pTypeBase, pToken1, token)))
         {
-            fprintf(stderr, "Index %lu: expected %s/%u, got %u\n", i, expected[i].name, expected[i].token, pfds[i]->returntype->pType->pTypeBase->pToken1->token);
+            fprintf(stderr, "Index %lu: expected %s/%u, got %u\n", i, expected[i].name, expected[i].token, p_tree_walk_PFunctionDefinition(pfds[i], returntype, pType, pTypeBase, pToken1, token));
         }
     }
 
     free(pfds);
-    p_tree_delete(pmod);
     p_context_delete(context);
 
     return 0;

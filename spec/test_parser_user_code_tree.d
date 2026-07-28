@@ -31,9 +31,9 @@ unittest
     assert_eq(11, context.alias_a_value);
     assert_eq(22, context.alias_b_value);
 
-    Start * start = p_result(context);
-    assert(start.pA !is null);
-    assert(start.pB !is null);
-    assert(start.pC is null);
-    p_tree_delete(start);
+    Start start = p_result(context);
+    assert(start.pA.valid);
+    assert(start.pB.valid);
+    assert(!start.pC.valid);
+    p_context_delete(context);
 }

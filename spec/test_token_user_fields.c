@@ -18,29 +18,22 @@ int main()
     p_context_t * context;
     context = p_context_new((uint8_t const *)input, strlen(input));
     assert(p_parse(context) == P_SUCCESS);
-    Start * start = p_result(context);
-    assert(start->pIDs);
-    assert(start->pIDs->id);
-#ifdef __cplusplus
-    assert(start->pIDs->id->comments == "# c1\n#  c2\n");
-#else
-    assert(start->pIDs->id->comments);
-    assert(strcmp(start->pIDs->id->comments, "# c1\n#  c2\n") == 0);
-#endif
-    assert(start->pIDs->pIDs);
-    assert(start->pIDs->pIDs->id);
-#ifdef __cplusplus
-    assert(start->pIDs->pIDs->id->comments == "# s1\n#   s2\n");
-#else
-    assert(start->pIDs->pIDs->id->comments);
-    assert(strcmp(start->pIDs->pIDs->id->comments, "# s1\n#   s2\n") == 0);
-#endif
+    Start start = p_result(context);
+    IDs ids = p_Start_pIDs(start);
+    assert(p_node_valid(ids));
+    Token id0 = p_IDs_id(ids);
+    assert(p_node_valid(id0));
+    assert(p_node_data(id0)->comments);
+    assert(strcmp(p_node_data(id0)->comments, "# c1\n#  c2\n") == 0);
+    IDs ids2 = p_IDs_pIDs(ids);
+    assert(p_node_valid(ids2));
+    Token id1 = p_IDs_id(ids2);
+    assert(p_node_valid(id1));
+    assert(p_node_data(id1)->comments);
+    assert(strcmp(p_node_data(id1)->comments, "# s1\n#   s2\n") == 0);
 
-#ifndef __cplusplus
     free(context->comments);
-#endif
     p_context_delete(context);
-    p_tree_delete(start);
 
     return 0;
 }

@@ -8,6 +8,9 @@
 
 #include <stdint.h>
 #include <stddef.h>
+<% if @cpp %>
+#include <vector>
+<% end %>
 
 /**************************************************************************
  * Public types
@@ -88,47 +91,29 @@ static inline <%= typestring %> <%= @grammar.prefix %>value_get<%= name == "defa
 <% end %>
 
 <% if @grammar.tree %>
-/** Tree node types. @{ */
-typedef struct <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>
+/** Tree node ID type (index into the context node arena). ID 0 is null. */
+typedef uint32_t <%= @grammar.prefix %>node_id_t;
+
+/**
+ * Tree node record.
+ *
+ * All tree nodes are stored contiguously in the context node arena. Child
+ * links are stored in a shared children array: a node's children
+ * occupy children[child_offset .. child_offset + n_fields]. Token payload
+ * fields (token, pvalue, and any user fields) are only meaningful when
+ * is_token is nonzero.
+ */
+typedef struct
 {
-    <% # TreeNode fields must be present in the same order here. # %>
     <%= @grammar.prefix %>position_t position;
     <%= @grammar.prefix %>position_t end_position;
+    <%= @grammar.prefix %>node_id_t child_offset;
     uint16_t n_fields;
     uint8_t is_token;
-<%= @grammar.token_user_fields %>
     <%= @grammar.prefix %>token_t token;
     <%= @grammar.prefix %>value_t pvalue;
-} <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>;
-
-<%   @parser.rule_sets.each do |name, rule_set| %>
-<%     next if name.start_with?("$") %>
-<%     next if rule_set.optional? %>
-struct <%= @grammar.tree_prefix %><%= name %><%= @grammar.tree_suffix %>;
-<%   end %>
-
-<%   @parser.rule_sets.each do |name, rule_set| %>
-<%     next if name.start_with?("$") %>
-<%     next if rule_set.optional? %>
-typedef struct <%= @grammar.tree_prefix %><%= name %><%= @grammar.tree_suffix %>
-{
-    <% # TreeNode fields must be present in the same order here. # %>
-    <%= @grammar.prefix %>position_t position;
-    <%= @grammar.prefix %>position_t end_position;
-    uint16_t n_fields;
-    uint8_t is_token;
-<%     rule_set.tree_fields.each do |fields| %>
-    union
-    {
-<%       fields.each do |field_name, type| %>
-        struct <%= type %> * <%= field_name %>;
-<%       end %>
-    };
-<%     end %>
-} <%= @grammar.tree_prefix %><%= name %><%= @grammar.tree_suffix %>;
-
-<%   end %>
-/** @} */
+<%= @grammar.token_user_fields %>
+} <%= @grammar.prefix %>node_data_t;
 <% end %>
 
 /** Lexed token information. */
@@ -179,7 +164,25 @@ typedef struct
 
     /** Parse result value. */
 <% if @grammar.tree %>
-    void * parse_result;
+    <%= @grammar.prefix %>node_id_t parse_result;
+
+<%   if @cpp %>
+    /** Tree node arena. Node ID 0 is reserved as the null node. */
+    std::vector<<%= @grammar.prefix %>node_data_t> <%= @grammar.prefix %>tree_nodes;
+
+    /** Shared tree child links. */
+    std::vector<<%= @grammar.prefix %>node_id_t> <%= @grammar.prefix %>tree_children;
+<%   else %>
+    /** Tree node arena. Node ID 0 is reserved as the null node. */
+    <%= @grammar.prefix %>node_data_t * <%= @grammar.prefix %>tree_nodes;
+    size_t <%= @grammar.prefix %>tree_nodes_length;
+    size_t <%= @grammar.prefix %>tree_nodes_capacity;
+
+    /** Shared tree child links. */
+    <%= @grammar.prefix %>node_id_t * <%= @grammar.prefix %>tree_children;
+    size_t <%= @grammar.prefix %>tree_children_length;
+    size_t <%= @grammar.prefix %>tree_children_capacity;
+<%   end %>
 <% else %>
     <%= @grammar.prefix %>value_t parse_result;
 <% end %>
@@ -192,6 +195,10 @@ typedef struct
 
 <%= @grammar.context_user_fields %>
 } <%= @grammar.prefix %>context_t;
+
+<% if @grammar.tree %>
+<%= c_tree_types_header %>
+<% end %>
 
 /**************************************************************************
  * Public data
@@ -217,21 +224,14 @@ size_t <%= @grammar.prefix %>parse_inner_<%= start_rule %>(<%= @grammar.prefix %
 <%   end %>
 
 <% if @grammar.tree %>
-<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context);
+<%= h_type(@grammar.start_rules[0]) %> <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context);
 <%   @grammar.start_rules.each_with_index do |start_rule, i| %>
-<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * <%= @grammar.prefix %>result_<%= start_rule %>(<%= @grammar.prefix %>context_t * context);
+<%= h_type(start_rule) %> <%= @grammar.prefix %>result_<%= start_rule %>(<%= @grammar.prefix %>context_t * context);
 <%   end %>
 <% else %>
 <%= start_rule_type[1] %> <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context);
 <%   @grammar.start_rules.each_with_index do |start_rule, i| %>
 <%= start_rule_type(i)[1] %> <%= @grammar.prefix %>result_<%= start_rule %>(<%= @grammar.prefix %>context_t * context);
-<%   end %>
-<% end %>
-
-<% if @grammar.tree %>
-void <%= @grammar.prefix %>tree_delete(<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * tree);
-<%   @grammar.start_rules.each_with_index do |start_rule, i| %>
-void <%= @grammar.prefix %>tree_delete_<%= start_rule %>(<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * tree);
 <%   end %>
 <% end %>
 

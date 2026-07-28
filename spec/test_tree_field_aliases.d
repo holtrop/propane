@@ -12,11 +12,11 @@ unittest
     string input = "\na\nb\nc";
     p_context_t * context = p_context_new(input);
     assert(p_parse(context) == P_SUCCESS);
-    Start * start = p_result(context);
+    Start start = p_result(context);
 
     assert_eq(TOKEN_a, start.first.pToken.token);
     assert_eq(TOKEN_b, start.second.pToken.token);
     assert_eq(TOKEN_c, start.third.pToken.token);
 
-    p_tree_delete(start);
+    p_context_delete(context);
 }

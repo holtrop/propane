@@ -68,6 +68,18 @@ const char * <%= @grammar.prefix %>token_names[] = {
     context->text_position.row = 1u;
     context->text_position.col = 1u;
     context->mode = <%= @lexer.mode_id("default") %>;
+<% if @grammar.tree %>
+
+    /* Reserve node ID 0 as the null tree node. */
+<%   if @cpp %>
+    context-><%= @grammar.prefix %>tree_nodes.resize(1);
+<%   else %>
+    context-><%= @grammar.prefix %>tree_nodes_capacity = 16u;
+    context-><%= @grammar.prefix %>tree_nodes = (<%= @grammar.prefix %>node_data_t *)malloc(16u * sizeof(<%= @grammar.prefix %>node_data_t));
+    memset(&context-><%= @grammar.prefix %>tree_nodes[0], 0, sizeof(<%= @grammar.prefix %>node_data_t));
+    context-><%= @grammar.prefix %>tree_nodes_length = 1u;
+<%   end %>
+<% end %>
 
     return context;
 }
@@ -84,9 +96,27 @@ const char * <%= @grammar.prefix %>token_names[] = {
  */
 void <%= @grammar.prefix %>context_delete(<%= @grammar.prefix %>context_t * context)
 {
+<% if @grammar.tree && @grammar.free_token_node != "" %>
+<%   if @cpp %>
+    for (size_t i = 0u; i < context-><%= @grammar.prefix %>tree_nodes.size(); i++)
+<%   else %>
+    for (size_t i = 0u; i < context-><%= @grammar.prefix %>tree_nodes_length; i++)
+<%   end %>
+    {
+        if (context-><%= @grammar.prefix %>tree_nodes[i].is_token)
+        {
+            <%= @grammar.prefix %>node_data_t * token_tree_node = &context-><%= @grammar.prefix %>tree_nodes[i];
+<%= expand_code(@grammar.free_token_node, false, nil, nil) %>
+        }
+    }
+<% end %>
 <% if @cpp %>
     delete context;
 <% else %>
+<%   if @grammar.tree %>
+    free(context-><%= @grammar.prefix %>tree_nodes);
+    free(context-><%= @grammar.prefix %>tree_children);
+<%   end %>
     free(context);
 <% end %>
 }
@@ -713,8 +743,8 @@ typedef struct
     size_t state_id;
 
 <% if @grammar.tree %>
-    /** tree node. */
-    void * tree_node;
+    /** Tree node ID. */
+    <%= @grammar.prefix %>node_id_t node_id;
 <% else %>
     <%= @grammar.prefix %>position_t position;
     <%= @grammar.prefix %>position_t end_position;
@@ -722,18 +752,6 @@ typedef struct
     <%= @grammar.prefix %>value_t pvalue;
 <% end %>
 } state_value_t;
-
-<% if @grammar.tree %>
-/** Common tree node structure. */
-typedef struct TreeNode_s
-{
-    <%= @grammar.prefix %>position_t position;
-    <%= @grammar.prefix %>position_t end_position;
-    uint16_t n_fields;
-    uint8_t is_token;
-    struct TreeNode_s * fields[];
-} TreeNode;
-<% end %>
 
 /** Parser shift table. */
 static const shift_t parser_shift_table[] = {
@@ -872,6 +890,77 @@ static void state_values_stack_free(state_values_stack_t * stack)
      free(stack->entries);
 }
 
+<% if @grammar.tree %>
+/* Tree arena helpers. */
+
+/**
+ * Allocate a new (zeroed) tree node in the context arena.
+ *
+ * @return The new node ID.
+ */
+static <%= @grammar.prefix %>node_id_t tree_new_node(<%= @grammar.prefix %>context_t * context)
+{
+<% if @cpp %>
+    <%= @grammar.prefix %>node_id_t id = (<%= @grammar.prefix %>node_id_t)context-><%= @grammar.prefix %>tree_nodes.size();
+    context-><%= @grammar.prefix %>tree_nodes.emplace_back();
+    return id;
+<% else %>
+    if (context-><%= @grammar.prefix %>tree_nodes_length >= context-><%= @grammar.prefix %>tree_nodes_capacity)
+    {
+        size_t new_capacity = context-><%= @grammar.prefix %>tree_nodes_capacity * 2u;
+        <%= @grammar.prefix %>node_data_t * new_nodes = (<%= @grammar.prefix %>node_data_t *)malloc(new_capacity * sizeof(<%= @grammar.prefix %>node_data_t));
+        memcpy(new_nodes, context-><%= @grammar.prefix %>tree_nodes, context-><%= @grammar.prefix %>tree_nodes_length * sizeof(<%= @grammar.prefix %>node_data_t));
+        free(context-><%= @grammar.prefix %>tree_nodes);
+        context-><%= @grammar.prefix %>tree_nodes = new_nodes;
+        context-><%= @grammar.prefix %>tree_nodes_capacity = new_capacity;
+    }
+    <%= @grammar.prefix %>node_id_t id = (<%= @grammar.prefix %>node_id_t)context-><%= @grammar.prefix %>tree_nodes_length;
+    memset(&context-><%= @grammar.prefix %>tree_nodes[id], 0, sizeof(<%= @grammar.prefix %>node_data_t));
+    context-><%= @grammar.prefix %>tree_nodes_length += 1u;
+    return id;
+<% end %>
+}
+
+/**
+ * Reserve n contiguous (zeroed) child slots in the shared children array.
+ *
+ * @return The offset of the first reserved slot.
+ */
+static <%= @grammar.prefix %>node_id_t tree_reserve_children(<%= @grammar.prefix %>context_t * context, size_t n)
+{
+<% if @cpp %>
+    <%= @grammar.prefix %>node_id_t offset = (<%= @grammar.prefix %>node_id_t)context-><%= @grammar.prefix %>tree_children.size();
+    context-><%= @grammar.prefix %>tree_children.resize(context-><%= @grammar.prefix %>tree_children.size() + n);
+    return offset;
+<% else %>
+    size_t offset = context-><%= @grammar.prefix %>tree_children_length;
+    size_t needed = offset + n;
+    if (needed > context-><%= @grammar.prefix %>tree_children_capacity)
+    {
+        size_t new_capacity = context-><%= @grammar.prefix %>tree_children_capacity ? context-><%= @grammar.prefix %>tree_children_capacity : 1u;
+        while (new_capacity < needed)
+        {
+            new_capacity *= 2u;
+        }
+        <%= @grammar.prefix %>node_id_t * new_children = (<%= @grammar.prefix %>node_id_t *)malloc(new_capacity * sizeof(<%= @grammar.prefix %>node_id_t));
+        if (context-><%= @grammar.prefix %>tree_children != NULL)
+        {
+            memcpy(new_children, context-><%= @grammar.prefix %>tree_children, context-><%= @grammar.prefix %>tree_children_length * sizeof(<%= @grammar.prefix %>node_id_t));
+            free(context-><%= @grammar.prefix %>tree_children);
+        }
+        context-><%= @grammar.prefix %>tree_children = new_children;
+        context-><%= @grammar.prefix %>tree_children_capacity = new_capacity;
+    }
+    memset(&context-><%= @grammar.prefix %>tree_children[offset], 0, n * sizeof(<%= @grammar.prefix %>node_id_t));
+    context-><%= @grammar.prefix %>tree_children_length = needed;
+    return (<%= @grammar.prefix %>node_id_t)offset;
+<% end %>
+}
+
+/* Tree node field accessor functions. */
+<%= c_tree_accessor_defs %>
+<% end %>
+
 <% unless @grammar.tree %>
 /**
  * Get the rule position (start or end) for the currently matched rule.
@@ -936,7 +1025,7 @@ static <%= @grammar.prefix %>position_t get_rule_position(state_values_stack_t *
  * @retval P_USER_TERMINATED
  *   User requested to terminate parsing.
  */
-static size_t parser_user_code(<%= @grammar.tree ? "void" : "#{@grammar.prefix}value_t" %> * _pvalue, uint32_t rule, state_values_stack_t * statevalues, uint32_t n_states, <%= @grammar.prefix %>context_t * context)
+static size_t parser_user_code(<%= @grammar.tree ? "#{@grammar.prefix}node_id_t _node_id" : "#{@grammar.prefix}value_t * _pvalue" %>, uint32_t rule, state_values_stack_t * statevalues, uint32_t n_states, <%= @grammar.prefix %>context_t * context)
 {
     switch (rule)
     {
@@ -1041,7 +1130,7 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
     size_t reduced_rule_set = INVALID_ID;
     size_t last_shifted_rule_set_id = INVALID_ID;
 <% if @grammar.tree %>
-    void * reduced_parser_node;
+    <%= @grammar.prefix %>node_id_t reduced_parser_node;
 <% else %>
     <%= @grammar.prefix %>position_t reduced_position;
     <%= @grammar.prefix %>position_t reduced_end_position;
@@ -1087,7 +1176,7 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
             {
                 /* Successful parse. */
 <% if @grammar.tree %>
-                context->parse_result = state_values_stack_index(&statevalues, -1)->tree_node;
+                context->parse_result = state_values_stack_index(&statevalues, -1)->node_id;
 <% else %>
                 context->parse_result = state_values_stack_index(&statevalues, -1)->pvalue;
 <% end %>
@@ -1114,7 +1203,7 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
                     context->input_index -= token_info.length;
                     context->text_position = token_info.position;
 <% if @grammar.tree %>
-                    context->parse_result = state_values_stack_index(&statevalues, -1)->tree_node;
+                    context->parse_result = state_values_stack_index(&statevalues, -1)->node_id;
 <% else %>
                     context->parse_result = state_values_stack_index(&statevalues, -1)->pvalue;
 <% end %>
@@ -1137,11 +1226,8 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
             {
                 /* We shifted a token, mark it consumed. */
 <% if @grammar.tree %>
-<%   if @cpp %>
-                <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> * token_tree_node = new <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>();
-<%   else %>
-                <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> * token_tree_node = (<%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> *)malloc(sizeof(<%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>));
-<%   end %>
+                <%= @grammar.prefix %>node_id_t token_node_id = tree_new_node(context);
+                <%= @grammar.prefix %>node_data_t * token_tree_node = &context-><%= @grammar.prefix %>tree_nodes[token_node_id];
                 token_tree_node->position = token_info.position;
                 token_tree_node->end_position = token_info.end_position;
                 token_tree_node->n_fields = 0u;
@@ -1149,7 +1235,7 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
                 token_tree_node->token = token;
                 token_tree_node->pvalue = token_info.pvalue;
 <%= expand_code(@grammar.on_token_node, false, nil, nil) %>
-                new_state_info->tree_node = token_tree_node;
+                new_state_info->node_id = token_node_id;
 <% else %>
                 new_state_info->position = token_info.position;
                 new_state_info->end_position = token_info.end_position;
@@ -1161,7 +1247,7 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
             {
                 /* We shifted a RuleSet. */
 <% if @grammar.tree %>
-                new_state_info->tree_node = reduced_parser_node;
+                new_state_info->node_id = reduced_parser_node;
 <% else %>
                 new_state_info->pvalue = reduced_parser_value;
                 new_state_info->position = reduced_position;
@@ -1191,50 +1277,54 @@ static size_t parse_from(<%= @grammar.prefix %>context_t * context, size_t start
 <% if @grammar.tree %>
             if (parser_reduce_table[reduce_index].propagate_optional_target)
             {
-                reduced_parser_node = state_values_stack_index(&statevalues, -1)->tree_node;
+                reduced_parser_node = state_values_stack_index(&statevalues, -1)->node_id;
             }
             else if (parser_reduce_table[reduce_index].n_states > 0)
             {
-                size_t n_fields = parser_reduce_table[reduce_index].rule_set_node_field_array_size;
-                size_t bytes = sizeof(TreeNode) + n_fields * sizeof(void *);
-                TreeNode * node = (TreeNode *)malloc(bytes);
-                memset(node, 0, bytes);
-                node->position = INVALID_POSITION;
-                node->end_position = INVALID_POSITION;
-                node->n_fields = n_fields;
+                uint16_t n_fields = parser_reduce_table[reduce_index].rule_set_node_field_array_size;
+                /* Reserve child slots. New slots are zero-initialized
+                 * (null node ID) so absent optional children remain null. */
+                <%= @grammar.prefix %>node_id_t child_offset = tree_reserve_children(context, n_fields);
                 if (parser_reduce_table[reduce_index].rule_set_node_field_index_map == NULL)
                 {
                     for (size_t i = 0; i < parser_reduce_table[reduce_index].n_states; i++)
                     {
-                        node->fields[i] = (TreeNode *)state_values_stack_index(&statevalues, -(int)parser_reduce_table[reduce_index].n_states + (int)i)->tree_node;
+                        context-><%= @grammar.prefix %>tree_children[child_offset + i] = state_values_stack_index(&statevalues, -(int)parser_reduce_table[reduce_index].n_states + (int)i)->node_id;
                     }
                 }
                 else
                 {
                     for (size_t i = 0; i < parser_reduce_table[reduce_index].n_states; i++)
                     {
-                        node->fields[parser_reduce_table[reduce_index].rule_set_node_field_index_map[i]] = (TreeNode *)state_values_stack_index(&statevalues, -(int)parser_reduce_table[reduce_index].n_states + (int)i)->tree_node;
+                        context-><%= @grammar.prefix %>tree_children[child_offset + parser_reduce_table[reduce_index].rule_set_node_field_index_map[i]] = state_values_stack_index(&statevalues, -(int)parser_reduce_table[reduce_index].n_states + (int)i)->node_id;
                     }
                 }
+                <%= @grammar.prefix %>node_id_t node_id = tree_new_node(context);
+                <%= @grammar.prefix %>node_data_t * node = &context-><%= @grammar.prefix %>tree_nodes[node_id];
+                node->position = INVALID_POSITION;
+                node->end_position = INVALID_POSITION;
+                node->child_offset = child_offset;
+                node->n_fields = n_fields;
+                node->is_token = 0u;
                 bool position_found = false;
-                for (size_t i = 0; i < n_fields; i++)
+                for (uint16_t i = 0; i < n_fields; i++)
                 {
-                    TreeNode * child = node->fields[i];
-                    if ((child != NULL) && <%= @grammar.prefix %>position_valid(child->position))
+                    <%= @grammar.prefix %>node_id_t child_id = context-><%= @grammar.prefix %>tree_children[child_offset + i];
+                    if ((child_id != 0u) && <%= @grammar.prefix %>position_valid(context-><%= @grammar.prefix %>tree_nodes[child_id].position))
                     {
                         if (!position_found)
                         {
-                            node->position = child->position;
+                            node->position = context-><%= @grammar.prefix %>tree_nodes[child_id].position;
                             position_found = true;
                         }
-                        node->end_position = child->end_position;
+                        node->end_position = context-><%= @grammar.prefix %>tree_nodes[child_id].end_position;
                     }
                 }
-                reduced_parser_node = node;
+                reduced_parser_node = node_id;
             }
             else
             {
-                reduced_parser_node = NULL;
+                reduced_parser_node = 0u;
             }
 <%   if @grammar.parser_user_code_used? %>
             if (parser_user_code(reduced_parser_node, parser_reduce_table[reduce_index].rule, &statevalues, parser_reduce_table[reduce_index].n_states, context) == P_USER_TERMINATED)
@@ -1310,14 +1400,14 @@ size_t <%= @grammar.prefix %>parse_inner_<%= start_rule %>(<%= @grammar.prefix %
  * @return Parse result value.
  */
 <% if @grammar.tree %>
-<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
+<%= h_type(@grammar.start_rules[0]) %> <%= @grammar.prefix %>result(<%= @grammar.prefix %>context_t * context)
 {
-    return (<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> *) context->parse_result;
+    return <%= tree_handle(h_type(@grammar.start_rules[0]), "context->parse_result") %>;
 }
 <%   @grammar.start_rules.each_with_index do |start_rule, i| %>
-<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * <%= @grammar.prefix %>result_<%= start_rule %>(<%= @grammar.prefix %>context_t * context)
+<%= h_type(start_rule) %> <%= @grammar.prefix %>result_<%= start_rule %>(<%= @grammar.prefix %>context_t * context)
 {
-    return (<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> *) context->parse_result;
+    return <%= tree_handle(h_type(start_rule), "context->parse_result") %>;
 }
 <%   end %>
 <% else %>
@@ -1420,48 +1510,3 @@ size_t <%= @grammar.prefix %>user_terminate_code(<%= @grammar.prefix %>context_t
 {
     return context->token;
 }
-<% if @grammar.tree %>
-
-static void tree_delete(TreeNode * node)
-{
-    if (node->is_token)
-    {
-        <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> * token_tree_node = (<%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %> *)node;
-<%= expand_code(@grammar.free_token_node, false, nil, nil) %>
-<%   if @cpp %>
-        delete token_tree_node;
-<%   else %>
-        free(token_tree_node);
-<%   end %>
-    }
-    else if (node->n_fields > 0u)
-    {
-        for (size_t i = 0u; i < node->n_fields; i++)
-        {
-            if (node->fields[i] != NULL)
-            {
-                tree_delete(node->fields[i]);
-            }
-        }
-        free(node);
-    }
-}
-
-/**
- * Free all tree node memory.
- */
-void <%= @grammar.prefix %>tree_delete(<%= @grammar.tree_prefix %><%= @grammar.start_rules[0] %><%= @grammar.tree_suffix %> * tree)
-{
-    tree_delete((TreeNode *)tree);
-}
-<%   @grammar.start_rules.each_with_index do |start_rule, i| %>
-
-/**
- * Free all tree node memory.
- */
-void <%= @grammar.prefix %>tree_delete_<%= start_rule %>(<%= @grammar.tree_prefix %><%= start_rule %><%= @grammar.tree_suffix %> * tree)
-{
-    tree_delete((TreeNode *)tree);
-}
-<%   end %>
-<% end %>

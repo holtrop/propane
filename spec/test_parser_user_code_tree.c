@@ -28,11 +28,10 @@ int main()
     assert_eq(11, context->alias_a_value);
     assert_eq(22, context->alias_b_value);
 
-    Start * start = p_result(context);
-    assert(start->pA != NULL);
-    assert(start->pB != NULL);
-    assert(start->pC == NULL);
-    p_tree_delete(start);
+    Start start = p_result(context);
+    assert(p_node_valid(p_Start_pA(start)));
+    assert(p_node_valid(p_Start_pB(start)));
+    assert(!p_node_valid(p_Start_pC(start)));
     p_context_delete(context);
 
     return 0;
