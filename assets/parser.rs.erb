@@ -109,7 +109,84 @@ pub fn <%= @grammar.prefix %>value_get<%= suffix %>(pvalue: &<%= @grammar.prefix
 /** Tree node ID type (index into the context node arena). ID 0 is null. */
 pub type <%= @grammar.prefix %>node_id_t = u32;
 
-<%= rust_tree_types %>
+/**
+ * Tree node record.
+ *
+ * All tree nodes are stored contiguously in the context node arena. Child
+ * links are stored in a shared children array: a node's children
+ * occupy children[child_offset .. child_offset + n_fields]. Token payload
+ * fields (token, pvalue, and any user fields) are only meaningful when
+ * is_token is true.
+ */
+#[derive(Clone, Default)]
+pub struct <%= @grammar.prefix %>node_data_t {
+    pub position: <%= @grammar.prefix %>position_t,
+    pub end_position: <%= @grammar.prefix %>position_t,
+    pub child_offset: <%= @grammar.prefix %>node_id_t,
+    pub n_fields: u16,
+    pub is_token: bool,
+    pub token: <%= @grammar.prefix %>token_t,
+    pub pvalue: <%= @grammar.prefix %>value_t,
+<%   unless @grammar.token_user_fields.to_s.strip.empty? %>
+<%= @grammar.token_user_fields %>
+<%   end %>
+}
+
+/** Tree node handle types. */
+
+/** Token tree node handle. */
+#[derive(Clone, Copy)]
+pub struct <%= h_type("Token") %><'a> { context: &'a <%= @grammar.prefix %>context_t, id: <%= @grammar.prefix %>node_id_t }
+
+impl<'a> <%= h_type("Token") %><'a> {
+    /** Return whether this handle refers to a valid (non-null) node. */
+    pub fn valid(&self) -> bool { self.id != 0 }
+    /** Return the node ID (for identity comparison). */
+    pub fn node_id(&self) -> <%= @grammar.prefix %>node_id_t { self.id }
+    /** Access the underlying node record (token, pvalue, and user fields). */
+    pub fn data(&self) -> &'a <%= @grammar.prefix %>node_data_t { &self.context.<%= @grammar.prefix %>tree_nodes[self.id as usize] }
+    /** Text position of the first code point spanned by this node. */
+    pub fn position(&self) -> <%= @grammar.prefix %>position_t { self.context.<%= @grammar.prefix %>tree_nodes[self.id as usize].position }
+    /** Text position of the last code point spanned by this node. */
+    pub fn end_position(&self) -> <%= @grammar.prefix %>position_t { self.context.<%= @grammar.prefix %>tree_nodes[self.id as usize].end_position }
+    /** Number of child fields in this node. */
+    pub fn n_fields(&self) -> u16 { if self.id != 0 { self.context.<%= @grammar.prefix %>tree_nodes[self.id as usize].n_fields } else { 0 } }
+    /** Token ID for this token node. */
+    pub fn token(&self) -> <%= @grammar.prefix %>token_t { self.context.<%= @grammar.prefix %>tree_nodes[self.id as usize].token }
+    /** Parser value associated with this token node. */
+    pub fn pvalue(&self) -> <%= @grammar.prefix %>value_t { self.context.<%= @grammar.prefix %>tree_nodes[self.id as usize].pvalue.clone() }
+}
+<%   tree_node_rule_sets.each do |rule_set| %>
+
+/** <%= rule_set.name %> tree node handle. */
+#[derive(Clone, Copy)]
+pub struct <%= h_type(rule_set.name) %><'a> { context: &'a <%= @grammar.prefix %>context_t, id: <%= @grammar.prefix %>node_id_t }
+
+impl<'a> <%= h_type(rule_set.name) %><'a> {
+    /** Return whether this handle refers to a valid (non-null) node. */
+    pub fn valid(&self) -> bool { self.id != 0 }
+    /** Return the node ID (for identity comparison). */
+    pub fn node_id(&self) -> <%= @grammar.prefix %>node_id_t { self.id }
+    /** Access the underlying node record. */
+    pub fn data(&self) -> &'a <%= @grammar.prefix %>node_data_t { &self.context.<%= @grammar.prefix %>tree_nodes[self.id as usize] }
+    /** Text position of the first code point spanned by this node. */
+    pub fn position(&self) -> <%= @grammar.prefix %>position_t { self.context.<%= @grammar.prefix %>tree_nodes[self.id as usize].position }
+    /** Text position of the last code point spanned by this node. */
+    pub fn end_position(&self) -> <%= @grammar.prefix %>position_t { self.context.<%= @grammar.prefix %>tree_nodes[self.id as usize].end_position }
+    /** Number of child fields in this node. */
+    pub fn n_fields(&self) -> u16 { if self.id != 0 { self.context.<%= @grammar.prefix %>tree_nodes[self.id as usize].n_fields } else { 0 } }
+<%     each_tree_field(rule_set) do |rt, field_name, child_type, slot| %>
+
+    /** Access the <%= field_name %> child node. */
+    pub fn <%= rust_ident(field_name) %>(&self) -> <%= child_type %><'a> {
+        if self.id == 0 {
+            return <%= child_type %> { context: self.context, id: 0 };
+        }
+        <%= child_type %> { context: self.context, id: self.context.<%= @grammar.prefix %>tree_children[self.context.<%= @grammar.prefix %>tree_nodes[self.id as usize].child_offset as usize + <%= slot %>] }
+    }
+<%     end %>
+}
+<%   end %>
 <% end %>
 
 /** Lexed token information. */
