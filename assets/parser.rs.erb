@@ -26,13 +26,24 @@
  *************************************************************************/
 
 /* Result codes. */
-pub const P_SUCCESS: usize = 0;
-pub const P_DECODE_ERROR: usize = 1;
-pub const P_UNEXPECTED_INPUT: usize = 2;
-pub const P_UNEXPECTED_TOKEN: usize = 3;
-pub const P_DROP: usize = 4;
-pub const P_EOF: usize = 5;
-pub const P_USER_TERMINATED: usize = 6;
+pub const <%= @grammar.prefix.upcase %>SUCCESS: usize = 0;
+pub const <%= @grammar.prefix.upcase %>DECODE_ERROR: usize = 1;
+pub const <%= @grammar.prefix.upcase %>UNEXPECTED_INPUT: usize = 2;
+pub const <%= @grammar.prefix.upcase %>UNEXPECTED_TOKEN: usize = 3;
+pub const <%= @grammar.prefix.upcase %>DROP: usize = 4;
+pub const <%= @grammar.prefix.upcase %>EOF: usize = 5;
+pub const <%= @grammar.prefix.upcase %>USER_TERMINATED: usize = 6;
+<% if @grammar.prefix.upcase != "P_" %>
+
+/* Internal result code aliases used by the generated implementation below. */
+const P_SUCCESS: usize = 0;
+const P_DECODE_ERROR: usize = 1;
+const P_UNEXPECTED_INPUT: usize = 2;
+const P_UNEXPECTED_TOKEN: usize = 3;
+const P_DROP: usize = 4;
+const P_EOF: usize = 5;
+const P_USER_TERMINATED: usize = 6;
+<% end %>
 
 /** Token type. */
 pub type <%= @grammar.prefix %>token_t = <%= get_type_for(@grammar.terminate_token_id) %>;
