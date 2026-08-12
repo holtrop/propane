@@ -1,0 +1,176 @@
+<<header
+pub const JSON_OBJECT: usize = 0;
+pub const JSON_ARRAY: usize = 1;
+pub const JSON_NUMBER: usize = 2;
+pub const JSON_STRING: usize = 3;
+pub const JSON_TRUE: usize = 4;
+pub const JSON_FALSE: usize = 5;
+pub const JSON_NULL: usize = 6;
+
+#[derive(Clone, Default)]
+pub enum JSONValue {
+    #[default]
+    Null,
+    Object(Vec<(String, JSONValue)>),
+    Array(Vec<JSONValue>),
+    Number(f64),
+    StringVal(String),
+    True,
+    False,
+}
+
+impl JSONValue {
+    pub fn id(&self) -> usize {
+        match self {
+            JSONValue::Object(_) => JSON_OBJECT,
+            JSONValue::Array(_) => JSON_ARRAY,
+            JSONValue::Number(_) => JSON_NUMBER,
+            JSONValue::StringVal(_) => JSON_STRING,
+            JSONValue::True => JSON_TRUE,
+            JSONValue::False => JSON_FALSE,
+            JSONValue::Null => JSON_NULL,
+        }
+    }
+    pub fn number(&self) -> f64 {
+        if let JSONValue::Number(n) = self { *n } else { 0.0 }
+    }
+    pub fn string(&self) -> &str {
+        if let JSONValue::StringVal(s) = self { s.as_str() } else { "" }
+    }
+    pub fn object_len(&self) -> usize {
+        if let JSONValue::Object(e) = self { e.len() } else { 0 }
+    }
+    pub fn array_len(&self) -> usize {
+        if let JSONValue::Array(e) = self { e.len() } else { 0 }
+    }
+}
+>>
+
+context_user_fields <<
+    pub string_value: String,
+>>
+
+ptype JSONValue;
+
+drop /\s+/;
+token lbrace /\{/;
+token rbrace /\}/;
+token lbracket /\[/;
+token rbracket /\]/;
+token comma /,/;
+token colon /:/;
+token number /-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][-+]?[0-9]+)?/ <<
+    let n: f64 = std::str::from_utf8(match_).unwrap().parse().unwrap();
+    $$ = JSONValue::Number(n);
+>>
+token true <<
+  $$ = JSONValue::True;
+>>
+token false <<
+  $$ = JSONValue::False;
+>>
+token null <<
+  $$ = JSONValue::Null;
+>>
+/"/ <<
+  $mode(string);
+  ${context.string_value} = String::new();
+>>
+string: token string /"/ <<
+  $$ = JSONValue::StringVal(std::mem::take(&mut ${context.string_value}));
+  $mode(default);
+>>
+string: /\\"/ <<
+  ${context.string_value}.push('"');
+>>
+string: /\\\\/ <<
+  ${context.string_value}.push('\\');
+>>
+string: /\\\// <<
+  ${context.string_value}.push('/');
+>>
+string: /\\b/ <<
+  ${context.string_value}.push('\u{0008}');
+>>
+string: /\\f/ <<
+  ${context.string_value}.push('\u{000C}');
+>>
+string: /\\n/ <<
+  ${context.string_value}.push('\n');
+>>
+string: /\\r/ <<
+  ${context.string_value}.push('\r');
+>>
+string: /\\t/ <<
+  ${context.string_value}.push('\t');
+>>
+string: /\\u[0-9a-fA-F]{4}/ <<
+  /* Not actually going to encode the code point for this example... */
+  let s: String = ['{', match_[2] as char, match_[3] as char, match_[4] as char, match_[5] as char, '}'].iter().collect();
+  ${context.string_value}.push_str(&s);
+>>
+string: /[^\\]/ <<
+  ${context.string_value}.push(match_[0] as char);
+>>
+Start -> Value <<
+  $$ = $1;
+>>
+Value -> string <<
+  $$ = $1;
+>>
+Value -> number <<
+  $$ = $1;
+>>
+Value -> Object <<
+  $$ = $1;
+>>
+Value -> Array <<
+  $$ = $1;
+>>
+Value -> true <<
+  $$ = $1;
+>>
+Value -> false <<
+  $$ = $1;
+>>
+Value -> null <<
+  $$ = $1;
+>>
+Object -> lbrace rbrace <<
+  $$ = JSONValue::Object(Vec::new());
+>>
+Object -> lbrace KeyValues rbrace <<
+  $$ = $2;
+>>
+KeyValues -> KeyValue <<
+  $$ = $1;
+>>
+KeyValues -> KeyValues comma KeyValue <<
+  let mut obj = $1;
+  if let JSONValue::Object(kve) = $3 {
+      if let JSONValue::Object(entries) = &mut obj {
+          entries.extend(kve);
+      }
+  }
+  $$ = obj;
+>>
+KeyValue -> string colon Value <<
+  let name = if let JSONValue::StringVal(s) = $1 { s } else { String::new() };
+  $$ = JSONValue::Object(vec![(name, $3)]);
+>>
+Array -> lbracket rbracket <<
+  $$ = JSONValue::Array(Vec::new());
+>>
+Array -> lbracket Values rbracket <<
+  $$ = $2;
+>>
+Values -> Value <<
+  $$ = $1;
+>>
+Values -> Values comma Value <<
+  let mut arr = $1;
+  if let JSONValue::Array(elems) = &mut arr {
+      elems.push($3);
+  }
+  $$ = arr;
+>>

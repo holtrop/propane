@@ -1,0 +1,80 @@
+<<
+fn mylexfn(context: &mut p_context_t, out_token_info: &mut p_token_info_t) -> usize {
+    loop {
+        if context.expanding {
+            let ei = context.expand_i;
+            context.expand_i += 1;
+            if context.expand_i >= context.token_infos.len() {
+                context.expanding = false;
+            }
+            *out_token_info = context.token_infos[ei].clone();
+            return P_SUCCESS;
+        }
+
+        let lex_result = p_lex(context, out_token_info);
+        if lex_result != P_SUCCESS {
+            return lex_result;
+        }
+
+        if out_token_info.token == TOKEN_macro {
+            context.defining = true;
+        } else if out_token_info.token == TOKEN_macroname {
+            if !context.defining {
+                context.expanding = true;
+                context.expand_i = 0;
+                continue;
+            }
+        } else if out_token_info.token == TOKEN_lbrace {
+            if context.defining {
+                /* Capture the macro body tokens (up to the closing '}'). */
+                let mut infos: Vec<p_token_info_t> = Vec::new();
+                loop {
+                    let mut ti = p_token_info_t::default();
+                    assert_eq!(P_SUCCESS, p_lex(context, &mut ti));
+                    if ti.token == TOKEN_rbrace {
+                        break;
+                    }
+                    infos.push(ti);
+                }
+                context.token_infos = infos;
+                context.defining = false;
+            }
+        } else {
+            context.defining = false;
+        }
+        return lex_result;
+    }
+}
+>>
+
+context_user_fields <<
+    pub defining: bool,
+    pub expanding: bool,
+    pub expand_i: usize,
+    pub token_infos: Vec<p_token_info_t>,
+    pub nums: Vec<i64>,
+>>
+
+ptype i64;
+
+lex_fn mylexfn;
+
+drop /\s+/;
+token lbrace /\{/;
+token rbrace /\}/;
+token plus /\+/;
+token macro;
+token macroname /@[a-zA-Z_]\w*/;
+token num /\d+/ <<
+  let mut v: i64 = 0;
+  for c in match_ { v = v * 10 + (*c - b'0') as i64; }
+  $$ = v;
+>>
+
+Start -> Statements;
+Statements -> ;
+Statements -> Statement Statements;
+Statement -> Add;
+Statement -> MacroStart;
+Add -> num plus num << $$ = $1 + $3; ${context.nums}.push($$); >>
+MacroStart -> macro macroname lbrace;

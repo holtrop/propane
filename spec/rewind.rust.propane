@@ -1,0 +1,67 @@
+<<
+fn mylexfn(context: &mut p_context_t, out_token_info: &mut p_token_info_t) -> usize {
+    loop {
+        let result = p_lex(context, out_token_info);
+        if result != P_SUCCESS {
+            return result;
+        }
+        if out_token_info.token == TOKEN_repeat {
+            let mut count_info = p_token_info_t::default();
+            assert_eq!(P_SUCCESS, p_lex(context, &mut count_info));
+            assert_eq!(TOKEN_num, count_info.token);
+            let mut brace_info = p_token_info_t::default();
+            assert_eq!(P_SUCCESS, p_lex(context, &mut brace_info));
+            assert_eq!(TOKEN_lbrace, brace_info.token);
+            context.remaining = p_value_get(&count_info.pvalue);
+            context.body_index = p_input_index(context);
+            context.body_position = p_position(context);
+            continue;
+        }
+        if out_token_info.token == TOKEN_rbrace {
+            if context.remaining > 1 {
+                context.remaining -= 1;
+                let bi = context.body_index;
+                let bp = context.body_position;
+                p_set_input_index(context, bi);
+                p_set_position(context, bp);
+                continue;
+            }
+            context.remaining = 0;
+            continue;
+        }
+        if out_token_info.token == TOKEN_num {
+            context.num_cols.push(out_token_info.position.col);
+        }
+        return result;
+    }
+}
+>>
+
+context_user_fields <<
+    pub nums: Vec<i64>,
+    pub num_cols: Vec<u32>,
+    pub remaining: i64,
+    pub body_index: usize,
+    pub body_position: p_position_t,
+>>
+
+ptype i64;
+
+lex_fn mylexfn;
+
+drop /\s+/;
+token repeat /repeat/;
+token lbrace /\{/;
+token rbrace /\}/;
+token plus /\+/;
+token num /\d+/ <<
+  let mut v: i64 = 0;
+  for c in match_ { v = v * 10 + (*c - b'0') as i64; }
+  $$ = v;
+>>
+
+Start -> Statements;
+Statements -> ;
+Statements -> Statement Statements;
+Statement -> Add;
+Add -> num plus num << ${context.nums}.push($1 + $3); >>

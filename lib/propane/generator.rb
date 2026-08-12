@@ -18,6 +18,8 @@ class Propane
         elsif output_file =~ %r{\.(cc|cpp|cxx)$}
           @cpp = true
           "c"
+        elsif output_file.end_with?(".rs")
+          "rust"
         else
           raise Error.new("Could not determine target language from output file name (#{output_file})")
         end
@@ -31,7 +33,8 @@ class Propane
         extensions += %w[h]
       end
       extensions.each do |extension|
-        template = Assets.get("parser.#{extension || @language}.erb")
+        template_language = @language == "rust" ? "rs" : @language
+        template = Assets.get("parser.#{extension || template_language}.erb")
         if extension
           output_file = @output_file.sub(%r{\.[a-z]+$}, ".#{extension}")
         else
@@ -39,7 +42,12 @@ class Propane
         end
         erb = ERB.new(template, trim_mode: "<>")
         result = erb.result(binding.clone).lines.each_with_index.map do |line, i|
-          if line == "#linereset\n"
+          if @language == "rust"
+            # Rust has no #line directive support, so strip the directives that
+            # the grammar embeds in user code blocks.
+            line = line.sub(/^#line \d+ "[^"]*"/, "")
+            line == "#linereset\n" ? "" : line
+          elsif line == "#linereset\n"
             %[#line #{i + 2} "#{output_file}"\n]
           else
             line
@@ -275,6 +283,8 @@ class Propane
           "context->user_terminate_code = (#{user_terminate_code}); return #{retval};"
         when "d"
           "context.user_terminate_code = (#{user_terminate_code}); return #{retval};"
+        when "rust"
+          "context.user_terminate_code = (#{user_terminate_code}); return #{retval};"
         end
       end
       code = code.gsub(/\$\{context\.(\w+)\}/) do |match|
@@ -284,6 +294,8 @@ class Propane
           "context->#{fieldname}"
         when "d"
           "context.#{fieldname}"
+        when "rust"
+          "context.#{fieldname}"
         end
       end
       code = code.gsub(/\$\{token\.(\w+)\}/) do |match|
@@ -292,6 +304,8 @@ class Propane
         when "c"
           "token_tree_node->#{fieldname}"
         when "d"
+          "token_tree_node.#{fieldname}"
+        when "rust"
           "token_tree_node.#{fieldname}"
         end
       end
@@ -304,6 +318,8 @@ class Propane
               tree_handle(typename, "_node_id")
             when "d"
               tree_handle(typename, "_node_id")
+            when "rust"
+              tree_handle(typename, "_node_id")
             end
           else
             case @language
@@ -311,6 +327,8 @@ class Propane
               "_pvalue->v_#{rule.ptypename}"
             when "d"
               "_pvalue.v_#{rule.ptypename}"
+            when "rust"
+              "(*_pvalue.v_#{rule.ptypename}_mut())"
             end
           end
         end
@@ -345,6 +363,8 @@ class Propane
               "out_token_info->pvalue"
             when "d"
               "out_token_info.pvalue"
+            when "rust"
+              "out_token_info.pvalue"
             end
           else
             case @language
@@ -352,6 +372,8 @@ class Propane
               "out_token_info->pvalue.v_#{pattern.ptypename}"
             when "d"
               "out_token_info.pvalue.v_#{pattern.ptypename}"
+            when "rust"
+              "(*out_token_info.pvalue.v_#{pattern.ptypename}_mut())"
             end
           end
         end
@@ -361,6 +383,8 @@ class Propane
             "out_token_info->position"
           when "d"
             "out_token_info.position"
+          when "rust"
+            "out_token_info.position"
           end
         end
         code = code.gsub(/\$\{end_position\}/) do |match|
@@ -368,6 +392,8 @@ class Propane
           when "c"
             "out_token_info->end_position"
           when "d"
+            "out_token_info.end_position"
+          when "rust"
             "out_token_info.end_position"
           end
         end
@@ -382,6 +408,8 @@ class Propane
             "context->mode = #{mode_id}u"
           when "d"
             "context.mode = #{mode_id}u"
+          when "rust"
+            "context.mode = #{mode_id}"
           end
         end
       end
@@ -416,6 +444,8 @@ class Propane
           tree_handle(typename, "state_values_stack_index(statevalues, -1 - (int)n_states + #{index})->node_id")
         when "d"
           tree_handle(typename, "statevalues[$-1-n_states+#{index}].node_id")
+        when "rust"
+          tree_handle(typename, "statevalues[statevalues.len() - 1 - n_states + #{index}].node_id")
         end
       else
         case @language
@@ -423,6 +453,8 @@ class Propane
           "state_values_stack_index(statevalues, -1 - (int)n_states + #{index})->pvalue.v_#{component.ptypename}"
         when "d"
           "statevalues[$-1-n_states+#{index}].pvalue.v_#{component.ptypename}"
+        when "rust"
+          "statevalues[statevalues.len() - 1 - n_states + #{index}].pvalue.get_v_#{component.ptypename}()"
         end
       end
     end
@@ -446,6 +478,8 @@ class Propane
         "(#{typename}{context, #{id_expr}})"
       elsif @language == "c"
         "((#{typename}){context, #{id_expr}})"
+      elsif @language == "rust"
+        "(#{typename} { context, id: #{id_expr} })"
       else
         "#{typename}(context, #{id_expr})"
       end
@@ -687,6 +721,113 @@ class Propane
       out.join("\n")
     end
 
+    # Rust keywords that must be escaped as raw identifiers when used as a
+    # generated identifier (e.g. a field alias named `type`).
+    RUST_KEYWORDS = %w[
+      as break const continue dyn else enum extern false fn for if impl in let
+      loop match mod move mut pub ref return static struct trait true type
+      unsafe use where while async await abstract become box do final macro
+      override priv typeof unsized virtual yield try gen
+    ]
+
+    # Escape a name as a Rust raw identifier if it is a reserved keyword.
+    #
+    # @param name [String]
+    #   Identifier name.
+    #
+    # @return [String]
+    #   Name, escaped as a raw identifier if necessary.
+    def rust_ident(name)
+      RUST_KEYWORDS.include?(name) ? "r##{name}" : name
+    end
+
+    # Map a ptype type string to a valid Rust type.
+    #
+    # The default ptype is a C "void *"; for Rust with no declared ptype we use
+    # the unit type instead.
+    #
+    # @param typestring [String]
+    #   ptype type string.
+    #
+    # @return [String]
+    #   Rust type string.
+    def rust_ptype(typestring)
+      typestring == "void *" ? "()" : typestring
+    end
+
+    # Generate the Rust tree node record and handle types.
+    #
+    # Mirrors the C tree node record plus the C++ handle structs: each rule set
+    # and the Token node get a handle type ({context, id}) with accessor methods.
+    #
+    # @return [String]
+    #   Rust tree node type definitions.
+    def rust_tree_types
+      p = @grammar.prefix
+      out = []
+      out << "/** Tree node record. */"
+      out << "#[derive(Clone, Default)]"
+      out << "pub struct #{p}node_data_t {"
+      out << "    pub position: #{p}position_t,"
+      out << "    pub end_position: #{p}position_t,"
+      out << "    pub child_offset: #{p}node_id_t,"
+      out << "    pub n_fields: u16,"
+      out << "    pub is_token: bool,"
+      out << "    pub token: #{p}token_t,"
+      out << "    pub pvalue: #{p}value_t,"
+      unless @grammar.token_user_fields.to_s.strip.empty?
+        out << @grammar.token_user_fields
+      end
+      out << "}"
+      out << ""
+      out << "/** Tree node handle types. */"
+      tree_handle_types.each do |t|
+        out << "#[derive(Clone, Copy)]"
+        out << "pub struct #{t}<'a> { context: &'a #{p}context_t, id: #{p}node_id_t }"
+      end
+      out << ""
+      # Common accessors for every handle type.
+      tree_handle_types.each do |t|
+        out << "impl<'a> #{t}<'a> {"
+        out << "    /** Return whether this handle refers to a valid (non-null) node. */"
+        out << "    pub fn valid(&self) -> bool { self.id != 0 }"
+        out << "    /** Return the node ID (for identity comparison). */"
+        out << "    pub fn node_id(&self) -> #{p}node_id_t { self.id }"
+        out << "    /** Access the underlying node record. */"
+        out << "    pub fn data(&self) -> &'a #{p}node_data_t { &self.context.#{p}tree_nodes[self.id as usize] }"
+        out << "    /** Text position of the first code point spanned by this node. */"
+        out << "    pub fn position(&self) -> #{p}position_t { self.context.#{p}tree_nodes[self.id as usize].position }"
+        out << "    /** Text position of the last code point spanned by this node. */"
+        out << "    pub fn end_position(&self) -> #{p}position_t { self.context.#{p}tree_nodes[self.id as usize].end_position }"
+        out << "    /** Number of child fields in this node. */"
+        out << "    pub fn n_fields(&self) -> u16 { if self.id != 0 { self.context.#{p}tree_nodes[self.id as usize].n_fields } else { 0 } }"
+        if t == h_type("Token")
+          out << "    /** Token ID for this token node. */"
+          out << "    pub fn token(&self) -> #{p}token_t { self.context.#{p}tree_nodes[self.id as usize].token }"
+          out << "    /** Parser value associated with this token node. */"
+          out << "    pub fn pvalue(&self) -> #{p}value_t { self.context.#{p}tree_nodes[self.id as usize].pvalue.clone() }"
+        end
+        out << "}"
+      end
+      out << ""
+      # Navigation accessors for rule set handles.
+      tree_node_rule_sets.each do |rule_set|
+        rtype = h_type(rule_set.name)
+        out << "impl<'a> #{rtype}<'a> {"
+        each_tree_field(rule_set) do |rt, field_name, child_type, slot|
+          out << "    /** Access the #{field_name} child node. */"
+          out << "    pub fn #{rust_ident(field_name)}(&self) -> #{child_type}<'a> {"
+          out << "        if self.id == 0 {"
+          out << "            return #{child_type} { context: self.context, id: 0 };"
+          out << "        }"
+          out << "        #{child_type} { context: self.context, id: self.context.#{p}tree_children[self.context.#{p}tree_nodes[self.id as usize].child_offset as usize + #{slot}] }"
+          out << "    }"
+        end
+        out << "}"
+      end
+      out.join("\n")
+    end
+
     # Get the lex function to use.
     #
     # @return [String]
@@ -720,6 +861,8 @@ class Propane
           "uint8_t"
         when "d"
           "ubyte"
+        when "rust"
+          "u8"
         end
       elsif max <= 0xFFFF
         case @language
@@ -727,11 +870,15 @@ class Propane
           "uint16_t"
         when "d"
           "ushort"
+        when "rust"
+          "u16"
         end
       else
         case @language
         when "c"
           "uint32_t"
+        when "rust"
+          "u32"
         else
           "uint"
         end

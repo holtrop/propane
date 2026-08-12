@@ -1,5 +1,9 @@
 ## v5.0.0
 
+### New Features
+
+- Add Rust target language output.
+
 ### API Changes
 
 - Tree generation mode now stores all tree nodes in a compact arena owned by

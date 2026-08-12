@@ -1,0 +1,44 @@
+<<
+fn mylexfn(context: &mut p_context_t, out_token_info: &mut p_token_info_t) -> usize {
+    let result = p_lex(context, out_token_info);
+    if result != P_SUCCESS {
+        return result;
+    }
+    if out_token_info.token == TOKEN_lparen {
+        let start_position = out_token_info.position;
+        let inner_result = p_parse_inner_Start(context, &[TOKEN_rparen]);
+        if inner_result != P_SUCCESS {
+            return inner_result;
+        }
+        /* Read the inner subtree's span before re-borrowing context to lex. */
+        let inner = p_result_Start(context);
+        assert!(inner.valid());
+        let inner_start_col = inner.position().col;
+        let inner_end_col = inner.end_position().col;
+        let mut rparen_info = p_token_info_t::default();
+        assert_eq!(P_SUCCESS, p_lex(context, &mut rparen_info));
+        assert_eq!(TOKEN_rparen, rparen_info.token);
+        assert_eq!(start_position.col + 1, inner_start_col);
+        assert_eq!(rparen_info.position.col - 1, inner_end_col);
+        /* Synthesize a num token spanning the whole "( ... )" group. */
+        out_token_info.token = TOKEN_num;
+        out_token_info.position = start_position;
+        out_token_info.end_position = rparen_info.end_position;
+    }
+    P_SUCCESS
+}
+>>
+
+tree;
+
+lex_fn mylexfn;
+
+drop /\s+/;
+token lparen /\(/;
+token rparen /\)/;
+token plus /\+/;
+token num /\d+/;
+
+Start -> Expr;
+Expr -> num;
+Expr -> Expr plus num;

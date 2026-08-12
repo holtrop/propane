@@ -53,7 +53,7 @@ EOF
     if options[:args]
       command += options[:args]
     else
-      command += %W[spec/run/testparser#{options[:name]}.propane spec/run/testparser#{options[:name]}.#{options[:language]} --log spec/run/testparser#{options[:name]}.log]
+      command += %W[spec/run/testparser#{options[:name]}.propane spec/run/testparser#{options[:name]}.#{lang_ext(options[:language])} --log spec/run/testparser#{options[:name]}.log]
     end
     command += (options[:extra_args] || [])
     if (options[:capture])
@@ -65,9 +65,16 @@ EOF
     end
   end
 
+  # Map a spec language name to the generated parser source file extension.
+  def lang_ext(language)
+    language == "rust" ? "rs" : language
+  end
+
   def compile(test_files, options = {})
     test_files = Array(test_files).map do |test_file|
-      if !File.exist?(test_file) && test_file.end_with?(".cpp")
+      if test_file.end_with?(".rust")
+        test_file.sub(%r{\.rust$}, ".rs")
+      elsif !File.exist?(test_file) && test_file.end_with?(".cpp")
         test_file.sub(%r{\.cpp$}, ".c")
       else
         test_file
@@ -75,7 +82,7 @@ EOF
     end
     options[:parsers] ||= [""]
     parsers = options[:parsers].map do |name|
-      "spec/run/testparser#{name}.#{options[:language]}"
+      "spec/run/testparser#{name}.#{lang_ext(options[:language])}"
     end
     case options[:language]
     when "c"
@@ -84,6 +91,21 @@ EOF
       command = [*%w[g++ -g -x c++ -Wall -o spec/run/testparser -Ispec -Ispec/run], *parsers, *test_files, "spec/testutils.c", "-lm"]
     when "d"
       command = [*%w[ldc2 -g --unittest -of spec/run/testparser -Ispec], *parsers, *test_files, "spec/testutils.d"]
+    when "rust"
+      # Compile each generated parser to an rlib, then compile the test crate
+      # against them. Safe Rust needs no valgrind, but it is run anyway.
+      externs = []
+      options[:parsers].each do |name|
+        crate = "testparser#{name}"
+        rlib = "spec/run/lib#{crate}.rlib"
+        rustc = [*%w[rustc --edition 2021 --crate-type=rlib -A warnings],
+                 "--crate-name", crate, "-o", rlib, "spec/run/testparser#{name}.rs"]
+        expect(system(*rustc)).to be_truthy
+        externs += ["--extern", "#{crate}=#{rlib}"]
+      end
+      # rustc takes a single crate root; any additional Rust test files are
+      # expected to be pulled in as modules or provided by the parser crate.
+      command = [*%w[rustc --edition 2021 -A warnings -o spec/run/testparser], *externs, test_files.first]
     end
     result = system(*command)
     expect(result).to be_truthy
@@ -285,7 +307,7 @@ EOF
     expect(results.status).to_not eq 0
   end
 
-  %w[d c cpp].each do |language|
+  %w[d c cpp rust].each do |language|
 
     context "#{language.upcase} language" do
 
@@ -332,6 +354,16 @@ token int /\\d+/ <<
     v *= 10;
     v += (c - '0');
   }
+  $$ = v;
+>>
+Start -> int << $$ = $1; >>
+EOF
+        when "rust"
+          write_grammar <<EOF
+ptype i64;
+token int /\\d+/ <<
+  let mut v: i64 = 0;
+  for c in match_ { v = v * 10 + (*c - b'0') as i64; }
   $$ = v;
 >>
 Start -> int << $$ = $1; >>
@@ -430,6 +462,31 @@ E3 -> E3 power E4 << $$ = pow($1, $3); >>
 E4 -> integer << $$ = $1; >>
 E4 -> lparen E1 rparen << $$ = $2; >>
 EOF
+        when "rust"
+          write_grammar <<EOF
+ptype u64;
+token plus /\\+/;
+token times /\\*/;
+token power /\\*\\*/;
+token integer /\\d+/ <<
+  let mut v: u64 = 0;
+  for c in match_ { v = v * 10 + (*c - b'0') as u64; }
+  $$ = v;
+>>
+token lparen /\\(/;
+token rparen /\\)/;
+drop /\\s+/;
+
+Start -> E1 << $$ = $1; >>
+E1 -> E2 << $$ = $1; >>
+E1 -> E1 plus E2 << $$ = $1 + $3; >>
+E2 -> E3 << $$ = $1; >>
+E2 -> E2 times E3 << $$ = $1 * $3; >>
+E3 -> E4 << $$ = $1; >>
+E3 -> E3 power E4 << $$ = $1.pow($3 as u32); >>
+E4 -> integer << $$ = $1; >>
+E4 -> lparen E1 rparen << $$ = $2; >>
+EOF
         end
         run_propane(language: language)
         compile("spec/test_basic_math_grammar.#{language}", language: language)
@@ -506,6 +563,16 @@ Start -> Abcs def;
 Abcs -> ;
 Abcs -> abc Abcs;
 EOF
+        when "rust"
+          write_grammar <<EOF
+token abc <<
+  println!("abc!");
+>>
+token def;
+Start -> Abcs def;
+Abcs -> ;
+Abcs -> abc Abcs;
+EOF
         end
         run_propane(language: language)
         compile("spec/test_user_code.#{language}", language: language)
@@ -540,6 +607,12 @@ import std.stdio;
 >>
 token abc;
 /def/ << writeln("def!"); >>
+Start -> abc;
+EOF
+        when "rust"
+          write_grammar <<EOF
+token abc;
+/def/ << println!("def!"); >>
 Start -> abc;
 EOF
         end
@@ -580,6 +653,16 @@ token abc;
 /def/ << writeln("def!"); >>
 /ghi/ <<
   writeln("ghi!");
+  return $token(abc);
+>>
+Start -> abc;
+EOF
+        when "rust"
+          write_grammar <<EOF
+token abc;
+/def/ << println!("def!"); >>
+/ghi/ <<
+  println!("ghi!");
   return $token(abc);
 >>
 Start -> abc;
@@ -635,6 +718,25 @@ drop /\\s+/;
 >>
 string: /[^"]+/ <<
   writeln("captured string");
+>>
+string: /"/ <<
+  $mode(default);
+  return $token(string);
+>>
+Start -> abc string def;
+EOF
+        when "rust"
+          write_grammar <<EOF
+token abc;
+token def;
+tokenid string;
+drop /\\s+/;
+/"/ <<
+  println!("begin string mode");
+  $mode(string);
+>>
+string: /[^"]+/ <<
+  println!("captured string");
 >>
 string: /"/ <<
   $mode(default);
@@ -700,6 +802,24 @@ Start -> abc dot ident <<
   writeln("ident: ", $3);
 >>
 EOF
+        when "rust"
+          write_grammar <<EOF
+ptype u8;
+token abc;
+token def;
+default, identonly: token ident /[a-z]+/ <<
+  $$ = match_[0];
+  $mode(default);
+  return $token(ident);
+>>
+token dot /\\./ <<
+  $mode(identonly);
+>>
+default, identonly: drop /\\s+/;
+Start -> abc dot ident <<
+  println!("ident: {}", $3 as char);
+>>
+EOF
         end
         run_propane(language: language)
         compile("spec/test_lexer_multiple_modes.#{language}", language: language)
@@ -736,6 +856,14 @@ token b;
 Start -> A B << writeln("Start!"); >>
 A -> a << writeln("A!"); >>
 B -> b << writeln("B!"); >>
+EOF
+        when "rust"
+          write_grammar <<EOF
+token a;
+token b;
+Start -> A B << println!("Start!"); >>
+A -> a << println!("A!"); >>
+B -> b << println!("B!"); >>
 EOF
         end
         run_propane(language: language)
@@ -844,6 +972,37 @@ A -> a;
 B -> b;
 C -> << ${context.c_is_null} = ($$.valid) ? 0 : 1; >>
 EOF
+        when "rust"
+          write_grammar <<EOF
+tree;
+context_user_fields <<
+    pub start_n_fields: i64,
+    pub start_a_value: i64,
+    pub a_value: i64,
+    pub b_value: i64,
+    pub b_token: p_token_t,
+    pub c_is_null: i64,
+    pub c_field_is_null: i64,
+    pub alias_a_value: i64,
+    pub alias_b_value: i64,
+>>
+ptype i64;
+token a << $$ = 11; >>
+token b << $$ = 22; >>
+Start -> A:ay B:bee C <<
+  ${context.start_n_fields} = $$.n_fields() as i64;
+  ${context.start_a_value} = $$.pA().pToken1().pvalue();
+  ${context.a_value} = $1.pToken1().pvalue();
+  ${context.b_value} = $2.pToken1().pvalue();
+  ${context.b_token} = $2.pToken1().token();
+  ${context.c_field_is_null} = if $$.pC().valid() { 0 } else { 1 };
+  ${context.alias_a_value} = ${ay}.pToken1().pvalue();
+  ${context.alias_b_value} = ${bee}.pToken1().pvalue();
+>>
+A -> a;
+B -> b;
+C -> << ${context.c_is_null} = if $$.valid() { 0 } else { 1 }; >>
+EOF
         end
         run_propane(language: language)
         compile("spec/test_parser_user_code_tree.#{language}", language: language)
@@ -853,12 +1012,15 @@ EOF
       end
 
       it "parses lists" do
+        ptype = language == "d" ? "uint" : (language == "rust" ? "u32" : "uint32_t")
+        zero = language == "rust" ? "0" : "0u"
+        one = language == "rust" ? "1" : "1u"
         write_grammar <<EOF
-ptype #{language == "d" ? "uint" : "uint32_t"};
+ptype #{ptype};
 token a;
 Start -> As << $$ = $1; >>
-As -> << $$ = 0u; >>
-As -> As a << $$ = $1 + 1u; >>
+As -> << $$ = #{zero}; >>
+As -> As a << $$ = $1 + #{one}; >>
 EOF
         run_propane(language: language)
         compile("spec/test_parsing_lists.#{language}", language: language)
@@ -913,6 +1075,13 @@ token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
 >>
 Start -> id;
 EOF
+        when "rust"
+          write_grammar <<EOF
+token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
+  println!("Matched token is {}", std::str::from_utf8(match_).unwrap());
+>>
+Start -> id;
+EOF
         end
         run_propane(language: language)
         compile("spec/test_lexer_match_text.#{language}", language: language)
@@ -941,6 +1110,16 @@ EOF
 ptype ulong;
 token word /[a-z]+/ <<
   $$ = match.length;
+>>
+Start -> word <<
+  $$ = $1;
+>>
+EOF
+        when "rust"
+          write_grammar <<EOF
+ptype u64;
+token word /[a-z]+/ <<
+  $$ = match_length as u64;
 >>
 Start -> word <<
   $$ = $1;
@@ -1098,6 +1277,25 @@ Words -> ;
 Words -> word Words;
 Words -> stop Words;
 EOF
+        when "rust"
+          write_grammar <<EOF
+context_user_fields <<
+    pub last_start: p_position_t,
+    pub last_end: p_position_t,
+>>
+drop /\\s+/;
+token word /[a-z]+/ <<
+    ${context.last_start} = ${position};
+    ${context.last_end} = ${end_position};
+>>
+token stop /!/ <<
+    $terminate(42);
+>>
+Start -> Words;
+Words -> ;
+Words -> word Words;
+Words -> stop Words;
+EOF
         end
         run_propane(language: language)
         compile("spec/test_lexer_positions.#{language}", language: language)
@@ -1160,6 +1358,21 @@ tokenid t;
 >>
 Start -> t;
 EOF
+        when "rust"
+          write_grammar <<EOF
+tokenid t;
+/\\a/ << println!("A"); >>
+/\\b/ << println!("B"); >>
+/\\t/ << println!("T"); >>
+/\\n/ << println!("N"); >>
+/\\v/ << println!("V"); >>
+/\\f/ << println!("F"); >>
+/\\r/ << println!("R"); >>
+/t/ <<
+  return $token(t);
+>>
+Start -> t;
+EOF
         end
         run_propane(language: language)
         compile("spec/test_match_backslashes.#{language}", language: language)
@@ -1195,7 +1408,7 @@ EOF
         write_grammar <<EOF
 tree;
 
-ptype int;
+ptype #{language == "rust" ? "i64" : "int"};
 
 token a << $$ = 11; >>
 token b << $$ = 22; >>
@@ -1239,7 +1452,7 @@ tree;
 tree_prefix P ;
 tree_suffix  S;
 
-ptype int;
+ptype #{language == "rust" ? "i64" : "int"};
 
 token a << $$ = 11; >>
 token b << $$ = 22; >>
@@ -1321,6 +1534,24 @@ Start -> a? b R? <<
 R -> c d << $$ = "cd"; >>
 R (string) -> d c << $$ = "dc"; >>
 EOF
+        elsif language == "rust"
+          write_grammar <<EOF
+ptype i64;
+ptype float = f64;
+ptype string = String;
+
+token a (float) << $$ = 1.5; >>
+token b << $$ = 2; >>
+token c << $$ = 3; >>
+token d << $$ = 4; >>
+Start -> a? b R? <<
+  println!("a: {}", $1);
+  println!("b: {}", $2);
+  println!("R: {}", $3);
+>>
+R -> c d << $$ = "cd".to_string(); >>
+R (string) -> d c << $$ = "dc".to_string(); >>
+EOF
         else
           write_grammar <<EOF
 <<
@@ -1350,7 +1581,7 @@ EOF
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
         verify_lines(results.stdout, [
-          "a: 0#{language == "d" ? "" : ".0"}",
+          "a: 0#{["d", "rust"].include?(language) ? "" : ".0"}",
           "b: 2",
           "R: ",
           "a: 1.5",
@@ -1396,8 +1627,21 @@ R -> c d;
 R -> d c;
 EOF
         end
+        if language == "rust"
+          write_grammar <<EOF
+tree;
+token a;
+token b;
+token c;
+token d;
+Start -> a? b R?;
+R -> c d;
+R -> d c;
+EOF
+        end
         run_propane(language: language)
         compile("spec/test_optional_rule_component_tree.#{language}", language: language)
+        # (rust grammar written above overrides the C/D form for the Rust run)
         results = run_test(language: language)
         expect(results.stderr).to eq ""
         expect(results.status).to eq 0
@@ -1428,6 +1672,18 @@ tree;
 #include <stdio.h>
 >>
 
+token a;
+token b;
+token c;
+token d;
+Start -> a?:a b R?:r;
+R -> c d;
+R -> d c;
+EOF
+        end
+        if language == "rust"
+          write_grammar <<EOF
+tree;
 token a;
 token b;
 token c;
@@ -1528,7 +1784,19 @@ EOF
       end
 
       it "allows specifying field aliases when tree mode is not enabled" do
-        if language == "d"
+        if language == "rust"
+          write_grammar <<EOF
+ptype String;
+token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
+  $$ = std::str::from_utf8(match_).unwrap().to_string();
+>>
+drop /\\s+/;
+Start -> id:first id:second <<
+  println!("first is {}", ${first});
+  println!("second is {}", ${second});
+>>
+EOF
+        elsif language == "d"
           write_grammar <<EOF
 <<
 import std.stdio;
@@ -1574,7 +1842,22 @@ EOF
       end
 
       it "aliases the correct field when multiple rules are in a rule set when tree mode is not enabled" do
-        if language == "d"
+        if language == "rust"
+          write_grammar <<EOF
+ptype String;
+token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
+  $$ = std::str::from_utf8(match_).unwrap().to_string();
+>>
+drop /\\s+/;
+Start -> id;
+Start -> Foo;
+Start -> id:first id:second <<
+  println!("first is {}", ${first});
+  println!("second is {}", ${second});
+>>
+Foo -> ;
+EOF
+        elsif language == "d"
           write_grammar <<EOF
 <<
 import std.stdio;
@@ -1640,7 +1923,7 @@ EOF
 
       it "allows multiple starting rules" do
     write_grammar <<EOF
-ptype int;
+ptype #{language == "rust" ? "i64" : "int"};
 token a << $$ = 1; >>
 token b << $$ = 2; >>
 token c << $$ = 3; >>
@@ -1660,7 +1943,7 @@ EOF
 
       it "supports parse_inner APIs that treat provided tokens as follow tokens" do
     write_grammar <<EOF
-ptype int;
+ptype #{language == "rust" ? "i64" : "int"};
 token a << $$ = 1; >>
 token b << $$ = 2; >>
 Start -> Y << $$ = $1; >>
@@ -1675,7 +1958,7 @@ EOF
 
       it "parse_inner APIs block success when the outer rule is unfinished" do
     write_grammar <<EOF
-ptype int;
+ptype #{language == "rust" ? "i64" : "int"};
 token a << $$ = 1; >>
 token b << $$ = 2; >>
 token c << $$ = 3; >>
@@ -1691,7 +1974,7 @@ EOF
 
       it "parse_inner APIs work when the reduce state uses lookahead disambiguation" do
     write_grammar <<EOF
-ptype int;
+ptype #{language == "rust" ? "i64" : "int"};
 token a;
 token b;
 start Start;
@@ -1750,7 +2033,7 @@ EOF
       it "allows multiple starting rules in tree mode" do
     write_grammar <<EOF
 tree;
-ptype int;
+ptype #{language == "rust" ? "i64" : "int"};
 token a << $$ = 1; >>
 token b << $$ = 2; >>
 token c << $$ = 3; >>
@@ -1795,7 +2078,16 @@ EOF
       end
 
       it "executes code blocks associated with drop statements" do
-        if language == "d"
+        if language == "rust"
+          write_grammar <<EOF
+drop /\\s+/;
+drop /#(.*)\\n/ <<
+  eprint!("comment: {}", std::str::from_utf8(match_).unwrap());
+>>
+token a;
+Start -> a;
+EOF
+        elsif language == "d"
           write_grammar <<EOF
 <<
 import std.stdio;
@@ -1829,7 +2121,24 @@ EOF
       end
 
       it "allows user-defined context fields" do
-        if language == "d"
+        if language == "rust"
+          write_grammar <<EOF
+context_user_fields <<
+    pub comments: String,
+    pub acount: u32,
+>>
+drop /\\s+/;
+drop /#(.*)\\n/ <<
+    ${context.comments} += std::str::from_utf8(match_).unwrap();
+>>
+token a <<
+    ${context.acount} += 1;
+>>
+Start -> As;
+As -> ;
+As -> a As;
+EOF
+        elsif language == "d"
           write_grammar <<EOF
 context_user_fields <<
     string comments;
@@ -1889,7 +2198,28 @@ EOF
       end
 
       it "allows custom token user fields" do
-        if language == "d"
+        if language == "rust"
+          write_grammar <<EOF
+context_user_fields <<
+    pub comments: String,
+>>
+token_user_fields <<
+    pub comments: String,
+>>
+on_token_node <<
+    ${token.comments} = std::mem::take(&mut ${context.comments});
+>>
+tree;
+drop /\\s+/;
+drop /#(.*)\\n/ <<
+    ${context.comments} += std::str::from_utf8(match_).unwrap();
+>>
+token id /\\w+/;
+Start -> IDs;
+IDs -> ;
+IDs -> id:id IDs;
+EOF
+        elsif language == "d"
           write_grammar <<EOF
 context_user_fields <<
     string comments;
@@ -1986,7 +2316,41 @@ EOF
       end
 
       it "allows a custom lex function" do
-        if language == "d"
+        if language == "rust"
+          write_grammar <<EOF
+<<
+fn mylexfn(context: &mut p_context_t, out_token_info: &mut p_token_info_t) -> usize {
+    let mut result = P_SUCCESS;
+    if context.count > 0 {
+        out_token_info.token = TOKEN_a;
+        out_token_info.pvalue = p_value(context.count);
+        context.count -= 1;
+    } else {
+        result = p_lex(context, out_token_info);
+        if out_token_info.token == TOKEN_c {
+            context.count = 3;
+        }
+    }
+    result
+}
+>>
+
+context_user_fields <<
+    pub count: usize,
+>>
+ptype usize;
+lex_fn mylexfn;
+
+token a << $$ = 7; >>
+token b << $$ = 8; >>
+token c << $$ = 9; >>
+Start -> << $$ = 0; >>
+Start -> Start ID << $$ = ($1 << 4) | $2; >>
+ID -> a << $$ = $1; >>
+ID -> b << $$ = $1; >>
+ID -> c << $$ = $1; >>
+EOF
+        elsif language == "d"
           write_grammar <<EOF
 <<
 private size_t mylexfn(p_context_t * context, p_token_info_t * out_token_info)
@@ -2068,7 +2432,19 @@ EOF
       end
 
       it "provides accessor functions to extract user values from a parser value" do
-        if language == "d"
+        if language == "rust"
+          write_grammar <<EOF
+ptype i64;
+ptype float = f64;
+ptype string = String;
+
+drop /\\s+/;
+token num /\\d+/ << $$ = 42; >>
+token flt (float) /f/ << $$ = 1.5; >>
+token str (string) /s/ << $$ = "hello".to_string(); >>
+Start -> num flt str;
+EOF
+        elsif language == "d"
           write_grammar <<EOF
 ptype int;
 ptype float = float;
@@ -2101,7 +2477,49 @@ EOF
       end
 
       it "allows accessing rule and component text positions" do
-        if language == "d"
+        if language == "rust"
+          write_grammar <<EOF
+drop /\\s+/;
+token tok1;
+token tok2;
+token ident /[a-zA-Z_]\\w*/;
+token num /\\d+/;
+Num -> num;
+Start -> ident Num <<
+    println!("ident start: {}, {}", ${1.position}.row, ${1.position}.col);
+    println!("ident end: {}, {}", ${1.end_position}.row, ${1.end_position}.col);
+    println!("Num start: {}, {}", ${2.position}.row, ${2.position}.col);
+    println!("Num end: {}, {}", ${2.end_position}.row, ${2.end_position}.col);
+    println!("Start start: {}, {}", ${$.position}.row, ${$.position}.col);
+    println!("Start end: {}, {}", ${$.end_position}.row, ${$.end_position}.col);
+>>
+R -> Empty tok2 <<
+    println!("Empty start: {}, {}", ${1.position}.row, ${1.position}.col);
+    println!("Empty end: {}, {}", ${1.end_position}.row, ${1.end_position}.col);
+    println!("tok2 start: {}, {}", ${2.position}.row, ${2.position}.col);
+    println!("tok2 end: {}, {}", ${2.end_position}.row, ${2.end_position}.col);
+    println!("R start: {}, {}", ${$.position}.row, ${$.position}.col);
+    println!("R end: {}, {}", ${$.end_position}.row, ${$.end_position}.col);
+>>
+R -> tok1 Empty <<
+    println!("tok1 start: {}, {}", ${1.position}.row, ${1.position}.col);
+    println!("tok1 end: {}, {}", ${1.end_position}.row, ${1.end_position}.col);
+    println!("Empty start: {}, {}", ${2.position}.row, ${2.position}.col);
+    println!("Empty end: {}, {}", ${2.end_position}.row, ${2.end_position}.col);
+    println!("R2 start: {}, {}", ${$.position}.row, ${$.position}.col);
+    println!("R2 end: {}, {}", ${$.end_position}.row, ${$.end_position}.col);
+>>
+Empty -> ;
+Start -> R <<
+    println!("StartR start: {}, {}", ${$.position}.row, ${$.position}.col);
+    println!("StartR end: {}, {}", ${$.end_position}.row, ${$.end_position}.col);
+>>
+Start -> Empty <<
+    println!("StartEmpty start: {}, {}", ${$.position}.row, ${$.position}.col);
+    println!("StartEmpty end: {}, {}", ${$.end_position}.row, ${$.end_position}.col);
+>>
+EOF
+        elsif language == "d"
           write_grammar <<EOF
 <<
 import std.stdio;

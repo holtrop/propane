@@ -1,0 +1,41 @@
+<<
+fn mylexfn(context: &mut p_context_t, out_token_info: &mut p_token_info_t) -> usize {
+    let result = p_lex(context, out_token_info);
+    if result != P_SUCCESS {
+        return result;
+    }
+    if out_token_info.token == TOKEN_lparen {
+        /* Reentrant nested parse of the parenthesized sub-expression. */
+        let inner_result = p_parse_inner_Start(context, &[TOKEN_rparen]);
+        if inner_result != P_SUCCESS {
+            return inner_result;
+        }
+        let value = p_result_Start(context);
+        /* p_parse_inner rewound the input so ')' was not consumed; consume it. */
+        let mut rparen_info = p_token_info_t::default();
+        assert_eq!(P_SUCCESS, p_lex(context, &mut rparen_info));
+        assert_eq!(TOKEN_rparen, rparen_info.token);
+        out_token_info.token = TOKEN_num;
+        out_token_info.pvalue = p_value(value);
+    }
+    P_SUCCESS
+}
+>>
+
+ptype i64;
+
+lex_fn mylexfn;
+
+drop /\s+/;
+token lparen /\(/;
+token rparen /\)/;
+token plus /\+/;
+token num /\d+/ <<
+  let mut v: i64 = 0;
+  for c in match_ { v = v * 10 + (*c - b'0') as i64; }
+  $$ = v;
+>>
+
+Start -> Expr << $$ = $1; >>
+Expr -> num << $$ = $1; >>
+Expr -> Expr plus num << $$ = $1 + $3; >>
