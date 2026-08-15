@@ -307,9 +307,9 @@ EOF
     expect(results.status).to_not eq 0
   end
 
-  %w[d c cpp rust].each do |language|
+  {"d" => "D", "c" => "C", "cpp" => "C++", "rust" => "Rust"}.each do |language, language_name|
 
-    context "#{language.upcase} language" do
+    context "#{language_name} language" do
 
       it "generates a lexer" do
         write_grammar <<EOF
