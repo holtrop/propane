@@ -16,9 +16,6 @@
  * User code blocks
  *************************************************************************/
 
-<% unless @grammar.code_blocks.fetch("header", "").empty? %>
-<%= @grammar.code_blocks.fetch("header", "") %>
-<% end %>
 <%= @grammar.code_blocks.fetch("", "") %>
 
 /**************************************************************************

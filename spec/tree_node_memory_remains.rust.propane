@@ -1,7 +1,7 @@
 tree;
 tree_prefix P;
 
-<<header
+<<
 #[derive(Clone, Default)]
 pub struct TokenVal {
     pub i64_: u64,

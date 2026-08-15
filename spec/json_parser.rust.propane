@@ -1,4 +1,4 @@
-<<header
+<<
 pub const JSON_OBJECT: usize = 0;
 pub const JSON_ARRAY: usize = 1;
 pub const JSON_NUMBER: usize = 2;
