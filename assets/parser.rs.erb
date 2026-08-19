@@ -389,7 +389,7 @@ pub fn <%= @grammar.prefix %>decode_code_point(input: &[u8],
  * Lexer
  *************************************************************************/
 
- type lexer_state_id_t = <%= get_type_for(@lexer.state_table.size) %>;
+type lexer_state_id_t = <%= get_type_for(@lexer.state_table.size) %>;
 
 /** Invalid lexer state ID. */
 const INVALID_LEXER_STATE_ID: lexer_state_id_t = <%= @lexer.state_table.size %>;
@@ -635,6 +635,11 @@ fn attempt_lex_token(context: &mut <%= @grammar.prefix %>context_t, out_token_in
     match result {
         P_SUCCESS => {
             let mut token_to_accept = lexer_state_table[match_info.accepting_state as usize].token;
+            /* Calculate the token length and start/end positions before invoking
+             * the lexer user code so that the user code can access them. The
+             * context input text position tracking is not updated until after the
+             * user code has run so that it is left unchanged if the user code
+             * requests to terminate the lexer. */
             token_info.length = match_info.length;
             if match_info.end_delta_position.row != 0 {
                 token_info.end_position.row = token_info.position.row + match_info.end_delta_position.row;
@@ -648,9 +653,15 @@ fn attempt_lex_token(context: &mut <%= @grammar.prefix %>context_t, out_token_in
                 let match_slice = context.input[match_start..(match_start + match_info.length)].to_vec();
                 let user_code_token = lexer_user_code(context,
                     lexer_state_table[match_info.accepting_state as usize].code_id, &match_slice, match_info.length, &mut token_info);
+                /* A TERMINATE_TOKEN_ID return code from lexer_user_code() means
+                 * that the user code is requesting to terminate the lexer. */
                 if user_code_token == TERMINATE_TOKEN_ID {
                     return P_USER_TERMINATED;
                 }
+                /* An invalid token returned from lexer_user_code() means that the
+                 * user code did not explicitly return a token. So only override
+                 * the token to return if the user code does explicitly return a
+                 * token. */
                 if user_code_token != INVALID_TOKEN_ID {
                     token_to_accept = user_code_token;
                 }
@@ -697,6 +708,21 @@ fn attempt_lex_token(context: &mut <%= @grammar.prefix %>context_t, out_token_in
 
 /**
  * Lex the next token in the input stream.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ * @param[out] out_token_info
+ *   The lexed token information is stored here if the return value is
+ *   P_SUCCESS.
+ *
+ * @reval P_SUCCESS
+ *   A token was successfully lexed.
+ * @reval P_DECODE_ERROR
+ *   The decoder encountered invalid text encoding.
+ * @reval P_UNEXPECTED_INPUT
+ *   Input text does not match any lexer pattern.
+ * @retval P_USER_TERMINATED
+ *   User code has requested to terminate the lexer.
  */
 pub fn <%= @grammar.prefix %>lex(context: &mut <%= @grammar.prefix %>context_t, out_token_info: &mut <%= @grammar.prefix %>token_info_t) -> usize {
     loop {
@@ -711,13 +737,33 @@ pub fn <%= @grammar.prefix %>lex(context: &mut <%= @grammar.prefix %>context_t, 
  * Parser
  *************************************************************************/
 
+/** Reduce ID type. */
+type reduce_id_t = <%= get_type_for(@parser.reduce_table.size) %>;
+
+/**
+ * A symbol ID can hold either a token ID or a rule set ID.
+ *
+ * Token IDs and rule set IDs share the same namespace, with rule set IDs
+ * beginning after token IDs end.
+ */
+type symbol_id_t = <%= get_type_for(@parser.rule_sets.map(&:last).map(&:id).max) %>;
+
+/** Parser state ID type. */
+type parser_state_id_t = <%= get_type_for(@parser.state_table.size) %>;
+
+/** Parser rule ID type. */
+type rule_id_t = <%= get_type_for(@grammar.rules.size) %>;
+
+/** Parser shift ID type. */
+type shift_id_t = <%= get_type_for(@parser.shift_table.size) %>;
+
 /** Shift table entry. */
 #[derive(Clone, Copy)]
 struct shift_t {
     /** Token or rule set ID. */
-    symbol_id: <%= get_type_for(@parser.rule_sets.map(&:last).map(&:id).max) %>,
+    symbol_id: symbol_id_t,
     /** Parser state to shift to. */
-    state_id: lexer_state_id_t,
+    state_id: parser_state_id_t,
 }
 
 /** Reduce table entry. */
@@ -725,18 +771,47 @@ struct shift_t {
 struct reduce_t {
     /** Lookahead token. */
     token: <%= @grammar.prefix %>token_t,
-    /** Rule ID. */
-    rule: <%= get_type_for(@grammar.rules.size) %>,
-    /** Rule set ID. */
-    rule_set: <%= get_type_for(@parser.rule_sets.map(&:last).map(&:id).max) %>,
-    /** Number of states leading to this reduce action. */
-    n_states: <%= get_type_for(@parser.state_table.size) %>,
+
+    /**
+     * Rule ID.
+     *
+     * This is used to execute the parser user code block associated with a
+     * grammar rule.
+     */
+    rule: rule_id_t,
+
+    /**
+     * Rule set ID.
+     *
+     * This is used as the new top symbol ID of the parse stack after this
+     * reduce action.
+     */
+    rule_set: symbol_id_t,
+
+    /**
+     * Number of states leading to this reduce action.
+     *
+     * This is the number of entries popped from the parse stack after this
+     * reduce action.
+     */
+    n_states: parser_state_id_t,
 <% if @grammar.tree %>
-    /** Map of rule components to rule set child fields (None for a flat map). */
+
+    /**
+     * Map of rule components to rule set child fields (None for a flat map).
+     */
     rule_set_node_field_index_map: Option<&'static [u16]>,
-    /** Number of rule set tree node fields. */
+
+    /**
+     * Number of rule set tree node fields.
+     */
     rule_set_node_field_array_size: u16,
-    /** Whether this rule propagates a matched optional target node. */
+
+    /**
+     * Whether this rule was a generated optional rule that matched the
+     * optional target. In this case, propagate the matched target node up
+     * instead of making a new node for this rule.
+     */
     propagate_optional_target: bool,
 <% end %>
 }
@@ -745,13 +820,16 @@ struct reduce_t {
 #[derive(Clone, Copy)]
 struct parser_state_t {
     /** First shift table entry for this parser state. */
-    shift_table_index: <%= get_type_for(@parser.shift_table.size) %>,
+    shift_table_index: shift_id_t,
+
     /** Number of shift table entries for this parser state. */
-    n_shift_entries: <%= get_type_for(@parser.shift_table.size) %>,
+    n_shift_entries: shift_id_t,
+
     /** First reduce table entry for this parser state. */
-    reduce_table_index: <%= get_type_for(@parser.reduce_table.size) %>,
+    reduce_table_index: reduce_id_t,
+
     /** Number of reduce table entries for this parser state. */
-    n_reduce_entries: <%= get_type_for(@parser.reduce_table.size) %>,
+    n_reduce_entries: reduce_id_t,
 }
 
 /**
@@ -763,6 +841,7 @@ struct parser_state_t {
 struct state_value_t {
     /** Parser state ID. */
     state_id: usize,
+
 <% if @grammar.tree %>
     /** Tree node ID. */
     node_id: <%= @grammar.prefix %>node_id_t,
@@ -1012,7 +1091,7 @@ fn parse_from(context: &mut <%= @grammar.prefix %>context_t, start_state_id: usi
                     token_tree_node.token = token;
                     token_tree_node.pvalue = token_info.pvalue.clone();
                 }
-<%= expand_code(@grammar.on_token_node, false, nil, nil).gsub("token_tree_node", "context.#{@grammar.prefix}tree_nodes[token_node_id as usize]") %>
+<%= expand_code(@grammar.on_token_node, false, nil, nil).gsub(/\btoken_tree_node\b/, "context.#{@grammar.prefix}tree_nodes[token_node_id as usize]") %>
                 statevalues[new_index].node_id = token_node_id;
 <% else %>
                 statevalues[new_index].position = token_info.position;
