@@ -15,6 +15,10 @@ unless ENV["dist_specs"]
       command_name "RSpec"
     end
     project_name "Propane"
+    # Keep this process's results separate from the propane subprocess results
+    # so that nothing has to merge on the fly; the spec Rake task collates all
+    # of the parts once the suite is done.
+    coverage_dir "coverage/parts/rspec"
     merge_timeout 3600
     formatter(MyFormatter)
   end

@@ -39,6 +39,11 @@ class MyFormatter
 end
 SimpleCov.start do
   command_name(#{command_name.inspect})
+  # Write this process's results to its own directory. Sharing one resultset
+  # file means every propane invocation must read, merge, and rewrite the
+  # results of all previous invocations, which grows quadratically over the
+  # suite. The parts are merged once at the end by the spec Rake task.
+  coverage_dir(#{"coverage/parts/#{command_name}".inspect})
   filters.clear
   add_filter do |src|
     !(src.filename[SimpleCov.root])
@@ -119,7 +124,7 @@ EOF
     results = Results.new(stdout, stderr, status)
     # Valgrind is only reliably available on Linux, so limit the leak check to
     # Linux platforms.
-    if RUBY_PLATFORM =~ /linux/
+    if RUBY_PLATFORM =~ /linux/ && ENV["spec-valgrind"]
       stdout, stderr, status = Open3.capture3("valgrind --leak-check=full --show-leak-kinds=all --track-origins=yes --verbose spec/run/testparser")
       vgout = stdout + stderr
       File.binwrite("spec/run/.vgout", vgout)

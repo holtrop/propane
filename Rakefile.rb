@@ -1,3 +1,4 @@
+require "fileutils"
 require "rake/clean"
 require "rspec/core/rake_task"
 require "simplecov"
@@ -11,7 +12,10 @@ end
 
 RSpec::Core::RakeTask.new(:spec, :example_pattern) do |task, args|
   if args.example_pattern
+    ENV["partial_specs"] = "1"
     task.rspec_opts = %W[-e "#{args.example_pattern}" -f documentation]
+  else
+    FileUtils.rm_rf("coverage")
   end
 end
 task :spec do |task, args|
@@ -19,11 +23,20 @@ task :spec do |task, args|
     original_stdout = $stdout
     sio = StringIO.new
     $stdout = sio
-    SimpleCov.collate Dir["coverage/.resultset.json"]
+    SimpleCov.collate Dir["coverage/parts/*/.resultset.json"]
     $stdout = original_stdout
     sio.string.lines.each do |line|
       $stdout.write(line) unless line =~ /Coverage report generated for/
     end
+  end
+end
+
+task :valgrind do
+  begin
+    ENV["spec-valgrind"] = "1"
+    Rake::Task[:spec].execute
+  ensure
+    ENV.delete("spec-valgrind")
   end
 end
 
@@ -43,4 +56,4 @@ task :user_guide do
   system("ruby", "-Ilib", "rb/gen_user_guide.rb")
 end
 
-task :all => [:spec, :dspec, :user_guide]
+task :all => [:valgrind, :dspec, :user_guide]
