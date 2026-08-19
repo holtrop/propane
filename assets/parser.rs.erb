@@ -398,7 +398,12 @@ const INVALID_LEXER_STATE_ID: lexer_state_id_t = <%= @lexer.state_table.size %>;
 <% user_code_id_count = (@grammar.patterns.map(&:code_id).compact.max || 0) + 1 %>
 const INVALID_USER_CODE_ID: <%= get_type_for(user_code_id_count) %> = <%= user_code_id_count %>;
 
-/** Lexer transition table entry. */
+/**
+ * Lexer transition table entry.
+ *
+ * An incoming code point matching the range for a transition entry will cause
+ * the lexer to progress to the destination state.
+ */
 #[derive(Clone, Copy)]
 struct lexer_transition_t {
     /** First code point in the range for this transition. */
@@ -472,6 +477,15 @@ static lexer_mode_table: [lexer_mode_t; <%= @lexer.mode_table.size %>] = [
 
 /**
  * Execute user code associated with a lexer pattern.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ * @param code_id
+ *   The ID of the user code block to execute.
+ * @param match
+ *   Matched text for this pattern.
+ * @param out_token_info
+ *   Lexer token info in progress.
  *
  * @return Token to accept, or invalid token if the user code does
  *   not explicitly return a token.
@@ -1066,16 +1080,17 @@ fn parse_from(context: &mut <%= @grammar.prefix %>context_t, start_state_id: usi
     statevalues.push(state_value_t::default());
     let sv_len = statevalues.len();
     statevalues[sv_len - 1].state_id = start_state_id;
-    let result;
     loop {
         if token == INVALID_TOKEN_ID {
             let lexer_result = <%= lex_fn %>(context, &mut token_info);
             if lexer_result != P_SUCCESS {
-                result = lexer_result;
-                break;
+                return lexer_result;
             }
             token = token_info.token;
         }
+        /* For a "parse inner" operation, determine once per iteration whether
+         * the current token is a member of the caller-provided follow token
+         * set. Used by both the shift-side and reduce-side retries below. */
         let mut token_is_follow = false;
         for &ft in follow_tokens {
             if token == ft {
@@ -1096,12 +1111,23 @@ fn parse_from(context: &mut <%= @grammar.prefix %>context_t, start_state_id: usi
 <% else %>
                 context.parse_result = statevalues[statevalues.len() - 1].pvalue.clone();
 <% end %>
-                result = P_SUCCESS;
-                break;
+                return P_SUCCESS;
             }
             if (shift_state == INVALID_ID) && token_is_follow {
+                /* For a "parse inner" operation, if the incoming token is one
+                 * of the caller's follow tokens, retry the shift as
+                 * TOKEN___EOF. Only consider the parse complete if the reduced
+                 * start rule is the only thing on the parse stack (i.e. the
+                 * initial state plus a single shifted start rule set entry). */
                 let retry_shift_state = check_shift(statevalues[statevalues.len() - 1].state_id, TOKEN___EOF as usize);
-                if (retry_shift_state != INVALID_ID) && (statevalues.len() == 2) && (last_shifted_rule_set_id == start_rule_set_id) {
+                if (retry_shift_state != INVALID_ID) &&
+                    (statevalues.len() == 2) &&
+                    (last_shifted_rule_set_id == start_rule_set_id) {
+                    /* Successful parse via follow token. Rewind the input
+                     * position so that the follow token is not consumed from
+                     * the input stream and remains available for a subsequent
+                     * call to <%= @grammar.prefix %>lex() or a
+                     * <%= @grammar.prefix %>parse*() function. */
                     context.input_index -= token_info.length;
                     context.text_position = token_info.position;
 <% if @grammar.tree %>
@@ -1109,12 +1135,15 @@ fn parse_from(context: &mut <%= @grammar.prefix %>context_t, start_state_id: usi
 <% else %>
                     context.parse_result = statevalues[statevalues.len() - 1].pvalue.clone();
 <% end %>
-                    result = P_SUCCESS;
-                    break;
+                    return P_SUCCESS;
                 }
             }
         }
         if shift_state != INVALID_ID {
+            /* We have something to shift. Track the last shifted rule set ID
+             * (INVALID_ID if we just shifted a token) so the follow-token
+             * shift retry can gate success on the reduced start rule being the
+             * only thing on top of the initial state. */
             last_shifted_rule_set_id = reduced_rule_set;
             statevalues.push(state_value_t::default());
             let new_index = statevalues.len() - 1;
@@ -1157,6 +1186,11 @@ fn parse_from(context: &mut <%= @grammar.prefix %>context_t, start_state_id: usi
 
         let mut reduce_index = check_reduce(statevalues[statevalues.len() - 1].state_id, token);
         if (reduce_index == INVALID_ID) && token_is_follow {
+            /* For a "parse inner" operation, if the incoming token is one of
+             * the caller's follow tokens, retry the reduce lookup as
+             * TOKEN___EOF. Whatever reduce_index results (if any) is used
+             * regardless of which rule set it reduces to; this allows chains
+             * of reductions leading up to the start rule. */
             reduce_index = check_reduce(statevalues[statevalues.len() - 1].state_id, TOKEN___EOF);
         }
         if reduce_index != INVALID_ID {
@@ -1228,13 +1262,15 @@ fn parse_from(context: &mut <%= @grammar.prefix %>context_t, start_state_id: usi
             continue;
         }
 
-        /* Unexpected token. Reset the context text position to the token. */
+        /* A token was successfully lexed, so the input text position was
+         * advanced. However, this is an unexpected token, so we want to reset
+         * the context text position to point to the token rather than the text
+         * after it, so that if the caller wants to report the error position,
+         * it will point to the correct position of the unexpected token. */
         context.text_position = token_info.position;
         context.token = token;
-        result = P_UNEXPECTED_TOKEN;
-        break;
+        return P_UNEXPECTED_TOKEN;
     }
-    result
 }
 
 pub fn <%= @grammar.prefix %>parse(context: &mut <%= @grammar.prefix %>context_t) -> usize {
@@ -1253,6 +1289,11 @@ pub fn <%= @grammar.prefix %>parse_inner_<%= start_rule %>(context: &mut <%= @gr
 
 /**
  * Get the parse result value.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ *
+ * @return Parse result value.
  */
 <% if @grammar.tree %>
 pub fn <%= @grammar.prefix %>result(context: &<%= @grammar.prefix %>context_t) -> <%= h_type(@grammar.start_rules[0]) %><'_> {
@@ -1274,32 +1315,84 @@ pub fn <%= @grammar.prefix %>result_<%= start_rule %>(context: &<%= @grammar.pre
 <%   end %>
 <% end %>
 
-/** Get the current text input position. */
+/**
+ * Get the current text input position.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ *
+ * @return Current text position.
+ */
 pub fn <%= @grammar.prefix %>position(context: &<%= @grammar.prefix %>context_t) -> <%= @grammar.prefix %>position_t {
     context.text_position
 }
 
-/** Set the current text input position. */
+/**
+ * Set the current text input position.
+ *
+ * This can be used to set the initial text position to something other than
+ * (1, 1) for a nested parse operation so that error positions reported by
+ * subsequent lexer/parser calls are relative to a larger enclosing document.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ * @param position
+ *   Text position to set.
+ */
 pub fn <%= @grammar.prefix %>set_position(context: &mut <%= @grammar.prefix %>context_t, position: <%= @grammar.prefix %>position_t) {
     context.text_position = position;
 }
 
-/** Get the current input text byte offset. */
+/**
+ * Get the current input text byte offset.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ *
+ * @return Current input text byte offset (measured from the start of the
+ *   input text passed to <%= @grammar.prefix %>context_new()).
+ */
 pub fn <%= @grammar.prefix %>input_index(context: &<%= @grammar.prefix %>context_t) -> usize {
     context.input_index
 }
 
-/** Set the current input text byte offset. */
+/**
+ * Set the current input text byte offset.
+ *
+ * This moves the lexer's read cursor to the given byte offset (measured from
+ * the start of the input text passed to <%= @grammar.prefix %>context_new()).
+ * It can be used together with <%= @grammar.prefix %>set_position() to rewind
+ * the input part-way through a parse in order to re-read an earlier section of
+ * the input. The byte offset is not validated; the caller is responsible for
+ * providing an offset within the bounds of the input text. A value previously
+ * returned by <%= @grammar.prefix %>input_index() is a suitable argument.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ * @param input_index
+ *   Input text byte offset to set.
+ */
 pub fn <%= @grammar.prefix %>set_input_index(context: &mut <%= @grammar.prefix %>context_t, input_index: usize) {
     context.input_index = input_index;
 }
 
-/** Get the user terminate code. */
+/**
+ * Get the user terminate code.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ *
+ * @return User terminate code.
+ */
 pub fn <%= @grammar.prefix %>user_terminate_code(context: &<%= @grammar.prefix %>context_t) -> usize {
     context.user_terminate_code
 }
 
-/** Get the parse token. */
+/**
+ * Get the parse token.
+ *
+ * @return Parse token.
+ */
 pub fn <%= @grammar.prefix %>token(context: &<%= @grammar.prefix %>context_t) -> <%= @grammar.prefix %>token_t {
     context.token
 }
