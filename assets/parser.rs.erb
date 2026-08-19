@@ -389,8 +389,10 @@ pub fn <%= @grammar.prefix %>decode_code_point(input: &[u8],
  * Lexer
  *************************************************************************/
 
+ type lexer_state_id_t = <%= get_type_for(@lexer.state_table.size) %>;
+
 /** Invalid lexer state ID. */
-const INVALID_LEXER_STATE_ID: <%= get_type_for(@lexer.state_table.size) %> = <%= @lexer.state_table.size %>;
+const INVALID_LEXER_STATE_ID: lexer_state_id_t = <%= @lexer.state_table.size %>;
 
 /** Invalid lexer user code ID. */
 <% user_code_id_count = (@grammar.patterns.map(&:code_id).compact.max || 0) + 1 %>
@@ -404,7 +406,7 @@ struct lexer_transition_t {
     /** Last code point in the range for this transition. */
     last: <%= @grammar.prefix %>code_point_t,
     /** Destination lexer state ID for this transition. */
-    destination_state: <%= get_type_for(@lexer.state_table.size) %>,
+    destination_state: lexer_state_id_t,
 }
 
 /** Lexer state table entry. */
@@ -500,7 +502,7 @@ fn lexer_user_code(context: &mut <%= @grammar.prefix %>context_t,
  *
  * @return Lexer state to transition to, or INVALID_LEXER_STATE_ID if none.
  */
-fn check_lexer_transition(current_state: u32, code_point: u32) -> <%= get_type_for(@lexer.state_table.size) %> {
+fn check_lexer_transition(current_state: u32, code_point: u32) -> lexer_state_id_t {
     let transition_table_index = lexer_state_table[current_state as usize].transition_table_index as u32;
     for i in 0..(lexer_state_table[current_state as usize].n_transitions as u32) {
         let t = &lexer_transition_table[(transition_table_index + i) as usize];
