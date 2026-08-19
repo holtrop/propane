@@ -446,7 +446,7 @@ struct lexer_match_info_t {
     /** Input text position delta to next code point after token end. */
     delta_position: <%= @grammar.prefix %>position_t,
     /** Accepting lexer state from the match (state ID, or INVALID). */
-    accepting_state: <%= get_type_for(@lexer.state_table.size) %>,
+    accepting_state: lexer_state_id_t,
 }
 
 /** Lexer transition table. */
@@ -500,6 +500,11 @@ fn lexer_user_code(context: &mut <%= @grammar.prefix %>context_t,
  * Check if there is a transition from the current lexer state to another
  * based on the given input code point.
  *
+ * @param current_state
+ *   Current lexer state.
+ * @param code_point
+ *   Input code point.
+ *
  * @return Lexer state to transition to, or INVALID_LEXER_STATE_ID if none.
  */
 fn check_lexer_transition(current_state: u32, code_point: u32) -> lexer_state_id_t {
@@ -515,6 +520,24 @@ fn check_lexer_transition(current_state: u32, code_point: u32) -> lexer_state_id
 
 /**
  * Find the longest lexer pattern match at the current position.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ * @param[out] out_match_info
+ *   The longest match information is stored here if the return value is
+ *   P_SUCCESS or P_DECODE_ERROR.
+ * @param[out] out_unexpected_input_length
+ *   The unexpected input length is stored here if the return value is
+ *   P_UNEXPECTED_INPUT.
+ *
+ * @reval P_SUCCESS
+ *   A token was successfully lexed.
+ * @reval P_DECODE_ERROR
+ *   The decoder encountered invalid text encoding.
+ * @reval P_UNEXPECTED_INPUT
+ *   Input text does not match any lexer pattern.
+ * @retval P_EOF
+ *   The end of the text input was reached.
  */
 fn find_longest_match(context: &<%= @grammar.prefix %>context_t,
     out_match_info: &mut lexer_match_info_t, out_unexpected_input_length: &mut usize) -> usize {
@@ -544,7 +567,7 @@ fn find_longest_match(context: &<%= @grammar.prefix %>context_t,
                     }
                     current_state = transition_state as u32;
                     if lexer_state_table[current_state as usize].accepts {
-                        attempt_match.accepting_state = current_state as <%= get_type_for(@lexer.state_table.size) %>;
+                        attempt_match.accepting_state = current_state as lexer_state_id_t;
                         longest_match = attempt_match;
                     }
                 } else if longest_match.length > 0 {
@@ -561,6 +584,7 @@ fn find_longest_match(context: &<%= @grammar.prefix %>context_t,
                     *out_match_info = longest_match;
                     return P_SUCCESS;
                 } else if attempt_match.length != 0 {
+                    /* There is a partial match - error! */
                     *out_unexpected_input_length = attempt_match.length;
                     return P_UNEXPECTED_INPUT;
                 } else {
@@ -568,6 +592,9 @@ fn find_longest_match(context: &<%= @grammar.prefix %>context_t,
                 }
             }
             P_DECODE_ERROR => {
+                /* If we see a decode error, we may be partially in the middle of
+                 * matching a pattern, so return the attempted match info so that
+                 * the input text position can be updated. */
                 *out_match_info = attempt_match;
                 return result;
             }
@@ -580,6 +607,23 @@ fn find_longest_match(context: &<%= @grammar.prefix %>context_t,
 
 /**
  * Attempt to lex the next token in the input stream.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ * @param[out] out_token_info
+ *   The lexed token information is stored here if the return value is
+ *   P_SUCCESS.
+ *
+ * @reval P_SUCCESS
+ *   A token was successfully lexed.
+ * @reval P_DECODE_ERROR
+ *   The decoder encountered invalid text encoding.
+ * @reval P_UNEXPECTED_INPUT
+ *   Input text does not match any lexer pattern.
+ * @retval P_DROP
+ *   A drop pattern was matched so the lexer should continue.
+ * @retval P_USER_TERMINATED
+ *   User code has requested to terminate the lexer.
  */
 fn attempt_lex_token(context: &mut <%= @grammar.prefix %>context_t, out_token_info: &mut <%= @grammar.prefix %>token_info_t) -> usize {
     let mut token_info = <%= @grammar.prefix %>token_info_t::default();
@@ -673,7 +717,7 @@ struct shift_t {
     /** Token or rule set ID. */
     symbol_id: <%= get_type_for(@parser.rule_sets.map(&:last).map(&:id).max) %>,
     /** Parser state to shift to. */
-    state_id: <%= get_type_for(@parser.state_table.size) %>,
+    state_id: lexer_state_id_t,
 }
 
 /** Reduce table entry. */
