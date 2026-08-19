@@ -953,6 +953,13 @@ fn get_rule_position(statevalues: &[state_value_t], i: usize, n_states: usize, g
 <% if !@grammar.tree || @grammar.parser_user_code_used? %>
 /**
  * Execute user code associated with a parser rule.
+ *
+ * @param rule The ID of the rule.
+ *
+ * @retval P_SUCCESS
+ *   Continue parsing.
+ * @retval P_USER_TERMINATED
+ *   User requested to terminate parsing.
  */
 fn parser_user_code(context: &mut <%= @grammar.prefix %>context_t, <%= @grammar.tree ? "_node_id: #{@grammar.prefix}node_id_t" : "_pvalue: &mut #{@grammar.prefix}value_t" %>, rule: u32, statevalues: &[state_value_t], n_states: usize) -> usize {
     match rule {
@@ -976,6 +983,11 @@ fn parser_user_code(context: &mut <%= @grammar.prefix %>context_t, <%= @grammar.
 /**
  * Check if the parser should shift to a new state.
  *
+ * @param state_id
+ *   Parser state ID.
+ * @param symbol_id
+ *   Incoming token/rule set ID.
+ *
  * @return State to shift to, or INVALID_ID if none.
  */
 fn check_shift(state_id: usize, symbol_id: usize) -> usize {
@@ -992,6 +1004,11 @@ fn check_shift(state_id: usize, symbol_id: usize) -> usize {
 /**
  * Check if the parser should reduce to a new state.
  *
+ * @param state_id
+ *   Parser state ID.
+ * @param token
+ *   Incoming token.
+ *
  * @return Reduce table index to reduce with, or INVALID_ID if none.
  */
 fn check_reduce(state_id: usize, token: <%= @grammar.prefix %>token_t) -> usize {
@@ -1007,6 +1024,30 @@ fn check_reduce(state_id: usize, token: <%= @grammar.prefix %>token_t) -> usize 
 
 /**
  * Run the parser.
+ *
+ * @param context
+ *   Lexer/parser context structure.
+ * @param start_state_id
+ *   ID of the state in which to start.
+ * @param start_rule_set_id
+ *   Rule set ID for the requested start rule. Only used when
+ *   @p follow_tokens is non-empty, to gate follow-token shift success.
+ * @param follow_tokens
+ *   Optional slice of caller-provided follow tokens (tokens expected to
+ *   appear immediately after the start rule in some outer context). Used to
+ *   drive the "parse inner" retry logic. May be null/empty for a standard
+ *   parse.
+ *
+ * @retval P_SUCCESS
+ *   The parser successfully matched the input text. The parse result value
+ *   can be accessed with <%= @grammar.prefix %>result().
+ * @retval P_UNEXPECTED_TOKEN
+ *   An unexpected token was encountered that does not match any grammar rule.
+ *   The function p_token(&context) can be used to get the unexpected token.
+ * @reval P_DECODE_ERROR
+ *   The decoder encountered invalid text encoding.
+ * @reval P_UNEXPECTED_INPUT
+ *   Input text does not match any lexer pattern.
  */
 fn parse_from(context: &mut <%= @grammar.prefix %>context_t, start_state_id: usize,
     start_rule_set_id: usize, follow_tokens: &[<%= @grammar.prefix %>token_t]) -> usize {

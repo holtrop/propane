@@ -1075,7 +1075,7 @@ static size_t check_shift(size_t state_id, size_t symbol_id)
  * @param token
  *   Incoming token.
  *
- * @return State to reduce to, or INVALID_ID if none.
+ * @return Reduce table index to reduce with, or INVALID_ID if none.
  */
 static size_t check_reduce(size_t state_id, <%= @grammar.prefix %>token_t token)
 {
