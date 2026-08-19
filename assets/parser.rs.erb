@@ -30,17 +30,6 @@ pub const <%= @grammar.prefix.upcase %>UNEXPECTED_TOKEN: usize = 3;
 pub const <%= @grammar.prefix.upcase %>DROP: usize = 4;
 pub const <%= @grammar.prefix.upcase %>EOF: usize = 5;
 pub const <%= @grammar.prefix.upcase %>USER_TERMINATED: usize = 6;
-<% if @grammar.prefix.upcase != "P_" %>
-
-/* Internal result code aliases used by the generated implementation below. */
-const P_SUCCESS: usize = 0;
-const P_DECODE_ERROR: usize = 1;
-const P_UNEXPECTED_INPUT: usize = 2;
-const P_UNEXPECTED_TOKEN: usize = 3;
-const P_DROP: usize = 4;
-const P_EOF: usize = 5;
-const P_USER_TERMINATED: usize = 6;
-<% end %>
 
 /** Token type. */
 pub type <%= @grammar.prefix %>token_t = <%= get_type_for(@grammar.terminate_token_id) %>;
@@ -224,8 +213,6 @@ pub struct <%= @grammar.prefix %>context_t {
 
     /** Input text. */
     input: Vec<u8>,
-    /** Input text length. */
-    input_length: usize,
     /** Input text index (byte offset). */
     input_index: usize,
     /** Input text position (row/column). */
@@ -266,11 +253,31 @@ pub const <%= @grammar.prefix %>token_names: [&str; <%= @grammar.tokens.size %>]
 ];
 
 /**************************************************************************
+ * Private types
+ *************************************************************************/
+
+<% if @grammar.prefix.upcase != "P_" %>
+/* Result codes. */
+const P_SUCCESS: usize = 0;
+const P_DECODE_ERROR: usize = 1;
+const P_UNEXPECTED_INPUT: usize = 2;
+const P_UNEXPECTED_TOKEN: usize = 3;
+const P_DROP: usize = 4;
+const P_EOF: usize = 5;
+const P_USER_TERMINATED: usize = 6;
+<% end %>
+
+/* An invalid ID value. */
+const INVALID_ID: usize = usize::MAX;
+
+/**************************************************************************
  * State initialization
  *************************************************************************/
 
 /**
  * Allocate and initialize lexer/parser context structure.
+ *
+ * Deinitialize and deallocate with <%= @grammar.prefix %>context_delete().
  *
  * @param input
  *   Text input.
@@ -282,7 +289,6 @@ pub fn <%= @grammar.prefix %>context_new(input: &[u8]) -> <%= @grammar.prefix %>
 
     /* Lexer initialization. */
     context.input = input.to_vec();
-    context.input_length = input.len();
     context.text_position.row = 1;
     context.text_position.col = 1;
     context.mode = <%= @lexer.mode_id("default") %>;
@@ -306,11 +312,10 @@ pub fn <%= @grammar.prefix %>context_delete(mut context: <%= @grammar.prefix %>c
     for i in 0..context.<%= @grammar.prefix %>tree_nodes.len() {
         if context.<%= @grammar.prefix %>tree_nodes[i].is_token {
             let token_node_id = i;
-<%= expand_code(@grammar.free_token_node, false, nil, nil).gsub("token_tree_node", "context.#{@grammar.prefix}tree_nodes[token_node_id]") %>
+<%= expand_code(@grammar.free_token_node, false, nil, nil).gsub(/\btoken_tree_node\b/, "context.#{@grammar.prefix}tree_nodes[token_node_id]") %>
         }
     }
 <% end %>
-    drop(context);
 }
 
 /**************************************************************************
@@ -659,9 +664,6 @@ pub fn <%= @grammar.prefix %>lex(context: &mut <%= @grammar.prefix %>context_t, 
 /**************************************************************************
  * Parser
  *************************************************************************/
-
-/* An invalid ID value. */
-const INVALID_ID: usize = usize::MAX;
 
 /** Shift table entry. */
 #[derive(Clone, Copy)]
