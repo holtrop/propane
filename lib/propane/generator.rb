@@ -470,16 +470,24 @@ class Propane
     #   Handle type name.
     # @param id_expr [String]
     #   Expression yielding the node ID.
+    # @param parenthesize [Boolean]
+    #   Whether to parenthesize the expression. Parentheses are required where
+    #   the expression is substituted into a user code block, since the
+    #   expression could be followed there by a field access or appear in a
+    #   position where a bare Rust struct literal is not accepted. They are
+    #   unnecessary where the expression stands alone, and Rust warns about
+    #   them there, so this can be disabled for those uses.
     #
     # @return [String]
     #   Handle constructor expression.
-    def tree_handle(typename, id_expr)
+    def tree_handle(typename, id_expr, parenthesize = true)
       if @cpp
         "(#{typename}{context, #{id_expr}})"
       elsif @language == "c"
         "((#{typename}){context, #{id_expr}})"
       elsif @language == "rust"
-        "(#{typename} { context, id: #{id_expr} })"
+        expr = "#{typename} { context, id: #{id_expr} }"
+        parenthesize ? "(#{expr})" : expr
       else
         "#{typename}(context, #{id_expr})"
       end

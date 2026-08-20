@@ -6,7 +6,6 @@
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
 #![allow(unused_variables)]
-#![allow(unused_parens)]
 
 /**************************************************************************
  * User code blocks
@@ -495,6 +494,10 @@ static lexer_mode_table: [lexer_mode_t; <%= @lexer.mode_table.size %>] = [
  * @return Token to accept, or invalid token if the user code does
  *   not explicitly return a token.
  */
+/* A $$ or $N reference in a user code block expands to a parenthesized
+ * dereference, since it may be followed there by a field or method access.
+ * The parentheses are redundant where the reference is a complete argument. */
+#[allow(unused_parens)]
 fn lexer_user_code(context: &mut <%= @grammar.prefix %>context_t,
     code_id: <%= get_type_for(user_code_id_count) %>, match_text: &[u8],
     out_token_info: &mut <%= @grammar.prefix %>token_info_t) -> <%= @grammar.prefix %>token_t {
@@ -987,6 +990,10 @@ fn get_rule_position(statevalues: &[state_value_t], i: usize, n_states: usize, g
  * @retval P_USER_TERMINATED
  *   User requested to terminate parsing.
  */
+/* A $$ or $N reference in a user code block expands to a parenthesized
+ * dereference, since it may be followed there by a field or method access.
+ * The parentheses are redundant where the reference is a complete argument. */
+#[allow(unused_parens)]
 fn parser_user_code(context: &mut <%= @grammar.prefix %>context_t, <%= @grammar.tree ? "_node_id: #{@grammar.prefix}node_id_t" : "_pvalue: &mut #{@grammar.prefix}value_t" %>, rule: u32, statevalues: &[state_value_t], n_states: usize) -> usize {
     match rule {
 <%   @grammar.rules.each do |rule| %>
@@ -1309,11 +1316,11 @@ pub fn <%= @grammar.prefix %>parse_inner_<%= start_rule %>(context: &mut <%= @gr
  */
 <% if @grammar.tree %>
 pub fn <%= @grammar.prefix %>result(context: &<%= @grammar.prefix %>context_t) -> <%= h_type(@grammar.start_rules[0]) %><'_> {
-    <%= tree_handle(h_type(@grammar.start_rules[0]), "context.parse_result") %>
+    <%= tree_handle(h_type(@grammar.start_rules[0]), "context.parse_result", false) %>
 }
 <%   @grammar.start_rules.each_with_index do |start_rule, i| %>
 pub fn <%= @grammar.prefix %>result_<%= start_rule %>(context: &<%= @grammar.prefix %>context_t) -> <%= h_type(start_rule) %><'_> {
-    <%= tree_handle(h_type(start_rule), "context.parse_result") %>
+    <%= tree_handle(h_type(start_rule), "context.parse_result", false) %>
 }
 <%   end %>
 <% else %>
