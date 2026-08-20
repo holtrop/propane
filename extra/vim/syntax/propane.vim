@@ -7,12 +7,28 @@ if exists("b:current_syntax")
   finish
 endif
 
+" Guess the language of the user code blocks from their contents so that the
+" matching syntax file can be included below. b:propane_subtype may also be set
+" before this file is sourced to select the language explicitly.
 if !exists("b:propane_subtype")
-  if search('\<import\s\+\%(std\|core\)\.', 'nw') > 0
+  " Rust markers. Each keyword requires the syntax that follows it in Rust so
+  " that a plain identifier of the same name in another language does not match
+  " (`int fn = 3;' in C, for example). Type names are only accepted within a
+  " `ptype' statement for the same reason.
+  let s:rust = '\<let\s\+\%(mut\s\+\)\?\w'
+  let s:rust .= '\|\<fn\s\+\w\+\s*('
+  let s:rust .= '\|&mut\>\|\<pub\s\+\w\|\<impl\s\+\w'
+  let s:rust .= '\|#\[\|\<use\s\+\%(std\|core\)::'
+  let s:rust .= '\|\<ptype\>[^;]*\<\%(isize\|usize\|i8\|i16\|i32\|i64\|i128'
+  let s:rust .= '\|u8\|u16\|u32\|u64\|u128\|f32\|f64\|String\)\>'
+  if search(s:rust, 'nw') > 0
+    let b:propane_subtype = "rust"
+  elseif search('\<import\s\+\%(std\|core\)\.', 'nw') > 0
     let b:propane_subtype = "d"
   else
     let b:propane_subtype = "cpp"
   endif
+  unlet s:rust
 endif
 
 exe "syn include @propaneTarget syntax/".b:propane_subtype.".vim"
