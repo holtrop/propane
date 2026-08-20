@@ -5,7 +5,6 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
-#![allow(dead_code)]
 #![allow(unused_variables)]
 #![allow(unused_parens)]
 
@@ -83,6 +82,8 @@ pub enum <%= @grammar.prefix %>value_t {
 
 impl <%= @grammar.prefix %>value_t {
 <%   @grammar.ptypes.each do |name, typestring| %>
+    /* A grammar need not assign to $$ for every declared ptype. */
+    #[allow(dead_code)]
     fn v_<%= name %>_mut(&mut self) -> &mut <%= rust_ptype(typestring) %> {
         match self { <%= @grammar.prefix %>value_t::v_<%= name %>(v) => v, _ => unreachable!() }
     }
@@ -769,8 +770,11 @@ type symbol_id_t = <%= get_type_for(@parser.rule_sets.map(&:last).map(&:id).max)
 /** Parser state ID type. */
 type parser_state_id_t = <%= get_type_for(@parser.state_table.size) %>;
 
+<% parser_user_code_called = !@grammar.tree || @grammar.parser_user_code_used? %>
+<% if parser_user_code_called %>
 /** Parser rule ID type. */
 type rule_id_t = <%= get_type_for(@grammar.rules.size) %>;
+<% end %>
 
 /** Parser shift ID type. */
 type shift_id_t = <%= get_type_for(@parser.shift_table.size) %>;
@@ -789,6 +793,7 @@ struct shift_t {
 struct reduce_t {
     /** Lookahead token. */
     token: <%= @grammar.prefix %>token_t,
+<% if parser_user_code_called %>
 
     /**
      * Rule ID.
@@ -797,6 +802,7 @@ struct reduce_t {
      * grammar rule.
      */
     rule: rule_id_t,
+<% end %>
 
     /**
      * Rule set ID.
@@ -891,7 +897,9 @@ static parser_reduce_table: [reduce_t; <%= @parser.reduce_table.size %>] = [
 <%   @parser.reduce_table.each do |reduce| %>
     reduce_t {
         token: <%= reduce[:token_id] %>, /* Token: <%= reduce[:token] ? reduce[:token].name : "(any)" %> */
+<%     if parser_user_code_called %>
         rule: <%= reduce[:rule_id] %>, /* Rule ID */
+<%     end %>
         rule_set: <%= reduce[:rule_set_id] %>, /* Rule set ID (<%= reduce[:rule].rule_set.name %>) */
         n_states: <%= reduce[:n_states] %>, /* Number of states */
 <%     if @grammar.tree %>
