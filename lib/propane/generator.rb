@@ -41,12 +41,23 @@ class Propane
           output_file = @output_file
         end
         erb = ERB.new(template, trim_mode: "<>")
+        # Rust has no #line directive support. For a Rust target the directives
+        # that the grammar embeds around user code blocks are replaced with
+        # comments naming the grammar file and line number the code came from,
+        # so that the origin of a section of user code can still be found by
+        # reading up from a compiler diagnostic pointing into the generated
+        # module.
+        user_code_origin = nil
         result = erb.result(binding.clone).lines.each_with_index.map do |line, i|
           if @language == "rust"
-            # Rust has no #line directive support, so strip the directives that
-            # the grammar embeds in user code blocks.
-            line = line.sub(/^#line \d+ "[^"]*"/, "")
-            line == "#linereset\n" ? "" : line
+            if md = line.match(/^#line (\d+) "([^"]*)"/)
+              user_code_origin = "#{md[2]} line #{md[1]}"
+              line.sub(/^#line \d+ "[^"]*"/, %[/* Begin user code from #{user_code_origin}. */])
+            elsif line == "#linereset\n"
+              %[/* End user code from #{user_code_origin}. */\n]
+            else
+              line
+            end
           elsif line == "#linereset\n"
             %[#line #{i + 2} "#{output_file}"\n]
           else

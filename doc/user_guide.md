@@ -695,10 +695,21 @@ generated output without any surrounding `#line` directives.
 This can be useful when debugging the generated parser itself, or when the
 `#line` directives interfere with other tooling.
 
-The `noline` statement only affects the C, C++, and D targets.
-Rust has no `#line` directive equivalent, so `#line` directives are never
-emitted into Rust output and the `noline` statement has no effect for the Rust
-target.
+Rust has no `#line` directive equivalent.
+For a Rust target, Propane instead emits a comment before and after each
+section of user code naming the grammar file and the line number the code was
+taken from:
+
+```
+/* Begin user code from myparser.propane line 42. */
+  let mut v: i64 = 0;
+/* End user code from myparser.propane line 42. */
+```
+
+A compiler diagnostic that points into the generated Rust module can be traced
+back to the grammar by reading up to the nearest such comment.
+The `noline` statement suppresses these comments for a Rust target, in the same
+way that it suppresses `#line` directives for the other targets.
 
 ##> `on_tree_node` statement -  custom initialization of a token tree node
 

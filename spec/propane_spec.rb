@@ -2113,6 +2113,44 @@ EOF
         end
       end
 
+      if language == "rust"
+        it "marks user code sections with their grammar file and line number" do
+          write_grammar <<EOF
+ptype i64;
+drop /\\s+/;
+token num /\\d+/ <<
+  $$ = 42;
+>>
+Start -> num << $$ = $1; >>
+EOF
+          run_propane(language: language)
+          parser = File.binread("spec/run/testparser.rs")
+          # The lexer code block body begins on grammar line 4 and the parser
+          # rule code block is on grammar line 6.
+          expect(parser).to include %[/* Begin user code from spec/run/testparser.propane line 4. */]
+          expect(parser).to include %[/* End user code from spec/run/testparser.propane line 4. */]
+          expect(parser).to include %[/* Begin user code from spec/run/testparser.propane line 6. */]
+          expect(parser).to include %[/* End user code from spec/run/testparser.propane line 6. */]
+          expect(parser).to_not include "#line"
+        end
+
+        it "omits user code section markers when noline is specified" do
+          write_grammar <<EOF
+noline;
+ptype i64;
+drop /\\s+/;
+token num /\\d+/ <<
+  $$ = 42;
+>>
+Start -> num << $$ = $1; >>
+EOF
+          run_propane(language: language)
+          parser = File.binread("spec/run/testparser.rs")
+          expect(parser).to_not include "user code from"
+          expect(parser).to_not include "#line"
+        end
+      end
+
       it "executes code blocks associated with drop statements" do
         if language == "rust"
           write_grammar <<EOF
