@@ -1582,6 +1582,46 @@ If the first rule is matched, then `pOne1` and `pTwo2` will be valid node
 handles while `pTwo1` and `pOne2` will be invalid.
 If the second rule is matched instead, then the opposite would be the case.
 
+Reading a field of an invalid node handle produces another invalid node handle
+rather than failing.
+An invalid result therefore propagates along a chain of field accesses, so a
+walk which descends several levels only has to be checked once, at the end,
+instead of at every step.
+Using the tree generation grammar from the
+${#tree statement - tree generation mode} section:
+
+```
+let token = start.pItems().item().pDual().pOne1().pToken1();
+if token.valid()
+{
+    println!("{}", p_token_names[token.token() as usize]);
+}
+```
+
+If the parsed input did not contain a `Dual`, then `pDual()` returns an invalid
+handle and each remaining call in the chain passes that invalid result along.
+The walk does not fail and does not read invalid memory.
+
+Reading a field which the matched rule did not fill behaves the same way.
+Every node of a rule set reserves a slot for each field that the rule set can
+have, so reading `pTwo1` from a `Dual` node when `Dual -> One Two` was matched
+returns an invalid handle rather than reading past the end of the node's
+fields.
+
+This behavior is the same for every target language:
+
+  * C: `p_One_pToken1(p_Dual_pOne1(dual))`, or
+    `p_tree_walk_Dual(dual, pOne1, pToken1)`
+  * C++ and Rust: `dual.pOne1().pToken1()`
+  * D: `dual.pOne1.pToken1`
+
+The result at the end of the chain must still be checked before it is used.
+An invalid handle reports an invalid `position` and `end_position` and an
+`n_fields` of `0`, but its `token` is token ID `0` and its `pvalue` is a
+default-constructed parser value.
+Neither of those can be distinguished from a node which genuinely holds those
+values.
+
 If a field alias is present in a rule definition, an additional field will be
 generated in the tree node with the field alias name.
 For example:
