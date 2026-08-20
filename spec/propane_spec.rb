@@ -2059,9 +2059,36 @@ EOF
         expect(results.status).to eq 0
       end
 
-      if %w[c cpp].include?(language)
+      # D is excluded since it is garbage collected, so Propane does not emit a
+      # free_token_node code block for it.
+      if %w[c cpp rust].include?(language)
         it "allows a user function to free token node memory in tree mode" do
-          write_grammar <<EOF
+          if language == "rust"
+            write_grammar <<EOF
+<<
+use std::sync::atomic::{AtomicU32, Ordering};
+
+/** Number of token nodes freed by the free_token_node code block. */
+pub static FREED: AtomicU32 = AtomicU32::new(0);
+>>
+tree;
+free_token_node <<
+    if !${token.pvalue}.is_null() {
+        unsafe { drop(Box::from_raw(${token.pvalue})); }
+        FREED.fetch_add(1, Ordering::SeqCst);
+    }
+>>
+ptype *mut i32;
+token a <<
+  $$ = Box::into_raw(Box::new(1));
+>>
+token b <<
+  $$ = Box::into_raw(Box::new(2));
+>>
+Start -> a:a b:b;
+EOF
+          else
+            write_grammar <<EOF
 tree;
 free_token_node <<
     free(${token.pvalue});
@@ -2077,6 +2104,7 @@ token b <<
 >>
 Start -> a:a b:b;
 EOF
+          end
           run_propane(language: language)
           compile("spec/test_tree_delete_token_node_memory.#{language}", language: language)
           results = run_test(language: language)
