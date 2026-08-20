@@ -7,10 +7,7 @@
 #![allow(non_upper_case_globals)]
 #![allow(dead_code)]
 #![allow(unused_variables)]
-#![allow(unused_mut)]
 #![allow(unused_parens)]
-#![allow(unused_assignments)]
-#![allow(unreachable_patterns)]
 
 /**************************************************************************
  * User code blocks
@@ -307,8 +304,15 @@ pub fn <%= @grammar.prefix %>context_new(input: &[u8]) -> <%= @grammar.prefix %>
  * @param context
  *   Lexer/parser context structure.
  */
-pub fn <%= @grammar.prefix %>context_delete(mut context: <%= @grammar.prefix %>context_t) {
-<% if @grammar.tree && @grammar.free_token_node != "" %>
+<% free_token_node_used = @grammar.tree && @grammar.free_token_node != "" %>
+<% if free_token_node_used %>
+/* The context is taken as mutable for the benefit of the free_token_node user
+ * code block below, which is permitted but not required to modify the node it
+ * is freeing. */
+#[allow(unused_mut)]
+<% end %>
+pub fn <%= @grammar.prefix %>context_delete(<%= free_token_node_used ? "mut " : "" %>context: <%= @grammar.prefix %>context_t) {
+<% if free_token_node_used %>
     for i in 0..context.<%= @grammar.prefix %>tree_nodes.len() {
         if context.<%= @grammar.prefix %>tree_nodes[i].is_token {
             let token_node_id = i;
