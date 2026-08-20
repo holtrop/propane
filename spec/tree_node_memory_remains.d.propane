@@ -42,8 +42,8 @@ token semicolon /;/;
 
 # Integer literals.
 token hex_int_l /0[xX][0-9a-fA-F][0-9a-fA-F_]*/ <<
-  $$.bi = BigInt(match[0..3]);
-  foreach (c; match[3..$])
+  $$.bi = BigInt(match_text[0..3]);
+  foreach (c; match_text[3..$])
   {
     if (('0' <= c) && (c <= '9'))
     {
@@ -65,13 +65,13 @@ token hex_int_l /0[xX][0-9a-fA-F][0-9a-fA-F_]*/ <<
 
 # Identifier.
 token ident /\$?[a-zA-Z_][a-zA-Z_0-9]*\??/ <<
-  if (match[0] == '$')
+  if (match_text[0] == '$')
   {
-    $$.s = match[1..$];
+    $$.s = match_text[1..$];
   }
   else
   {
-    $$.s = match;
+    $$.s = match_text;
   }
   $mode(default);
   return $token(ident);

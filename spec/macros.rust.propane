@@ -67,7 +67,7 @@ token macro;
 token macroname /@[a-zA-Z_]\w*/;
 token num /\d+/ <<
   let mut v: i64 = 0;
-  for c in match_ { v = v * 10 + (*c - b'0') as i64; }
+  for c in match_text { v = v * 10 + (*c - b'0') as i64; }
   $$ = v;
 >>
 

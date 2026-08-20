@@ -482,8 +482,10 @@ static lexer_mode_table: [lexer_mode_t; <%= @lexer.mode_table.size %>] = [
  *   Lexer/parser context structure.
  * @param code_id
  *   The ID of the user code block to execute.
- * @param match
+ * @param match_text
  *   Matched text for this pattern.
+ * @param match_length
+ *   Matched text length.
  * @param out_token_info
  *   Lexer token info in progress.
  *
@@ -491,7 +493,7 @@ static lexer_mode_table: [lexer_mode_t; <%= @lexer.mode_table.size %>] = [
  *   not explicitly return a token.
  */
 fn lexer_user_code(context: &mut <%= @grammar.prefix %>context_t,
-    code_id: <%= get_type_for(user_code_id_count) %>, match_: &[u8],
+    code_id: <%= get_type_for(user_code_id_count) %>, match_text: &[u8],
     match_length: usize, out_token_info: &mut <%= @grammar.prefix %>token_info_t) -> <%= @grammar.prefix %>token_t {
     match code_id {
 <% @grammar.patterns.each do |pattern| %>

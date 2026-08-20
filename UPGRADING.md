@@ -2,7 +2,20 @@
 
 The generated API for tree generation mode (`tree;`) has been changed
 significantly for this version.
-The lexer/parser value APIs for non-tree grammars are unchanged.
+Aside from the lexer user code block matched text rename described below, the
+lexer/parser value APIs for non-tree grammars are unchanged.
+
+### Lexer user code block matched text
+
+The matched text argument passed to lexer user code blocks has been renamed
+from `match` to `match_text` for all target languages.
+
+- C, C++, and D: rename references to `match` in lexer user code blocks to
+  `match_text` (for example `$$ = match[0];` becomes `$$ = match_text[0];`).
+
+The `match_length` argument (C, C++) is unchanged.
+This rename only affects lexer user code blocks; parser rule user code blocks
+never had a matched text argument.
 
 ### Tree memory management
 

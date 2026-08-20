@@ -11,7 +11,7 @@ token repeat /repeat/;
 token lbrace /\{/;
 token rbrace /\}/;
 token plus /\+/;
-token num /\d+/ << int n = 0; foreach (ch; match) { n *= 10; n += (ch - '0'); } $$ = n; >>
+token num /\d+/ << int n = 0; foreach (ch; match_text) { n *= 10; n += (ch - '0'); } $$ = n; >>
 
 Start -> Statements;
 Statements -> ;

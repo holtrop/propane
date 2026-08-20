@@ -69,7 +69,7 @@ token times /\*/;
 token power /\*\*/;
 token integer /\d+/ <<
   ulong v;
-  foreach (c; match)
+  foreach (c; match_text)
   {
     v *= 10;
     v += (c - '0');

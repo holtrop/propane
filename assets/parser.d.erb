@@ -560,7 +560,7 @@ private immutable lexer_mode_t[] lexer_mode_table = [
  *   Lexer/parser context structure.
  * @param code_id
  *   The ID of the user code block to execute.
- * @param match
+ * @param match_text
  *   Matched text for this pattern.
  * @param out_token_info
  *   Lexer token info in progress.
@@ -569,7 +569,7 @@ private immutable lexer_mode_t[] lexer_mode_table = [
  *   not explicitly return a token.
  */
 private <%= @grammar.prefix %>token_t lexer_user_code(<%= @grammar.prefix %>context_t * context,
-    lexer_user_code_id_t code_id, string match,
+    lexer_user_code_id_t code_id, string match_text,
     <%= @grammar.prefix %>token_info_t * out_token_info)
 {
     switch (code_id)
@@ -765,9 +765,9 @@ private size_t attempt_lex_token(<%= @grammar.prefix %>context_t * context, <%= 
         }
         if (match_info.accepting_state.code_id != INVALID_USER_CODE_ID)
         {
-            string match = context.input[context.input_index..(context.input_index + match_info.length)];
+            string match_text = context.input[context.input_index..(context.input_index + match_info.length)];
             <%= @grammar.prefix %>token_t user_code_token = lexer_user_code(context,
-                match_info.accepting_state.code_id, match, &token_info);
+                match_info.accepting_state.code_id, match_text, &token_info);
             /* A TERMINATE_TOKEN_ID return code from lexer_user_code() means
              * that the user code is requesting to terminate the lexer. */
             if (user_code_token == TERMINATE_TOKEN_ID)

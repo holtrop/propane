@@ -43,7 +43,7 @@ token hex_int_l /0[xX][0-9a-fA-F][0-9a-fA-F_]*/ <<
 
 # Identifier.
 token ident /\$?[a-zA-Z_][a-zA-Z_0-9]*\??/ <<
-  $$.s = std::str::from_utf8(match_).unwrap().to_string();
+  $$.s = std::str::from_utf8(match_text).unwrap().to_string();
   $mode(default);
   return $token(ident);
 >>

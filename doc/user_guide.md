@@ -90,7 +90,7 @@ token times /\*/;
 token power /\*\*/;
 token integer /\d+/ <<
   ulong v;
-  foreach (c; match)
+  foreach (c; match_text)
   {
     v *= 10;
     v += (c - '0');
@@ -197,7 +197,7 @@ Example:
 token integer /\d+/ <<
   printf("integer token on row %d, col %d\n",
       ${position}.row, ${position}.col);
-  $$ = parse_integer(match, match_length);
+  $$ = parse_integer(match_text, match_length);
 >>
 ```
 
@@ -205,7 +205,7 @@ token integer /\d+/ <<
 
 The lexer code block is passed the following arguments:
 
-  * `match` (`uint8_t const`) - the pointer points to the text matched by the lexer pattern.
+  * `match_text` (`uint8_t const *`) - points to the text matched by the lexer pattern.
   * `match_length` (`size_t`) - length of the matched text.
 
 Example:
@@ -218,7 +218,7 @@ token integer /\d+/ <<
   for (size_t i = 0u; i < match_length; i++)
   {
     v *= 10;
-    v += (match[i] - '0');
+    v += (match_text[i] - '0');
   }
   $$ = v;
 >>
@@ -228,14 +228,14 @@ token integer /\d+/ <<
 
 The lexer code block is passed the following arguments:
 
-  * `match` (`string`) - a slice containing the text matched by the lexer pattern.
+  * `match_text` (`string`) - a slice containing the text matched by the lexer pattern.
 
 ```
 ptype ulong;
 
 token integer /\d+/ <<
   ulong v;
-  foreach (c; match)
+  foreach (c; match_text)
   {
     v *= 10;
     v += (c - '0');
@@ -248,20 +248,18 @@ token integer /\d+/ <<
 
 The lexer code block is passed the following arguments:
 
-  * `match_` (`&[u8]`) - a slice containing the text matched by the lexer pattern.
+  * `match_text` (`&[u8]`) - a slice containing the text matched by the lexer pattern.
   * `match_length` (`usize`) - length of the matched text.
 
-The argument is named `match_` rather than `match` because `match` is a Rust
-keyword.
-It is a byte slice rather than a string; use `std::str::from_utf8()` or
-`String::from_utf8_lossy()` to view the matched text as a string.
+The matched text is a byte slice rather than a string; use
+`std::str::from_utf8()` or `String::from_utf8_lossy()` to view it as a string.
 
 ```
 ptype i64;
 
 token integer /\d+/ <<
   let mut v: i64 = 0;
-  for c in match_
+  for c in match_text
   {
       v *= 10;
       v += (c - b'0') as i64;
@@ -423,7 +421,7 @@ context_user_fields <<
 >>
 drop /#(.*)\n/ <<
     /* Accumulate comments before the next parser tree node. */
-    ${context.comments} += std::string((const char *)match, match_length);
+    ${context.comments} += std::string((const char *)match_text, match_length);
 >>
 ```
 
@@ -435,7 +433,7 @@ context_user_fields <<
 >>
 drop /#(.*)\n/ <<
     /* Accumulate comments before the next parser tree node. */
-    ${context.comments} += std::str::from_utf8(match_).unwrap();
+    ${context.comments} += std::str::from_utf8(match_text).unwrap();
 >>
 ```
 
@@ -723,7 +721,7 @@ on_token_node <<
 >>
 drop /#(.*)\n/ <<
     /* Accumulate comments before the next parser tree node. */
-    ${context.comments} += std::string((const char *)match, match_length);
+    ${context.comments} += std::string((const char *)match_text, match_length);
 >>
 ```
 
@@ -741,7 +739,7 @@ on_token_node <<
 >>
 drop /#(.*)\n/ <<
     /* Accumulate comments before the next parser tree node. */
-    ${context.comments} += std::str::from_utf8(match_).unwrap();
+    ${context.comments} += std::str::from_utf8(match_text).unwrap();
 >>
 ```
 
@@ -988,7 +986,7 @@ on_token_node <<
 >>
 drop /#(.*)\n/ <<
     /* Accumulate comments before the next parser tree node. */
-    ${context.comments} += std::string((const char *)match, match_length);
+    ${context.comments} += std::string((const char *)match_text, match_length);
 >>
 ```
 
@@ -1260,7 +1258,7 @@ tokenid str;
   mystringvalue = "";
   $mode(string);
 >>
-string: /[^"]+/ << mystringvalue ~= match; >>
+string: /[^"]+/ << mystringvalue ~= match_text; >>
 string: /"/ <<
   $mode(default);
   return $token(str);
@@ -1300,7 +1298,7 @@ ptype char;
 token abc;
 token def;
 default, identonly: token ident /[a-z]+/ <<
-  $$ = match[0];
+  $$ = match_text[0];
   $mode(default);
   return $token(ident);
 >>
@@ -1334,7 +1332,7 @@ Example:
 ```
 ptype ulong;
 start Top;
-token word /[a-z]+/ << $$ = match.length; >>
+token word /[a-z]+/ << $$ = match_text.length; >>
 Top -> word << $$ = $1; >>
 ```
 

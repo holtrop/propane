@@ -343,7 +343,7 @@ token int /\\d+/ <<
   for (size_t i = 0u; i < match_length; i++)
   {
     v *= 10;
-    v += (match[i] - '0');
+    v += (match_text[i] - '0');
   }
   $$ = v;
 >>
@@ -354,7 +354,7 @@ EOF
 ptype int;
 token int /\\d+/ <<
   int v;
-  foreach (c; match)
+  foreach (c; match_text)
   {
     v *= 10;
     v += (c - '0');
@@ -368,7 +368,7 @@ EOF
 ptype i64;
 token int /\\d+/ <<
   let mut v: i64 = 0;
-  for c in match_ { v = v * 10 + (*c - b'0') as i64; }
+  for c in match_text { v = v * 10 + (*c - b'0') as i64; }
   $$ = v;
 >>
 Start -> int << $$ = $1; >>
@@ -415,7 +415,7 @@ token integer /\\d+/ <<
   for (size_t i = 0u; i < match_length; i++)
   {
     v *= 10;
-    v += (match[i] - '0');
+    v += (match_text[i] - '0');
   }
   $$ = v;
 >>
@@ -446,7 +446,7 @@ token times /\\*/;
 token power /\\*\\*/;
 token integer /\\d+/ <<
   ulong v;
-  foreach (c; match)
+  foreach (c; match_text)
   {
     v *= 10;
     v += (c - '0');
@@ -475,7 +475,7 @@ token times /\\*/;
 token power /\\*\\*/;
 token integer /\\d+/ <<
   let mut v: u64 = 0;
-  for c in match_ { v = v * 10 + (*c - b'0') as u64; }
+  for c in match_text { v = v * 10 + (*c - b'0') as u64; }
   $$ = v;
 >>
 token lparen /\\(/;
@@ -775,7 +775,7 @@ ptype char;
 token abc;
 token def;
 default, identonly: token ident /[a-z]+/ <<
-  $$ = match[0];
+  $$ = match_text[0];
   $mode(default);
   return $token(ident);
 >>
@@ -796,7 +796,7 @@ ptype char;
 token abc;
 token def;
 default, identonly: token ident /[a-z]+/ <<
-  $$ = match[0];
+  $$ = match_text[0];
   $mode(default);
 >>
 token dot /\\./ <<
@@ -813,7 +813,7 @@ ptype u8;
 token abc;
 token def;
 default, identonly: token ident /[a-z]+/ <<
-  $$ = match_[0];
+  $$ = match_text[0];
   $mode(default);
   return $token(ident);
 >>
@@ -1064,7 +1064,7 @@ EOF
 >>
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
   char * t = (char *)malloc(match_length + 1);
-  strncpy(t, (char *)match, match_length);
+  strncpy(t, (char *)match_text, match_length);
   printf("Matched token is %s\\n", t);
   free(t);
 >>
@@ -1076,14 +1076,14 @@ EOF
 import std.stdio;
 >>
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
-  writeln("Matched token is ", match);
+  writeln("Matched token is ", match_text);
 >>
 Start -> id;
 EOF
         when "rust"
           write_grammar <<EOF
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
-  println!("Matched token is {}", std::str::from_utf8(match_).unwrap());
+  println!("Matched token is {}", std::str::from_utf8(match_text).unwrap());
 >>
 Start -> id;
 EOF
@@ -1114,7 +1114,7 @@ EOF
           write_grammar <<EOF
 ptype ulong;
 token word /[a-z]+/ <<
-  $$ = match.length;
+  $$ = match_text.length;
 >>
 Start -> word <<
   $$ = $1;
@@ -1793,7 +1793,7 @@ EOF
           write_grammar <<EOF
 ptype String;
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
-  $$ = std::str::from_utf8(match_).unwrap().to_string();
+  $$ = std::str::from_utf8(match_text).unwrap().to_string();
 >>
 drop /\\s+/;
 Start -> id:first id:second <<
@@ -1808,7 +1808,7 @@ import std.stdio;
 >>
 ptype string;
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
-  $$ = match;
+  $$ = match_text;
 >>
 drop /\\s+/;
 Start -> id:first id:second <<
@@ -1825,7 +1825,7 @@ EOF
 ptype char *;
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
   char * s = (char *)malloc(match_length + 1);
-  strncpy(s, (char const *)match, match_length);
+  strncpy(s, (char const *)match_text, match_length);
   s[match_length] = 0;
   $$ = s;
 >>
@@ -1851,7 +1851,7 @@ EOF
           write_grammar <<EOF
 ptype String;
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
-  $$ = std::str::from_utf8(match_).unwrap().to_string();
+  $$ = std::str::from_utf8(match_text).unwrap().to_string();
 >>
 drop /\\s+/;
 Start -> id;
@@ -1869,7 +1869,7 @@ import std.stdio;
 >>
 ptype string;
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
-  $$ = match;
+  $$ = match_text;
 >>
 drop /\\s+/;
 Start -> id;
@@ -1889,7 +1889,7 @@ EOF
 ptype char *;
 token id /[a-zA-Z_][a-zA-Z0-9_]*/ <<
   char * s = (char *)malloc(match_length + 1);
-  strncpy(s, (char const *)match, match_length);
+  strncpy(s, (char const *)match_text, match_length);
   s[match_length] = 0;
   $$ = s;
 >>
@@ -2087,7 +2087,7 @@ EOF
           write_grammar <<EOF
 drop /\\s+/;
 drop /#(.*)\\n/ <<
-  eprint!("comment: {}", std::str::from_utf8(match_).unwrap());
+  eprint!("comment: {}", std::str::from_utf8(match_text).unwrap());
 >>
 token a;
 Start -> a;
@@ -2099,7 +2099,7 @@ import std.stdio;
 >>
 drop /\\s+/;
 drop /#(.*)\\n/ <<
-  stderr.write("comment: ", match);
+  stderr.write("comment: ", match_text);
 >>
 token a;
 Start -> a;
@@ -2112,7 +2112,7 @@ EOF
 >>
 drop /\\s+/;
 drop /#(.*)\\n/ <<
-  fprintf(stderr, "comment: %.*s", (int)match_length, match);
+  fprintf(stderr, "comment: %.*s", (int)match_length, match_text);
 >>
 token a;
 Start -> a;
@@ -2134,7 +2134,7 @@ context_user_fields <<
 >>
 drop /\\s+/;
 drop /#(.*)\\n/ <<
-    ${context.comments} += std::str::from_utf8(match_).unwrap();
+    ${context.comments} += std::str::from_utf8(match_text).unwrap();
 >>
 token a <<
     ${context.acount} += 1;
@@ -2151,7 +2151,7 @@ context_user_fields <<
 >>
 drop /\\s+/;
 drop /#(.*)\\n/ <<
-    ${context.comments} ~= match;
+    ${context.comments} ~= match_text;
 >>
 token a <<
     ${context.acount}++;
@@ -2178,7 +2178,7 @@ drop /#(.*)\\n/ <<
     char * commentsnew = (char *)malloc(cur_len + match_length + 1);
     if (${context.comments} != NULL)
         memcpy(commentsnew, ${context.comments}, cur_len);
-    memcpy(&commentsnew[cur_len], match, match_length);
+    memcpy(&commentsnew[cur_len], match_text, match_length);
     commentsnew[cur_len + match_length] = '\\0';
     if (${context.comments} != NULL)
     {
@@ -2217,7 +2217,7 @@ on_token_node <<
 tree;
 drop /\\s+/;
 drop /#(.*)\\n/ <<
-    ${context.comments} += std::str::from_utf8(match_).unwrap();
+    ${context.comments} += std::str::from_utf8(match_text).unwrap();
 >>
 token id /\\w+/;
 Start -> IDs;
@@ -2239,7 +2239,7 @@ on_token_node <<
 tree;
 drop /\\s+/;
 drop /#(.*)\\n/ <<
-    ${context.comments} ~= match;
+    ${context.comments} ~= match_text;
 >>
 token id /\\w+/;
 Start -> IDs;
@@ -2275,7 +2275,7 @@ drop /#(.*)\\n/ <<
     char * commentsnew = (char *)malloc(cur_len + match_length + 1);
     if (${context.comments} != NULL)
         memcpy(commentsnew, ${context.comments}, cur_len);
-    memcpy(&commentsnew[cur_len], match, match_length);
+    memcpy(&commentsnew[cur_len], match_text, match_length);
     commentsnew[cur_len + match_length] = '\\0';
     if (${context.comments} != NULL)
     {
@@ -2306,7 +2306,7 @@ on_token_node <<
 tree;
 drop /\\s+/;
 drop /#(.*)\\n/ <<
-    ${context.comments} += std::string((const char *)match, match_length);
+    ${context.comments} += std::string((const char *)match_text, match_length);
 >>
 token id /\\w+/;
 Start -> IDs;

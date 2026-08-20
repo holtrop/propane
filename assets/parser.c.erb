@@ -319,7 +319,7 @@ static lexer_mode_t lexer_mode_table[] = {
  *   Lexer/parser context structure.
  * @param code_id
  *   The ID of the user code block to execute.
- * @param match
+ * @param match_text
  *   Matched text for this pattern.
  * @param match_length
  *   Matched text length.
@@ -330,7 +330,7 @@ static lexer_mode_t lexer_mode_table[] = {
  *   not explicitly return a token.
  */
 static <%= @grammar.prefix %>token_t lexer_user_code(<%= @grammar.prefix %>context_t * context,
-    lexer_user_code_id_t code_id, uint8_t const * match,
+    lexer_user_code_id_t code_id, uint8_t const * match_text,
     size_t match_length, <%= @grammar.prefix %>token_info_t * out_token_info)
 {
     switch (code_id)
@@ -534,9 +534,9 @@ static size_t attempt_lex_token(<%= @grammar.prefix %>context_t * context, <%= @
         }
         if (match_info.accepting_state->code_id != INVALID_USER_CODE_ID)
         {
-            uint8_t const * match = &context->input[context->input_index];
+            uint8_t const * match_text = &context->input[context->input_index];
             <%= @grammar.prefix %>token_t user_code_token = lexer_user_code(context,
-                match_info.accepting_state->code_id, match, match_info.length, &token_info);
+                match_info.accepting_state->code_id, match_text, match_info.length, &token_info);
             /* A TERMINATE_TOKEN_ID return code from lexer_user_code() means
              * that the user code is requesting to terminate the lexer. */
             if (user_code_token == TERMINATE_TOKEN_ID)

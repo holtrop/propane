@@ -14,7 +14,7 @@ token macro;
 token macroname /@[a-zA-Z_]\w*/;
 token num /\d+/ <<
     int n = 0;
-    foreach (c; match)
+    foreach (c; match_text)
     {
         n *= 10;
         n += (c - '0');

@@ -6,6 +6,11 @@
 
 ### API Changes
 
+- The matched text argument passed to lexer user code blocks is now named
+  `match_text` for every target language. It was previously named `match` for
+  C, C++, and D, and `match_` for Rust. Any lexer user code block which
+  references the matched text must be updated to use the new name. The
+  `match_length` argument (C, C++, and Rust) is unchanged.
 - Tree generation mode now stores all tree nodes in a compact arena owned by
   the parser context (a flat node array plus a shared child-link array).
   This replaces the previous design of one heap allocation per node with

@@ -20,46 +20,46 @@ token number /-?(0|[1-9][0-9]*)(\.[0-9]+)?([eE][-+]?[0-9]+)?/ <<
     double n;
     bool negative;
     size_t i = 0u;
-    if (match[i] == '-')
+    if (match_text[i] == '-')
     {
         negative = true;
         i++;
     }
-    while ('0' <= match[i] && match[i] <= '9')
+    while ('0' <= match_text[i] && match_text[i] <= '9')
     {
         n *= 10.0;
-        n += (match[i] - '0');
+        n += (match_text[i] - '0');
         i++;
     }
-    if (match[i] == '.')
+    if (match_text[i] == '.')
     {
         i++;
         double mult = 0.1;
-        while ('0' <= match[i] && match[i] <= '9')
+        while ('0' <= match_text[i] && match_text[i] <= '9')
         {
-            n += mult * (match[i] - '0');
+            n += mult * (match_text[i] - '0');
             mult /= 10.0;
             i++;
         }
     }
-    if (match[i] == 'e' || match[i] == 'E')
+    if (match_text[i] == 'e' || match_text[i] == 'E')
     {
         bool exp_negative;
         i++;
-        if (match[i] == '-')
+        if (match_text[i] == '-')
         {
             exp_negative = true;
             i++;
         }
-        else if (match[i] == '+')
+        else if (match_text[i] == '+')
         {
             i++;
         }
         long exp;
-        while ('0' <= match[i] && match[i] <= '9')
+        while ('0' <= match_text[i] && match_text[i] <= '9')
         {
             exp *= 10;
-            exp += (match[i] - '0');
+            exp += (match_text[i] - '0');
             i++;
         }
         if (exp_negative)
@@ -117,10 +117,10 @@ string: /\\t/ <<
 >>
 string: /\\u[0-9a-fA-F]{4}/ <<
   /* Not actually going to encode the code point for this example... */
-  string_value ~= "{" ~ match[2..6] ~ "}";
+  string_value ~= "{" ~ match_text[2..6] ~ "}";
 >>
 string: /[^\\]/ <<
-  string_value ~= match;
+  string_value ~= match_text;
 >>
 Start -> Value <<
   $$ = $1;

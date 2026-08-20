@@ -10,7 +10,7 @@ drop /\s+/;
 token lparen /\(/;
 token rparen /\)/;
 token plus /\+/;
-token num /\d+/ << int n = 0; foreach (ch; match) { n *= 10; n += (ch - '0'); } $$ = n; >>
+token num /\d+/ << int n = 0; foreach (ch; match_text) { n *= 10; n += (ch - '0'); } $$ = n; >>
 
 Start -> Expr << $$ = $1; >>
 Expr -> num << $$ = $1; >>
