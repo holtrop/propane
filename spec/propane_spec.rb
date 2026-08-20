@@ -91,26 +91,29 @@ EOF
     end
     case options[:language]
     when "c"
-      command = [*%w[gcc -g -Wall -o spec/run/testparser -Ispec -Ispec/run], *parsers, *test_files, "spec/testutils.c", "-lm"]
+      command = [*%w[gcc -g -Wall -Werror -o spec/run/testparser -Ispec -Ispec/run], *parsers, *test_files, "spec/testutils.c", "-lm"]
     when "cpp"
-      command = [*%w[g++ -g -x c++ -Wall -o spec/run/testparser -Ispec -Ispec/run], *parsers, *test_files, "spec/testutils.c", "-lm"]
+      command = [*%w[g++ -g -x c++ -Wall -Werror -o spec/run/testparser -Ispec -Ispec/run], *parsers, *test_files, "spec/testutils.c", "-lm"]
     when "d"
-      command = [*%w[ldc2 -g --unittest -of spec/run/testparser -Ispec], *parsers, *test_files, "spec/testutils.d"]
+      command = [*%w[ldc2 -g -w -de --unittest -of spec/run/testparser -Ispec], *parsers, *test_files, "spec/testutils.d"]
     when "rust"
       # Compile each generated parser to an rlib, then compile the test crate
       # against them. Safe Rust needs no valgrind, but it is run anyway.
+      # Both compiles deny warnings so that a warning introduced into the
+      # generated parser (or into a spec test file) fails the spec rather than
+      # scrolling past unnoticed.
       externs = []
       options[:parsers].each do |name|
         crate = "testparser#{name}"
         rlib = "spec/run/lib#{crate}.rlib"
-        rustc = [*%w[rustc --edition 2021 --crate-type=rlib -A warnings],
+        rustc = [*%w[rustc --edition 2021 --crate-type=rlib -D warnings],
                  "--crate-name", crate, "-o", rlib, "spec/run/testparser#{name}.rs"]
         expect(system(*rustc)).to be_truthy
         externs += ["--extern", "#{crate}=#{rlib}"]
       end
       # rustc takes a single crate root; any additional Rust test files are
       # expected to be pulled in as modules or provided by the parser crate.
-      command = [*%w[rustc --edition 2021 -A warnings -o spec/run/testparser], *externs, test_files.first]
+      command = [*%w[rustc --edition 2021 -D warnings -o spec/run/testparser], *externs, test_files.first]
     end
     result = system(*command)
     expect(result).to be_truthy

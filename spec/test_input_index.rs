@@ -1,7 +1,7 @@
 use testparser::*;
 
 fn main() {
-    let mut c = p_context_new(b"ab");
+    let c = p_context_new(b"ab");
     assert_eq!(0, p_input_index(&c));
     p_context_delete(c);
 
