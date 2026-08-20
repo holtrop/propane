@@ -21,14 +21,32 @@ if !exists("b:propane_subtype")
   let s:rust .= '\|#\[\|\<use\s\+\%(std\|core\)::'
   let s:rust .= '\|\<ptype\>[^;]*\<\%(isize\|usize\|i8\|i16\|i32\|i64\|i128'
   let s:rust .= '\|u8\|u16\|u32\|u64\|u128\|f32\|f64\|String\)\>'
+  " D markers. These are spellings that have no valid C, C++, or Rust
+  " equivalent, so `import' is deliberately not among them: it is a D keyword
+  " but is also a C++20 module declaration.
+  let s:d = '\<foreach\%(_reverse\)\?\s*([^)]*;'
+  let s:d .= '\|\~=\|\<static\s\+if\s*(\|\<version\s*(\s*\w\+\s*)'
+  let s:d .= '\|\<scope\s*(\s*\%(exit\|failure\|success\)\s*)'
+  let s:d .= '\|\<\%(unittest\|mixin\|immutable\|__gshared\|invariant\)\>'
+  let s:d .= '\|\<alias\s\+\w\+\s*=\|\<enum\s\+\w\+\s*='
+  let s:d .= '\|@\%(property\|safe\|trusted\|system\|nogc\|disable\)\>'
+  let s:d .= '\|\<is\s\+null\>\|\<cast\s*(\s*\w\+\s*)'
+  let s:d .= '\|\<write\%(ln\|fln\|f\)\s*('
+  let s:d .= '\|\<\%(dchar\|dstring\|wstring\|cent\|ucent\)\>'
+  " A module import on its own is ambiguous between D and C++20, so only take
+  " it as D when nothing else in the file looks like C++.
+  let s:import = '\<import\s\+[A-Za-z_][A-Za-z0-9_.]*\s*;'
+  let s:cpp = '::\|\<template\s*<\|\<namespace\>\|\<nullptr\>\|#include\s*[<"]'
   if search(s:rust, 'nw') > 0
     let b:propane_subtype = "rust"
-  elseif search('\<import\s\+\%(std\|core\)\.', 'nw') > 0
+  elseif search(s:d, 'nw') > 0
+    let b:propane_subtype = "d"
+  elseif search(s:import, 'nw') > 0 && search(s:cpp, 'nw') == 0
     let b:propane_subtype = "d"
   else
     let b:propane_subtype = "cpp"
   endif
-  unlet s:rust
+  unlet s:rust s:d s:import s:cpp
 endif
 
 exe "syn include @propaneTarget syntax/".b:propane_subtype.".vim"
