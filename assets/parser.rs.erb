@@ -5,7 +5,6 @@
 #![allow(non_camel_case_types)]
 #![allow(non_snake_case)]
 #![allow(non_upper_case_globals)]
-#![allow(unused_variables)]
 
 /**************************************************************************
  * User code blocks
@@ -310,6 +309,10 @@ pub fn <%= @grammar.prefix %>context_new(input: &[u8]) -> <%= @grammar.prefix %>
  * code block below, which is permitted but not required to modify the node it
  * is freeing. */
 #[allow(unused_mut)]
+<% else %>
+/* Without a free_token_node code block this function has nothing to do. The
+ * context is consumed and the memory it owns is released when it is dropped. */
+#[allow(unused_variables)]
 <% end %>
 pub fn <%= @grammar.prefix %>context_delete(<%= free_token_node_used ? "mut " : "" %>context: <%= @grammar.prefix %>context_t) {
 <% if free_token_node_used %>
@@ -494,10 +497,12 @@ static lexer_mode_table: [lexer_mode_t; <%= @lexer.mode_table.size %>] = [
  * @return Token to accept, or invalid token if the user code does
  *   not explicitly return a token.
  */
-/* A $$ or $N reference in a user code block expands to a parenthesized
- * dereference, since it may be followed there by a field or method access.
- * The parentheses are redundant where the reference is a complete argument. */
-#[allow(unused_parens)]
+/* The parameters of this function are provided for the user code blocks
+ * inlined into it, which are not obliged to reference any of them. A $$ or $N
+ * reference in a user code block also expands to a parenthesized dereference,
+ * since it may be followed there by a field or method access; those
+ * parentheses are redundant where the reference is a complete argument. */
+#[allow(unused_parens, unused_variables)]
 fn lexer_user_code(context: &mut <%= @grammar.prefix %>context_t,
     code_id: <%= get_type_for(user_code_id_count) %>, match_text: &[u8],
     out_token_info: &mut <%= @grammar.prefix %>token_info_t) -> <%= @grammar.prefix %>token_t {
@@ -990,10 +995,12 @@ fn get_rule_position(statevalues: &[state_value_t], i: usize, n_states: usize, g
  * @retval P_USER_TERMINATED
  *   User requested to terminate parsing.
  */
-/* A $$ or $N reference in a user code block expands to a parenthesized
- * dereference, since it may be followed there by a field or method access.
- * The parentheses are redundant where the reference is a complete argument. */
-#[allow(unused_parens)]
+/* The parameters of this function are provided for the user code blocks
+ * inlined into it, which are not obliged to reference any of them. A $$ or $N
+ * reference in a user code block also expands to a parenthesized dereference,
+ * since it may be followed there by a field or method access; those
+ * parentheses are redundant where the reference is a complete argument. */
+#[allow(unused_parens, unused_variables)]
 fn parser_user_code(context: &mut <%= @grammar.prefix %>context_t, <%= @grammar.tree ? "_node_id: #{@grammar.prefix}node_id_t" : "_pvalue: &mut #{@grammar.prefix}value_t" %>, rule: u32, statevalues: &[state_value_t], n_states: usize) -> usize {
     match rule {
 <%   @grammar.rules.each do |rule| %>
