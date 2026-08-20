@@ -34,6 +34,11 @@
   Reference child fields through the target-language accessors described above
   rather than through struct pointer members.
 
+### Improvements
+
+- Improve D language detection in propane.vim
+- Speed up specs
+
 ## v4.8.1
 
 ### Fixes
