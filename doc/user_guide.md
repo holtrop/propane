@@ -866,13 +866,13 @@ Example:
 start Module ModuleItem Statement Expression;
 ```
 
-When multiple start rules are specified, multiple `p_parse_*()` functions,
-`p_result_*()`, and `p_tree_delete_*()` functions (in tree mode) are generated.
-A default `p_parse()`, `p_result()`, `p_tree_delete()` are generated corresponding
-to the first start rule.
+When multiple start rules are specified, multiple `p_parse_*()`,
+`p_parse_inner_*()`, and `p_result_*()` functions are generated.
+A default `p_parse()` and `p_result()` are generated corresponding to the first
+start rule.
 Additionally, each start rule causes the generation of another version of each
-of these functions, for example `p_parse_Statement()`, `p_result_Statement()`,
-and `p_tree_delete_Statement()`.
+of these functions, for example `p_parse_Statement()`,
+`p_parse_inner_Statement()`, and `p_result_Statement()`.
 
 ##> `token` statement - specifying tokens
 
@@ -1019,10 +1019,10 @@ In tree generation mode various aspects of propane's behavior are changed:
   code blocks" section).
   * Structure types are generated to represent the parsed tokens and rules as
   defined in the grammar.
-  * The parse result from `p_result()` points to a `Start` struct containing
-  the entire parse tree for the input. If the user has changed the start rule
-  with the `start` grammar statement, the name of the start struct will be
-  given by the user-specified start rule instead of `Start`.
+  * The parse result from `p_result()` is a `Start` tree node handle referring
+  to the root of the parse tree for the input. If the user has changed the start
+  rule with the `start` grammar statement, the name of the start structure will
+  be given by the user-specified start rule instead of `Start`.
 
 Example tree generation grammar:
 
@@ -1068,29 +1068,30 @@ example parse:
 string input = "a, ((b)), b";
 p_context_t * context = p_context_new(input);
 assert_eq(P_SUCCESS, p_parse(context));
-Start * start = p_result(context);
-assert(start.pItems1 !is null);
-assert(start.pItems !is null);
-Items * items = start.pItems;
-assert(items.item !is null);
-assert(items.item.pToken1 !is null);
+Start start = p_result(context);
+assert(start.pItems1.valid);
+assert(start.pItems.valid);
+Items items = start.pItems;
+assert(items.item.valid);
+assert(items.item.pToken1.valid);
 assert_eq(TOKEN_a, items.item.pToken1.token);
 assert_eq(11, items.item.pToken1.pvalue);
-assert(items.pItemsMore !is null);
-ItemsMore * itemsmore = items.pItemsMore;
-assert(itemsmore.item !is null);
-assert(itemsmore.item.item !is null);
-assert(itemsmore.item.item.item !is null);
-assert(itemsmore.item.item.item.pToken1 !is null);
+assert(items.pItemsMore.valid);
+ItemsMore itemsmore = items.pItemsMore;
+assert(itemsmore.item.valid);
+assert(itemsmore.item.item.valid);
+assert(itemsmore.item.item.item.valid);
+assert(itemsmore.item.item.item.pToken1.valid);
 assert_eq(TOKEN_b, itemsmore.item.item.item.pToken1.token);
 assert_eq(22, itemsmore.item.item.item.pToken1.pvalue);
-assert(itemsmore.pItemsMore !is null);
+assert(itemsmore.pItemsMore.valid);
 itemsmore = itemsmore.pItemsMore;
-assert(itemsmore.item !is null);
-assert(itemsmore.item.pToken1 !is null);
+assert(itemsmore.item.valid);
+assert(itemsmore.item.pToken1.valid);
 assert_eq(TOKEN_b, itemsmore.item.pToken1.token);
 assert_eq(22, itemsmore.item.pToken1.pvalue);
-assert(itemsmore.pItemsMore is null);
+assert(!itemsmore.pItemsMore.valid);
+p_context_delete(context);
 ```
 
 The equivalent traversal for a Rust target, where tree node fields are accessor
@@ -1124,7 +1125,7 @@ token information.
 
 These structure names can be modified by using the `tree_prefix` or `tree_suffix`
 statements in the grammar file.
-The field names that point to instances of the structures are not affected by
+The field names that refer to instances of the structures are not affected by
 the `tree_prefix` or `tree_suffix` values.
 
 For example, if the following two lines were added to the example above:
@@ -1140,20 +1141,20 @@ Then the types would be used as such instead:
 string input = "a, ((b)), b";
 p_context_t * context = p_context_new(input);
 assert_eq(P_SUCCESS, p_parse(context));
-ABCStartXYZ * start = p_result(context);
-assert(start.pItems1 !is null);
-assert(start.pItems !is null);
-ABCItemsXYZ * items = start.pItems;
-assert(items.pItem !is null);
-assert(items.pItem.pToken1 !is null);
+ABCStartXYZ start = p_result(context);
+assert(start.pItems1.valid);
+assert(start.pItems.valid);
+ABCItemsXYZ items = start.pItems;
+assert(items.pItem.valid);
+assert(items.pItem.pToken1.valid);
 assert_eq(TOKEN_a, items.pItem.pToken1.token);
 assert_eq(11, items.pItem.pToken1.pvalue);
-assert(items.pItemsMore !is null);
-ABCItemsMoreXYZ * itemsmore = items.pItemsMore;
-assert(itemsmore.pItem !is null);
-assert(itemsmore.pItem.pItem !is null);
-assert(itemsmore.pItem.pItem.pItem !is null);
-assert(itemsmore.pItem.pItem.pItem.pToken1 !is null);
+assert(items.pItemsMore.valid);
+ABCItemsMoreXYZ itemsmore = items.pItemsMore;
+assert(itemsmore.pItem.valid);
+assert(itemsmore.pItem.pItem.valid);
+assert(itemsmore.pItem.pItem.pItem.valid);
+assert(itemsmore.pItem.pItem.pItem.pToken1.valid);
 ```
 
 ##> Specifying a lexer pattern
@@ -1548,28 +1549,26 @@ Items -> ;
 ```
 
 The `Start` structure will have a field called `pItems` and another field of
-the same name but with a positional suffix (`pItems1`) which both point to the
+the same name but with a positional suffix (`pItems1`) which both refer to the
 parsed `Items` node.
-Their value will be null if the parsed `Items` rule was empty.
+Both will be invalid node handles if the parsed `Items` rule was empty.
 
-For Rust targets each of these generated fields is an accessor method returning
-a tree node handle, so the fields described in this section are read as
-`node.pItems()`, `node.pItems1()`, and so on.
-A handle for an absent child is not null; instead its `valid()` method returns
-`false`.
+Tree node fields are not data members; they are read through the per-language
+accessors described in the "Parser rule code blocks" section, so this field is
+read as `p_Start_pItems(node)` for C, `node.pItems()` for C++ and Rust, and
+`node.pItems` for D.
 
 The `Items` structure will have fields:
 
-  * `pItem` and `pItem1` which point to the parsed `Item` structure.
-  * `pItemsMore` and `pItemsMore2` which point to the parsed `ItemsMore` structure.
+  * `pItem` and `pItem1` which refer to the parsed `Item` node.
+  * `pItemsMore` and `pItemsMore2` which refer to the parsed `ItemsMore` node.
 
-If a rule can be empty (for example in the second `Items` rule above), then
-an instance of a pointer to that rule's generated tree node will be null if the
-parser matches the empty rule pattern.
+If a rule can be empty (for example in the second `Items` rule above), then the
+field referring to that rule's generated tree node will be an invalid node
+handle if the parser matches the empty rule pattern.
 
-The non-positional tree node field pointer will not be generated if there are
-multiple positions in which an instance of the node it points to could be
-present.
+The non-positional tree node field will not be generated if there are multiple
+positions in which an instance of the node it refers to could be present.
 For example, in the below rules:
 
 ```
@@ -1582,8 +1581,8 @@ The generated `Dual` structure will contain `pOne1`, `pTwo2`, `pTwo1`, and
 However, a `pOne` field and `pTwo` field will not be generated since it would
 be ambiguous which one was matched.
 
-If the first rule is matched, then `pOne1` and `pTwo2` will be non-null while
-`pTwo1` and `pOne2` will be null.
+If the first rule is matched, then `pOne1` and `pTwo2` will be valid node
+handles while `pTwo1` and `pOne2` will be invalid.
 If the second rule is matched instead, then the opposite would be the case.
 
 If a field alias is present in a rule definition, an additional field will be
@@ -1595,8 +1594,8 @@ Exp -> Exp:left plus ExpB:right;
 ```
 
 In the generated `Exp` structure, the fields `pExp`, `pExp1`, and `left` will
-all point to the same child node (an instance of the `Exp` structure), and the
-fields `pExpB`, `pExpB3`, and `right` will all point to the same child node
+all refer to the same child node (an instance of the `Exp` structure), and the
+fields `pExpB`, `pExpB3`, and `right` will all refer to the same child node
 (an instance of the `ExpB` structure).
 
 ##> Functions
@@ -1632,7 +1631,15 @@ and copies it into the returned context.
 ### `p_context_delete`
 
 The `p_context_delete()` function must be called to deinitialize and deallocate
-a context structure allocated by `p_context_init()`.
+a context structure allocated by `p_context_new()`.
+
+In tree generation mode, the whole parse tree is owned by the context and is
+freed by `p_context_delete()`.
+Tree node handles are only valid while the context is alive.
+If a lexer user code block allocates memory to store in a token node's `pvalue`
+or in a custom token user field, the `free_token_node` statement can be used to
+provide a code block which frees that memory; if specified, the
+`free_token_node` code block is executed from `p_context_delete()`.
 
 For Rust targets, `p_context_delete()` takes the context by value and consumes
 it.
@@ -1825,7 +1832,7 @@ if (p_parse(context) == P_SUCCESS)
 ```
 
 If tree generation mode is active, then the `p_result()` function returns a
-`Start *` pointing to the `Start` tree node structure.
+`Start` tree node handle referring to the root of the parse tree.
 
 When multiple start rules are specified, a separate result function is generated
 for each which returns the parse result for the corresponding rule.
@@ -2055,29 +2062,6 @@ assert_eq!(P_SUCCESS, result);
 assert_eq!(0x1F9E1, code_point);
 assert_eq!(4, code_point_length);
 ```
-
-### `p_tree_delete`
-
-The `p_tree_delete()` function can be used to free the memory used by the tree.
-It should be passed the same value that is returned by `p_result()`.
-
-Note that if any lexer user code block allocates memory to store in a token's
-`pvalue`, in order to properly free this memory the `free_token_node` statement
-should be used to provide a code block that frees this memory.
-If specified, the `free_token_node` code block will be executed during the
-`p_tree_delete()` process to allow user code to free any memory associated with
-a token node's `pvalue`.
-
-When multiple start rules are specified, a separate `p_tree_delete` function is
-generated for each which frees the tree resulting from parsing the given rule.
-For example, if `Statement` is specified as a start rule:
-
-```
-p_tree_delete_Statement(statement_tree);
-```
-
-In this case, Propane will free a `Statement` tree structure returned by the
-`p_parse_Statement(context)` function.
 
 ### `p_value`
 
