@@ -52,6 +52,23 @@ The generated source code will be written to the output file.
 If a log file path is specified, Propane will write a log file containing
 detailed information about the parser states and transitions.
 
+##> Target language selection
+
+Propane determines the target output language from the extension of the output
+file name given on the command line:
+
+  * `.c` selects the C target.
+    A header file with a `.h` extension is generated alongside the
+    implementation file.
+  * `.cc`, `.cpp`, or `.cxx` selects the C++ target.
+    A header file with a `.h` extension is generated alongside the
+    implementation file.
+  * `.d` selects the D target.
+  * `.rs` selects the Rust target.
+
+Propane reports an error if the target language cannot be determined from the
+output file name.
+
 #> Propane Grammar File
 
 A Propane grammar file provides Propane with the patterns, tokens, grammar
@@ -126,6 +143,14 @@ D example:
 ```
 <<
 import std.stdio;
+>>
+```
+
+Rust example:
+
+```
+<<
+use std::collections::HashMap;
 >>
 ```
 
@@ -219,6 +244,32 @@ token integer /\d+/ <<
 >>
 ```
 
+#### Rust lexer code block arguments
+
+The lexer code block is passed the following arguments:
+
+  * `match_` (`&[u8]`) - a slice containing the text matched by the lexer pattern.
+  * `match_length` (`usize`) - length of the matched text.
+
+The argument is named `match_` rather than `match` because `match` is a Rust
+keyword.
+It is a byte slice rather than a string; use `std::str::from_utf8()` or
+`String::from_utf8_lossy()` to view the matched text as a string.
+
+```
+ptype i64;
+
+token integer /\d+/ <<
+  let mut v: i64 = 0;
+  for c in match_
+  {
+      v *= 10;
+      v += (c - b'0') as i64;
+  }
+  $$ = v;
+>>
+```
+
 ### Parser rule code blocks
 
 Example:
@@ -267,8 +318,9 @@ positions.
 In this case the position should be checked for validity before its `row` and
 `col` fields are used (see `${#p_position_valid}`).
 For C targets this can be accomplished with
-`if (p_position_valid(${$.position}))` and for D targets this can be
-accomplished with `if (${$.position}.valid)`.
+`if (p_position_valid(${$.position}))`, for D targets with
+`if (${$.position}.valid)`, and for Rust targets with
+`if ${$.position}.valid()`.
 
 In tree generation mode, a full parse tree is automatically constructed in
 memory for user code to traverse after parsing is complete.
@@ -304,6 +356,11 @@ accessors on a node handle:
     C-style functions and macros above are also available.
   * D: `@property` accessors, e.g. `node.field`, `node.valid`, `node.position`,
     `node.token`, `node.pvalue`.
+  * Rust: handle methods called with `()`, e.g. `node.field()`, `node.valid()`,
+    `node.position()`, `node.end_position()`, `node.n_fields()`,
+    `node.token()`, `node.pvalue()`, `node.data()` (a reference to the node
+    record, for token user fields), and `node.node_id()` (for identity
+    comparison).
 
 The positional position expansions (`${$.position}`, `${N.position}`, etc...)
 are not available in tree generation mode; use the position accessors above
@@ -321,6 +378,21 @@ Assignment -> ident equals Expr <<
         p_node_position($$).row, p_node_position($$).col);
     printf("target identifier ends on row %d, col %d\n",
         p_node_end_position($1).row, p_node_end_position($1).col);
+>>
+```
+
+Rust example:
+
+```
+tree;
+
+Assignment -> ident equals Expr <<
+    /* $$ is the Assignment tree node, $1 is the ident Token node, and $3 is
+     * the Expr rule node. */
+    println!("assignment on row {}, col {}",
+        $$.position().row, $$.position().col);
+    println!("target identifier ends on row {}, col {}",
+        $1.end_position().row, $1.end_position().col);
 >>
 ```
 
@@ -354,6 +426,28 @@ drop /#(.*)\n/ <<
     ${context.comments} += std::string((const char *)match, match_length);
 >>
 ```
+
+Rust example:
+
+```
+context_user_fields <<
+    pub comments: String,
+>>
+drop /#(.*)\n/ <<
+    /* Accumulate comments before the next parser tree node. */
+    ${context.comments} += std::str::from_utf8(match_).unwrap();
+>>
+```
+
+For the Rust target, the code block contents are inserted directly into the
+generated `p_context_t` struct definition.
+Each field must therefore be written as a Rust struct field, terminated with a
+comma.
+The generated `p_context_t` derives `Default`, so each user context field type
+must implement `Default`.
+Mark a field `pub` if code outside of the generated module needs to access it;
+grammar user code blocks are emitted into the generated module itself and can
+access a field regardless.
 
 If a pointer to any allocated memory is stored in a user-defined context field,
 it is up to the user to free any memory when the program is finished using the
@@ -416,8 +510,38 @@ free_token_node <<
 >>
 ```
 
+Example freeing `pvalue` (Rust):
+
+```
+tree;
+free_token_node <<
+    if !${token.pvalue}.is_null()
+    {
+        unsafe { drop(Box::from_raw(${token.pvalue})); }
+    }
+>>
+ptype *mut i32;
+token a <<
+  $$ = Box::into_raw(Box::new(1));
+>>
+token b <<
+  $$ = Box::into_raw(Box::new(2));
+>>
+Start -> a:a b:b;
+```
+
 The `free_token_node` statement user code block is not emitted for D language
 since D has a garbage collector.
+
+The code block is emitted for the Rust target, where it runs from
+`p_context_delete()`.
+A `ptype` or token user field which owns its memory (a `String`, a `Vec`, a
+`Box`, and so on) is released when the context is dropped and does not need a
+`free_token_node` code block.
+The statement is only needed for memory which Rust does not track, such as a
+raw pointer obtained from `Box::into_raw()`.
+Note that the generated `p_context_t` does not implement `Drop`, so a
+`free_token_node` code block only runs if `p_context_delete()` is called.
 
 ##> `lex_fn` statement - specifying a custom lexer function
 
@@ -455,6 +579,38 @@ static size_t mylexfn(p_context_t * context, p_token_info_t * out_token_info)
     }
     return result;
 }
+>>
+
+lex_fn mylexfn;
+```
+
+Example (Rust):
+
+```
+<<
+fn mylexfn(context: &mut p_context_t, out_token_info: &mut p_token_info_t) -> usize
+{
+    let mut result = P_SUCCESS;
+    if context.count > 0
+    {
+        out_token_info.token = TOKEN_a;
+        out_token_info.pvalue = p_value(context.count);
+        context.count -= 1;
+    }
+    else
+    {
+        result = p_lex(context, out_token_info);
+        if out_token_info.token == TOKEN_c
+        {
+            context.count = 3;
+        }
+    }
+    result
+}
+>>
+
+context_user_fields <<
+    count: usize,
 >>
 
 lex_fn mylexfn;
@@ -542,6 +698,11 @@ generated output without any surrounding `#line` directives.
 This can be useful when debugging the generated parser itself, or when the
 `#line` directives interfere with other tooling.
 
+The `noline` statement only affects the C, C++, and D targets.
+Rust has no `#line` directive equivalent, so `#line` directives are never
+emitted into Rust output and the `noline` statement has no effect for the Rust
+target.
+
 ##> `on_tree_node` statement -  custom initialization of a token tree node
 
 The `on_token_node` statement can be used to provide code that initializes
@@ -563,6 +724,24 @@ on_token_node <<
 drop /#(.*)\n/ <<
     /* Accumulate comments before the next parser tree node. */
     ${context.comments} += std::string((const char *)match, match_length);
+>>
+```
+
+For example (Rust):
+
+```
+context_user_fields <<
+    pub comments: String,
+>>
+token_user_fields <<
+    pub comments: String,
+>>
+on_token_node <<
+    ${token.comments} = std::mem::take(&mut ${context.comments});
+>>
+drop /#(.*)\n/ <<
+    /* Accumulate comments before the next parser tree node. */
+    ${context.comments} += std::str::from_utf8(match_).unwrap();
 >>
 ```
 
@@ -644,6 +823,30 @@ In this mode, only one `ptype` is used by the parser.
 Lexer user code blocks may assign a parse value to the generated `Token` node
 by assigning to `$$` within a lexer code block.
 The type of the parse value `$$` is given by the global `ptype` type.
+
+### Rust `ptype` requirements
+
+For the Rust target, every `ptype` type must implement both `Clone` and
+`Default`.
+When tree generation mode is not active, the generated `p_value_t` is an enum
+with one variant per defined `ptype`.
+The generated accessor functions clone the held value, and return
+`Default::default()` when the variant currently held is not the one requested.
+
+A user-defined `ptype` type therefore normally needs a
+`#[derive(Clone, Default)]`:
+
+```
+<<
+#[derive(Clone, Default)]
+pub struct Value
+{
+    pub n: i64,
+}
+>>
+
+ptype Value;
+```
 
 ##> `start` statement - specifying the parser start rule name
 
@@ -754,6 +957,19 @@ token_user_fields <<
 >>
 ```
 
+Example (Rust):
+
+```
+token_user_fields <<
+    pub mytokenval: String,
+>>
+```
+
+For the Rust target, the code block contents are inserted directly into the
+generated token tree node struct, so each field must be written as a Rust
+struct field terminated with a comma.
+Each user token field type must implement `Clone` and `Default`.
+
 The `on_token_node` statement can be used to provide code that initializes
 any token user fields when a token tree node instance is created.
 
@@ -781,6 +997,9 @@ the `free_token_node` statement can be used to supply a code block which
 will be executed immediately before the token node is freed.
 For C++, the `delete` statement is used to free the token tree node, so the
 destructor for any custom token user fields will be called.
+For Rust, a token user field which owns its memory is dropped along with the
+context, so a `free_token_node` code block is only needed for memory which Rust
+does not track.
 
 ##> `tree` statement - tree generation mode
 
@@ -872,6 +1091,28 @@ assert(itemsmore.item.pToken1 !is null);
 assert_eq(TOKEN_b, itemsmore.item.pToken1.token);
 assert_eq(22, itemsmore.item.pToken1.pvalue);
 assert(itemsmore.pItemsMore is null);
+```
+
+The equivalent traversal for a Rust target, where tree node fields are accessor
+methods and an absent child is a handle whose `valid()` method returns `false`:
+
+```
+let mut context = p_context_new(b"a, ((b)), b");
+assert_eq!(P_SUCCESS, p_parse(&mut context));
+let start = p_result(&context);
+let items = start.pItems();
+assert!(items.valid());
+assert!(items.item().valid());
+assert_eq!(TOKEN_a, items.item().pToken1().token());
+assert_eq!(11, items.item().pToken1().pvalue());
+let mut itemsmore = items.pItemsMore();
+assert!(itemsmore.valid());
+assert_eq!(TOKEN_b, itemsmore.item().item().item().pToken1().token());
+assert_eq!(22, itemsmore.item().item().item().pToken1().pvalue());
+itemsmore = itemsmore.pItemsMore();
+assert_eq!(TOKEN_b, itemsmore.item().pToken1().token());
+assert!(!itemsmore.pItemsMore().valid());
+p_context_delete(context);
 ```
 
 ## `tree_prefix` and `tree_suffix` statements
@@ -1212,8 +1453,8 @@ lexing based on the grammar's lexer patterns.
 Propane defines a `p_context_t` structure type.
 The structure is intended to be used opaquely and stores information related to
 the state of the lexer and parser.
-Integrating code must define an instance of the `p_context_t` structure.
-A pointer to this instance is passed to the generated functions.
+A `p_context_t` instance is allocated and initialied with the `p_context_new()`
+function.
 
 ### `p_position_t`
 
@@ -1227,6 +1468,9 @@ For C targets, the `p_position_t` structure can be checked for validity by
 calling `p_position_valid(pos)` where `pos` is a `p_position_t` structure
 instance.
 
+For Rust targets, the `p_position_t` structure can be checked for validity by
+calling its `valid()` method (e.g. `if pos.valid()`).
+
 ### `p_value_t`
 
 If tree generation mode is enabled, the `p_value_t` type is defined to be the
@@ -1237,6 +1481,13 @@ given, so the `p_value_t` type is a union of all possible `ptype` types.
 In this case, the API functions `p_value()` and `p_value_XXX()` for each given
 `ptype` name `XXX` are generated to return `p_value_t` instances holding the
 corresponding `ptype`.
+
+For Rust targets, `p_value_t` is an enum rather than a union, and every `ptype`
+type must implement `Clone` and `Default` (see
+${#Rust ptype requirements}).
+Reading a `p_value_t` with an accessor for a `ptype` other than the one it
+currently holds returns `Default::default()` rather than reinterpreting the
+stored bytes.
 
 ### `p_token_info_t`
 
@@ -1250,6 +1501,9 @@ The `p_token_info_t` structure contains the following fields:
   The actual user value can be extracted with `p_value_get(&token_info.pvalue)`
   for the default value or `p_value_get_XXX(&token_info.pvalue)` for named
   `ptype` values.
+
+For Rust targets, `p_token_info_t` implements `Default`, so a token info
+structure to pass to `p_lex()` can be created with `p_token_info_t::default()`.
 
 ### Tree Node Types
 
@@ -1271,8 +1525,9 @@ A rule node may not have valid positions if the rule allows for an empty match.
 In this case the `position` structure should be checked for validity before
 using it.
 For C targets this can be accomplished with
-`if (p_position_valid(node->position))` and for D targets this can be
-accomplished with `if (node.position.valid)`.
+`if (p_position_valid(node->position))`, for D targets with
+`if (node.position.valid)`, and for Rust targets with
+`if node.position().valid()`.
 
 A `Token` node has the following additional fields:
 
@@ -1296,6 +1551,12 @@ The `Start` structure will have a field called `pItems` and another field of
 the same name but with a positional suffix (`pItems1`) which both point to the
 parsed `Items` node.
 Their value will be null if the parsed `Items` rule was empty.
+
+For Rust targets each of these generated fields is an accessor method returning
+a tree node handle, so the fields described in this section are read as
+`node.pItems()`, `node.pItems1()`, and so on.
+A handle for an absent child is not null; instead its `valid()` method returns
+`false`.
 
 The `Items` structure will have fields:
 
@@ -1359,10 +1620,31 @@ D example:
 p_context_t * context = p_context_new(input);
 ```
 
+Rust example:
+
+```
+let mut context = p_context_new(b"a = 1");
+```
+
+For Rust targets, `p_context_new()` accepts the input as a `&[u8]` byte slice
+and copies it into the returned context.
+
 ### `p_context_delete`
 
 The `p_context_delete()` function must be called to deinitialize and deallocate
 a context structure allocated by `p_context_init()`.
+
+For Rust targets, `p_context_delete()` takes the context by value and consumes
+it.
+The memory owned by the context is released when the context is dropped, so the
+call is only strictly required when the grammar supplies a `free_token_node`
+code block, which runs from `p_context_delete()`.
+
+Rust example:
+
+```
+p_context_delete(context);
+```
 
 ### `p_lex`
 
@@ -1401,6 +1683,30 @@ case P_SUCCESS:
 }
 ```
 
+Rust example:
+
+```
+let mut context = p_context_new(input);
+let mut token_info = p_token_info_t::default();
+loop
+{
+    match p_lex(&mut context, &mut token_info)
+    {
+        P_SUCCESS =>
+        {
+            if token_info.token == TOKEN___EOF
+            {
+                break;
+            }
+            println!("{} ({} bytes)", p_token_names[token_info.token as usize],
+                token_info.length);
+        }
+        /* P_DECODE_ERROR, P_UNEXPECTED_INPUT, or P_USER_TERMINATED. */
+        _ => break,
+    }
+}
+```
+
 ### `p_parse`
 
 The `p_parse()` function is the main entry point to the parser.
@@ -1411,6 +1717,13 @@ Example:
 ```
 p_context_t * context = p_context_new(input, input_length);
 size_t result = p_parse(context);
+```
+
+Rust example:
+
+```
+let mut context = p_context_new(input);
+let result = p_parse(&mut context);
 ```
 
 When multiple start rules are specified, a separate parse function is generated
@@ -1453,6 +1766,20 @@ size_t p_parse_inner_Statement(p_context_t * context,
 Passing `null` for the slice makes the function behave identically to
 `p_parse_Statement()`.
 
+For Rust targets, the signature accepts a slice:
+
+```
+pub fn p_parse_inner_Statement(context: &mut p_context_t,
+    follow_tokens: &[p_token_t]) -> usize;
+```
+
+Passing an empty slice (`&[]`) makes the function behave identically to
+`p_parse_Statement()`:
+
+```
+let result = p_parse_inner_Statement(&mut context, &[TOKEN_rbrace]);
+```
+
 When the parse is completed via a non-EOF follow token, that follow token is
 **not** consumed from the input stream.
 The parser rewinds the input index and text position to the start of the follow
@@ -1476,6 +1803,10 @@ if (p_position_valid(node->position))
 For D targets, rather than using `p_position_valid()`, the `valid` property
 function of the `p_position_t` structure can be queried
 (e.g. `if (node.position.valid)`).
+
+For Rust targets, rather than using `p_position_valid()`, the `valid()` method
+of the `p_position_t` structure can be called
+(e.g. `if node.position().valid()`).
 
 ### `p_result`
 
@@ -1512,6 +1843,20 @@ if (p_parse_Statement(context) == P_SUCCESS)
 In this case, the parser will start parsing with the `Statement` rule and the
 parse result from the `Statement` rule will be returned.
 
+Rust example:
+
+```
+let mut context = p_context_new(input);
+if p_parse(&mut context) == P_SUCCESS
+{
+    let result = p_result(&context);
+}
+```
+
+For Rust targets in tree generation mode, `p_result()` returns a `Start` tree
+node handle which borrows the context, so the handle must be dropped before the
+context is passed to `p_context_delete()`.
+
 ### `p_position`
 
 The `p_position()` function can be used to retrieve the parser position where
@@ -1526,6 +1871,18 @@ if (p_parse(context) == P_UNEXPECTED_TOKEN)
 {
     p_position_t error_position = p_position(context);
     fprintf(stderr, "Error: unexpected token at row %u column %u\n",
+        error_position.row, error_position.col);
+}
+```
+
+Rust example:
+
+```
+let mut context = p_context_new(input);
+if p_parse(&mut context) == P_UNEXPECTED_TOKEN
+{
+    let error_position = p_position(&context);
+    eprintln!("Error: unexpected token at row {} column {}",
         error_position.row, error_position.col);
 }
 ```
@@ -1549,6 +1906,14 @@ p_set_position(context, start);
 p_parse(context);
 ```
 
+Rust example:
+
+```
+let mut context = p_context_new(input);
+p_set_position(&mut context, p_position_t { row: 5, col: 20 });
+p_parse(&mut context);
+```
+
 ### `p_input_index`
 
 The `p_input_index()` function returns the current input text byte offset,
@@ -1563,6 +1928,15 @@ p_context_t * context = p_context_new(input, input_length);
 p_parse_inner_Statement(context, follow_tokens, n_follow_tokens);
 size_t offset = p_input_index(context);
 /* Remaining input starts at `input + offset`. */
+```
+
+Rust example:
+
+```
+let mut context = p_context_new(input);
+p_parse_inner_Statement(&mut context, follow_tokens);
+let offset = p_input_index(&context);
+/* Remaining input starts at `&input[offset..]`. */
 ```
 
 ### `p_set_input_index`
@@ -1587,6 +1961,17 @@ p_set_input_index(context, saved_index);
 p_set_position(context, saved_position);
 ```
 
+Rust example:
+
+```
+/* Save the cursor and text position at the start of a section. */
+let saved_index = p_input_index(&context);
+let saved_position = p_position(&context);
+/* ... later, rewind to re-read that section. */
+p_set_input_index(&mut context, saved_index);
+p_set_position(&mut context, saved_position);
+```
+
 ### `p_user_terminate_code`
 
 The `p_user_terminate_code()` function can be used to retrieve the user
@@ -1604,6 +1989,15 @@ if (p_parse(context) == P_USER_TERMINATED)
 }
 ```
 
+Rust example:
+
+```
+if p_parse(&mut context) == P_USER_TERMINATED
+{
+    let user_terminate_code = p_user_terminate_code(&context);
+}
+```
+
 ### `p_token`
 
 The `p_token()` function can be used to retrieve the current parse token.
@@ -1617,6 +2011,15 @@ Example:
 if (p_parse(context) == P_UNEXPECTED_TOKEN)
 {
     p_token_t unexpected_token = p_token(context);
+}
+```
+
+Rust example:
+
+```
+if p_parse(&mut context) == P_UNEXPECTED_TOKEN
+{
+    let unexpected_token = p_token(&context);
 }
 ```
 
@@ -1638,6 +2041,19 @@ result = p_decode_code_point("\xf0\x9f\xa7\xa1", &code_point, &code_point_length
 assert(result == P_SUCCESS);
 assert(code_point == 0x1F9E1u);
 assert(code_point_length == 4u);
+```
+
+Rust Example:
+
+```
+let mut code_point: p_code_point_t = 0;
+let mut code_point_length: u8 = 0;
+
+let result = p_decode_code_point(b"\xf0\x9f\xa7\xa1",
+    &mut code_point, &mut code_point_length);
+assert_eq!(P_SUCCESS, result);
+assert_eq!(0x1F9E1, code_point);
+assert_eq!(4, code_point_length);
 ```
 
 ### `p_tree_delete`
@@ -1678,6 +2094,12 @@ They are especially useful when tree generation mode is not active.
 In that case, the `p_value_t` union can hold one of several different possible
 value types.
 
+Rust example:
+
+```
+out_token_info.pvalue = p_value(count);
+```
+
 ### `p_value_get`
 
 The `p_value_get()` accessor functions can be used to extract a user value
@@ -1693,6 +2115,16 @@ corresponding member.
 These functions are the counterpart to `p_value()` constructor functions and
 are useful for reading the parser value associated with a lexed token, for
 example `p_value_get(&token_info.pvalue)`.
+
+Rust example:
+
+```
+let value = p_value_get(&token_info.pvalue);
+```
+
+For Rust targets these accessors return a clone of the held value.
+If the `p_value_t` holds a different `ptype` than the one requested, the
+accessor returns `Default::default()`.
 
 ##> Data
 
@@ -1711,6 +2143,19 @@ if (p_parse(context) == P_UNEXPECTED_TOKEN)
     p_position_t error_position = p_position(context);
     fprintf(stderr, "Error: unexpected token `%s' at row %u column %u\n",
         p_token_names[context->token],
+        error_position.row, error_position.col);
+}
+```
+
+Rust example:
+
+```
+let mut context = p_context_new(input);
+if p_parse(&mut context) == P_UNEXPECTED_TOKEN
+{
+    let error_position = p_position(&context);
+    eprintln!("Error: unexpected token `{}' at row {} column {}",
+        p_token_names[p_token(&context) as usize],
         error_position.row, error_position.col);
 }
 ```
