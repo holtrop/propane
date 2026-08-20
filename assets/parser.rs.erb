@@ -46,7 +46,7 @@ pub type <%= @grammar.prefix %>code_point_t = u32;
  *
  * This is useful for reporting errors, etc...
  */
-#[derive(Clone, Copy, Default, PartialEq)]
+#[derive(Clone, Copy, Debug, Default, PartialEq)]
 pub struct <%= @grammar.prefix %>position_t {
     /** Input text row (1-based). */
     pub row: u32,

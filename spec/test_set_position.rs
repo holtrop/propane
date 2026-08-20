@@ -17,9 +17,7 @@ fn main() {
     /* p_set_position overrides the initial position. */
     let mut c = p_context_new(b"ab");
     p_set_position(&mut c, p_position_t { row: 5, col: 20 });
-    let pos = p_position(&c);
-    assert_eq!(5, pos.row);
-    assert_eq!(20, pos.col);
+    assert_eq!(p_position_t { row: 5, col: 20 }, p_position(&c));
     assert_eq!(P_SUCCESS, p_lex(&mut c, &mut ti));
     assert_eq!(TOKEN_a, ti.token);
     assert_eq!(5, ti.position.row);
