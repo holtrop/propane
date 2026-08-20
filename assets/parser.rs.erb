@@ -484,8 +484,6 @@ static lexer_mode_table: [lexer_mode_t; <%= @lexer.mode_table.size %>] = [
  *   The ID of the user code block to execute.
  * @param match_text
  *   Matched text for this pattern.
- * @param match_length
- *   Matched text length.
  * @param out_token_info
  *   Lexer token info in progress.
  *
@@ -494,7 +492,7 @@ static lexer_mode_table: [lexer_mode_t; <%= @lexer.mode_table.size %>] = [
  */
 fn lexer_user_code(context: &mut <%= @grammar.prefix %>context_t,
     code_id: <%= get_type_for(user_code_id_count) %>, match_text: &[u8],
-    match_length: usize, out_token_info: &mut <%= @grammar.prefix %>token_info_t) -> <%= @grammar.prefix %>token_t {
+    out_token_info: &mut <%= @grammar.prefix %>token_info_t) -> <%= @grammar.prefix %>token_t {
     match code_id {
 <% @grammar.patterns.each do |pattern| %>
 <%   if pattern.code_id %>
@@ -668,7 +666,7 @@ fn attempt_lex_token(context: &mut <%= @grammar.prefix %>context_t, out_token_in
                 let match_start = context.input_index;
                 let match_slice = context.input[match_start..(match_start + match_info.length)].to_vec();
                 let user_code_token = lexer_user_code(context,
-                    lexer_state_table[match_info.accepting_state as usize].code_id, &match_slice, match_info.length, &mut token_info);
+                    lexer_state_table[match_info.accepting_state as usize].code_id, &match_slice, &mut token_info);
                 /* A TERMINATE_TOKEN_ID return code from lexer_user_code() means
                  * that the user code is requesting to terminate the lexer. */
                 if user_code_token == TERMINATE_TOKEN_ID {

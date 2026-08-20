@@ -249,7 +249,6 @@ token integer /\d+/ <<
 The lexer code block is passed the following arguments:
 
   * `match_text` (`&[u8]`) - a slice containing the text matched by the lexer pattern.
-  * `match_length` (`usize`) - length of the matched text.
 
 The matched text is a byte slice rather than a string; use
 `std::str::from_utf8()` or `String::from_utf8_lossy()` to view it as a string.

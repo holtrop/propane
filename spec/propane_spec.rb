@@ -1124,7 +1124,7 @@ EOF
           write_grammar <<EOF
 ptype u64;
 token word /[a-z]+/ <<
-  $$ = match_length as u64;
+  $$ = match_text.len() as u64;
 >>
 Start -> word <<
   $$ = $1;
