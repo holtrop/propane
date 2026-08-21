@@ -297,32 +297,36 @@ pub fn <%= @grammar.prefix %>context_new(input: &[u8]) -> <%= @grammar.prefix %>
     context
 }
 
+<% free_token_node_used = @grammar.tree && @grammar.free_token_node != "" %>
+<% if free_token_node_used %>
+impl Drop for <%= @grammar.prefix %>context_t {
+    /* Run the free_token_node user code block for every token node in the tree. */
+    fn drop(&mut self) {
+        /* Named so that ${context.<field>} expansions resolve here. */
+        let context = self;
+        for i in 0..context.<%= @grammar.prefix %>tree_nodes.len() {
+            if context.<%= @grammar.prefix %>tree_nodes[i].is_token {
+                let token_node_id = i;
+<%= expand_code(@grammar.free_token_node, false, nil, nil).gsub(/\btoken_tree_node\b/, "context.#{@grammar.prefix}tree_nodes[token_node_id]") %>
+            }
+        }
+    }
+}
+
+<% end %>
 /**
  * Deinitialize and deallocate lexer/parser context structure.
+ *
+ * The memory owned by the context is released when the context is dropped, so
+ * this function only has to consume it. It is provided for symmetry with
+ * <%= @grammar.prefix %>context_new() and with the other target languages;
+ * letting the context go out of scope has the same effect.
  *
  * @param context
  *   Lexer/parser context structure.
  */
-<% free_token_node_used = @grammar.tree && @grammar.free_token_node != "" %>
-<% if free_token_node_used %>
-/* The context is taken as mutable for the benefit of the free_token_node user
- * code block below, which is permitted but not required to modify the node it
- * is freeing. */
-#[allow(unused_mut)]
-<% else %>
-/* Without a free_token_node code block this function has nothing to do. The
- * context is consumed and the memory it owns is released when it is dropped. */
 #[allow(unused_variables)]
-<% end %>
-pub fn <%= @grammar.prefix %>context_delete(<%= free_token_node_used ? "mut " : "" %>context: <%= @grammar.prefix %>context_t) {
-<% if free_token_node_used %>
-    for i in 0..context.<%= @grammar.prefix %>tree_nodes.len() {
-        if context.<%= @grammar.prefix %>tree_nodes[i].is_token {
-            let token_node_id = i;
-<%= expand_code(@grammar.free_token_node, false, nil, nil).gsub(/\btoken_tree_node\b/, "context.#{@grammar.prefix}tree_nodes[token_node_id]") %>
-        }
-    }
-<% end %>
+pub fn <%= @grammar.prefix %>context_delete(context: <%= @grammar.prefix %>context_t) {
 }
 
 /**************************************************************************

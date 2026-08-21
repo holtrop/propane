@@ -530,15 +530,16 @@ Start -> a:a b:b;
 The `free_token_node` statement user code block is not emitted for D language
 since D has a garbage collector.
 
-The code block is emitted for the Rust target, where it runs from
-`p_context_delete()`.
+The code block is emitted for the Rust target, where it is run from a `Drop`
+implementation generated for `p_context_t`.
+It therefore runs exactly once however the context is disposed of, whether that
+is by calling `p_context_delete()` or by simply letting the context go out of
+scope.
 A `ptype` or token user field which owns its memory (a `String`, a `Vec`, a
 `Box`, and so on) is released when the context is dropped and does not need a
 `free_token_node` code block.
 The statement is only needed for memory which Rust does not track, such as a
 raw pointer obtained from `Box::into_raw()`.
-Note that the generated `p_context_t` does not implement `Drop`, so a
-`free_token_node` code block only runs if `p_context_delete()` is called.
 
 ##> `lex_fn` statement - specifying a custom lexer function
 
@@ -1691,9 +1692,9 @@ provide a code block which frees that memory; if specified, the
 
 For Rust targets, `p_context_delete()` takes the context by value and consumes
 it.
-The memory owned by the context is released when the context is dropped, so the
-call is only strictly required when the grammar supplies a `free_token_node`
-code block, which runs from `p_context_delete()`.
+Everything the context owns is released when it is dropped, including running
+any `free_token_node` code block, so calling this function is optional for a
+Rust target; letting the context go out of scope has the same effect.
 
 Rust example:
 
