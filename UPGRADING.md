@@ -14,8 +14,6 @@ from `match` to `match_text` for all target languages.
   `match_text` (for example `$$ = match[0];` becomes `$$ = match_text[0];`).
 
 The `match_length` argument (C, C++) is unchanged.
-This rename only affects lexer user code blocks; parser rule user code blocks
-never had a matched text argument.
 
 ### Tree memory management
 
@@ -50,6 +48,44 @@ In tree generation mode `$$` and `$1`, `$2`, ... now expand to node handles.
 Reference child fields through the target-language accessors above (for example
 `$$->pA->pToken1->pvalue` becomes `p_tree_walk_Start($$, pA, pToken1, pvalue)`
 in C, `$$.pA().pToken1().pvalue()` in C++, and `$$.pA.pToken1.pvalue` in D).
+
+### Pointers into tree node storage
+
+Tree nodes previously each had their own allocation, so a pointer to a node
+stayed valid for the life of the tree. They are now held in a single array
+which is reallocated as it grows, so a pointer or reference into that array may
+be invalidated whenever a new node is created.
+
+New nodes are created while parsing, so this matters for a pointer taken in a
+tree-mode parser rule user code block, which runs before the parse has
+finished. Keep the node handle instead, which stores a node ID rather than an
+address and stays valid, and obtain the pointer from it when it is needed.
+
+For example, replace a saved pointer:
+
+```
+context_user_fields <<
+    p_node_data_t * saved;
+>>
+Items -> Items a << ${context.saved} = p_node_data($$); >>
+```
+
+with a saved handle:
+
+```
+context_user_fields <<
+    Items saved_node;
+>>
+Items -> Items a << ${context.saved_node} = $$; >>
+```
+
+```
+p_node_data_t * data = p_node_data(context->saved_node);
+```
+
+Once parsing has finished, no further nodes are created, so a pointer obtained
+after `p_parse()` returns stays valid until the context is deleted, as long as
+no further parsing is performed with the same context.
 
 ## v4.0.0
 
