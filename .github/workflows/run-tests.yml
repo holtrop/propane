@@ -31,6 +31,9 @@ jobs:
       with:
         ruby-version: ${{ matrix.ruby-version }}
 
+    - name: Set up Rust
+      uses: dtolnay/rust-toolchain@stable
+
     - name: Install dependencies
       run: bundle install
 
