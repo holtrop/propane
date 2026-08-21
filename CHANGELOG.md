@@ -3,20 +3,20 @@
 ### New Features
 
 - Add Rust target language output.
+- Add Rust language detection in propane.vim.
 
 ### API Changes
 
 - The matched text argument passed to lexer user code blocks is now named
-  `match_text` for every target language. It was previously named `match` for
-  C, C++, and D, and `match_` for Rust. Any lexer user code block which
-  references the matched text must be updated to use the new name. The
+  `match_text` instead of `match`, since `match` is a keyword in Rust. The
   `match_length` argument (C and C++) is unchanged.
 - Tree generation mode now stores all tree nodes in a compact arena owned by
   the parser context (a flat node array plus a shared child-link array).
   This replaces the previous design of one heap allocation per node with
   layout-punned typed structs.
 - Tree nodes are now referenced by lightweight handles rather than pointers.
-  `p_result()` and the field accessors return handle values.
+  `p_result()` and the field accessors now return handle values in tree
+  generation mode.
 - The whole tree is freed together with the context by `p_context_delete()`.
   The `p_tree_delete()` / `p_tree_delete_XXX()` functions have been removed;
   tree node handles are only valid while the context is alive.
