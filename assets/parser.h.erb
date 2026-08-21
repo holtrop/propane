@@ -135,13 +135,19 @@ typedef struct
     <%= @grammar.prefix %>value_t pvalue;
 } <%= @grammar.prefix %>token_info_t;
 
+typedef struct <%= @grammar.prefix %>context_s <%= @grammar.prefix %>context_t;
+
+<% if @grammar.tree %>
+<%= c_tree_handle_types_header %>
+
+<% end %>
 /**
  * Lexer and parser context.
  *
  * The user must allocate an instance of this structure and pass it to any
  * public API function.
  */
-typedef struct
+struct <%= @grammar.prefix %>context_s
 {
     /* Lexer context data. */
 
@@ -194,7 +200,7 @@ typedef struct
     size_t user_terminate_code;
 
 <%= @grammar.context_user_fields %>
-} <%= @grammar.prefix %>context_t;
+};
 
 <% if @grammar.tree %>
 <%= c_tree_types_header %>

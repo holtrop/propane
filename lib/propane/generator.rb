@@ -552,16 +552,30 @@ class Propane
       end
     end
 
-    # Generate the C/C++ tree node handle type section for the header.
+    # Generate the tree node handle type declarations for the header.
+    #
+    # These are emitted before the context structure definition so that a
+    # context_user_fields block can declare a field of a handle type.
     #
     # @return [String]
-    #   Header handle section.
+    #   Handle type declarations.
+    def c_tree_handle_types_header
+      @cpp ? cpp_tree_handle_types_header : c_only_tree_handle_types_header
+    end
+
+    # Generate the remainder of the tree node section for the header.
+    #
+    # This is emitted after the context structure definition since it
+    # dereferences the context and so requires the complete type.
+    #
+    # @return [String]
+    #   Accessors, macros, and out-of-line handle method definitions.
     def c_tree_types_header
       @cpp ? cpp_tree_types_header : c_only_tree_types_header
     end
 
     # Generate the C (non-C++) tree node handle type section for the header.
-    def c_only_tree_types_header
+    def c_only_tree_handle_types_header
       p = @grammar.prefix
       out = []
       out << "/** Tree node handle types. @{ */"
@@ -569,6 +583,11 @@ class Propane
         out << "typedef struct { #{p}context_t * __context; #{p}node_id_t __id; } #{t};"
       end
       out << ""
+      out.join("\n")
+    end
+
+    def c_only_tree_types_header
+      out = []
       out << c_common_accessors_header
       out << "/** @} */"
       out.join("\n")
@@ -676,29 +695,30 @@ class Propane
       out.join("\n")
     end
 
-    # Generate the C++ tree node handle type section for the header.
-    def cpp_tree_types_header
+    # Generate the C++ tree node handle class declarations for the header.
+    # Only valid() is defined inline; every other method dereferences the
+    # context, which is still an incomplete type here, so those are declared
+    # and defined out of line once the context is complete.
+    def cpp_tree_handle_types_header
       p = @grammar.prefix
       out = []
       out << "/** Tree node handle types. @{ */"
       tree_handle_types.each {|t| out << "struct #{t};"}
       out << ""
-      # Token handle (all methods inline; no handle-typed returns).
       tt = h_type("Token")
       out << "struct #{tt}"
       out << "{"
       out << "    #{p}context_t * __context;"
       out << "    #{p}node_id_t __id;"
       out << "    bool valid() const { return __id != 0u; }"
-      out << "    #{p}node_data_t * data() const { return &__context->#{p}tree_nodes[__id]; }"
-      out << "    #{p}position_t position() const { return __context->#{p}tree_nodes[__id].position; }"
-      out << "    #{p}position_t end_position() const { return __context->#{p}tree_nodes[__id].end_position; }"
-      out << "    uint16_t n_fields() const { return __id ? __context->#{p}tree_nodes[__id].n_fields : (uint16_t)0u; }"
-      out << "    #{p}token_t token() const { return __context->#{p}tree_nodes[__id].token; }"
-      out << "    #{p}value_t pvalue() const { return __context->#{p}tree_nodes[__id].pvalue; }"
+      out << "    #{p}node_data_t * data() const;"
+      out << "    #{p}position_t position() const;"
+      out << "    #{p}position_t end_position() const;"
+      out << "    uint16_t n_fields() const;"
+      out << "    #{p}token_t token() const;"
+      out << "    #{p}value_t pvalue() const;"
       out << "};"
       out << ""
-      # Rule set handles: navigation methods declared, defined out-of-line below.
       tree_node_rule_sets.each do |rule_set|
         rtype = h_type(rule_set.name)
         out << "struct #{rtype}"
@@ -706,16 +726,35 @@ class Propane
         out << "    #{p}context_t * __context;"
         out << "    #{p}node_id_t __id;"
         out << "    bool valid() const { return __id != 0u; }"
-        out << "    #{p}node_data_t * data() const { return &__context->#{p}tree_nodes[__id]; }"
-        out << "    #{p}position_t position() const { return __context->#{p}tree_nodes[__id].position; }"
-        out << "    #{p}position_t end_position() const { return __context->#{p}tree_nodes[__id].end_position; }"
-        out << "    uint16_t n_fields() const { return __id ? __context->#{p}tree_nodes[__id].n_fields : (uint16_t)0u; }"
+        out << "    #{p}node_data_t * data() const;"
+        out << "    #{p}position_t position() const;"
+        out << "    #{p}position_t end_position() const;"
+        out << "    uint16_t n_fields() const;"
         each_tree_field(rule_set) do |rt, field_name, child_type, slot|
           out << "    #{child_type} #{field_name}() const;"
         end
         out << "};"
         out << ""
       end
+      out.join("\n")
+    end
+
+    # Generate the out-of-line C++ handle method definitions plus the C-style
+    # accessors. Emitted after the context structure definition.
+    def cpp_tree_types_header
+      p = @grammar.prefix
+      out = []
+      # Common node methods, now that the context type is complete.
+      ([h_type("Token")] + tree_node_rule_sets.map {|rs| h_type(rs.name)}).each do |ht|
+        out << "inline #{p}node_data_t * #{ht}::data() const { return &__context->#{p}tree_nodes[__id]; }"
+        out << "inline #{p}position_t #{ht}::position() const { return __context->#{p}tree_nodes[__id].position; }"
+        out << "inline #{p}position_t #{ht}::end_position() const { return __context->#{p}tree_nodes[__id].end_position; }"
+        out << "inline uint16_t #{ht}::n_fields() const { return __id ? __context->#{p}tree_nodes[__id].n_fields : (uint16_t)0u; }"
+      end
+      tt = h_type("Token")
+      out << "inline #{p}token_t #{tt}::token() const { return __context->#{p}tree_nodes[__id].token; }"
+      out << "inline #{p}value_t #{tt}::pvalue() const { return __context->#{p}tree_nodes[__id].pvalue; }"
+      out << ""
       # Out-of-line navigation method bodies (all handle types now complete).
       tree_node_rule_sets.each do |rule_set|
         rtype = h_type(rule_set.name)

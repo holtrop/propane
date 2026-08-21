@@ -2113,6 +2113,38 @@ EOF
         end
       end
 
+      # Rust is excluded since a Rust tree node handle borrows the context, so
+      # storing one in a context field would make the context self-referential.
+      if %w[c cpp d].include?(language)
+        it "allows a tree node handle type in a context user field" do
+          write_grammar <<EOF
+tree;
+ptype int;
+context_user_fields <<
+    Item first_item;
+    int have_first;
+>>
+drop /\\s+/;
+token a /a/ << $$ = 7; >>
+Item -> a;
+Items -> ;
+Items -> Items Item <<
+    if (${context.have_first} == 0)
+    {
+        ${context.first_item} = $2;
+        ${context.have_first} = 1;
+    }
+>>
+Start -> Items;
+EOF
+          run_propane(language: language)
+          compile("spec/test_context_field_handle.#{language}", language: language)
+          results = run_test(language: language)
+          expect(results.stderr).to eq ""
+          expect(results.status).to eq 0
+        end
+      end
+
       if language == "rust"
         it "marks user code sections with their grammar file and line number" do
           write_grammar <<EOF
