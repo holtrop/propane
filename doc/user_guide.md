@@ -349,10 +349,11 @@ accessors on a node handle:
     for token payload and user fields), and `p_node_id(node)` (for identity
     comparison).
   * C++: handle methods called with `()`, e.g. `node.field()`, `node.valid()`,
-    `node.position()`, `node.token()`, `node.pvalue()`, and `node.data()`. The
-    C-style functions and macros above are also available.
+    `node.position()`, `node.token()`, `node.pvalue()`, `node.data()`, and
+    `node.node_id()` (for identity comparison). The C-style functions and
+    macros above are also available.
   * D: `@property` accessors, e.g. `node.field`, `node.valid`, `node.position`,
-    `node.token`, `node.pvalue`.
+    `node.token`, `node.pvalue`, and `node.node_id` (for identity comparison).
   * Rust: handle methods called with `()`, e.g. `node.field()`, `node.valid()`,
     `node.position()`, `node.end_position()`, `node.n_fields()`,
     `node.token()`, `node.pvalue()`, `node.data()` (a reference to the node

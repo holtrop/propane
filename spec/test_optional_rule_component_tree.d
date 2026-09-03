@@ -31,6 +31,7 @@ unittest
     assert(start.pR3.valid);
     assert(start.pR.valid);
     assert(start.pR == start.pR3);
+    assert_eq(start.pR.node_id, start.pR3.node_id);
     assert_eq(TOKEN_c, start.pR.pToken1.token);
 
     p_context_delete(context);

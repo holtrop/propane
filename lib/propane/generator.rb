@@ -696,9 +696,10 @@ class Propane
     end
 
     # Generate the C++ tree node handle class declarations for the header.
-    # Only valid() is defined inline; every other method dereferences the
-    # context, which is still an incomplete type here, so those are declared
-    # and defined out of line once the context is complete.
+    # Only valid() and node_id() are defined inline; every other method
+    # dereferences the context, which is still an incomplete type here, so
+    # those are declared and defined out of line once the context is
+    # complete.
     def cpp_tree_handle_types_header
       p = @grammar.prefix
       out = []
@@ -711,6 +712,7 @@ class Propane
       out << "    #{p}context_t * __context;"
       out << "    #{p}node_id_t __id;"
       out << "    bool valid() const { return __id != 0u; }"
+      out << "    #{p}node_id_t node_id() const { return __id; }"
       out << "    #{p}node_data_t * data() const;"
       out << "    #{p}position_t position() const;"
       out << "    #{p}position_t end_position() const;"
@@ -726,6 +728,7 @@ class Propane
         out << "    #{p}context_t * __context;"
         out << "    #{p}node_id_t __id;"
         out << "    bool valid() const { return __id != 0u; }"
+        out << "    #{p}node_id_t node_id() const { return __id; }"
         out << "    #{p}node_data_t * data() const;"
         out << "    #{p}position_t position() const;"
         out << "    #{p}position_t end_position() const;"

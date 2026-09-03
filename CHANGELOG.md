@@ -1,3 +1,11 @@
+## v5.1.0
+
+### New Features
+
+- Add a `node_id()` accessor to the C++ and D tree node handle types, for node
+  identity comparison. This matches the existing `p_node_id()` macro (C) and
+  `node_id()` method (Rust).
+
 ## v5.0.0
 
 ### New Features

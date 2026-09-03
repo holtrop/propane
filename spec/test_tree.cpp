@@ -13,6 +13,8 @@ int main()
     assert(start.pItems1().valid());
     assert(start.pItems().valid());
     Items items = start.pItems();
+    assert_ne(0u, items.node_id());
+    assert_eq(start.pItems().node_id(), items.node_id());
     assert(items.pItem().valid());
     assert(items.pItem().pToken1().valid());
     assert_eq(TOKEN_a, items.pItem().pToken1().token());
@@ -40,6 +42,7 @@ int main()
     assert_eq(P_SUCCESS, p_parse(context));
     start = p_result(context);
     assert(!start.pItems().valid());
+    assert_eq(0u, start.pItems().node_id());
 
     p_context_delete(context);
 

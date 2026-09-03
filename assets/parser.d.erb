@@ -149,6 +149,12 @@ public struct <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>
         return __id != 0u;
     }
 
+    /** Return the node ID (for identity comparison). */
+    @property <%= @grammar.prefix %>node_id_t node_id()
+    {
+        return __id;
+    }
+
     /** Access the underlying node record (token, pvalue, and user fields). */
     @property ref <%= @grammar.prefix %>node_data_t __node()
     {
@@ -175,6 +181,12 @@ public struct <%= @grammar.tree_prefix %><%= rule_set.name %><%= @grammar.tree_s
     @property bool valid()
     {
         return __id != 0u;
+    }
+
+    /** Return the node ID (for identity comparison). */
+    @property <%= @grammar.prefix %>node_id_t node_id()
+    {
+        return __id;
     }
 
     /** Text position of the first code point spanned by this node. */
