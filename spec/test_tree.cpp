@@ -12,6 +12,13 @@ int main()
     Start start = p_result(context);
     assert(start.pItems1().valid());
     assert(start.pItems().valid());
+    // A rule node handle is usable directly as a boolean condition.
+    assert(start);
+    assert(start.pItems());
+    if (!start.pItems())
+    {
+        return 1;
+    }
     Items items = start.pItems();
     assert_ne(0u, items.node_id());
     assert_eq(start.pItems().node_id(), items.node_id());
@@ -19,6 +26,21 @@ int main()
     assert(items.pItem().pToken1().valid());
     assert_eq(TOKEN_a, items.pItem().pToken1().token());
     assert_eq(11, items.pItem().pToken1().pvalue());
+    // A token node handle is usable directly as a boolean condition.
+    Token token = items.pItem().pToken1();
+    assert(token);
+    if (!token)
+    {
+        return 1;
+    }
+    // An invalid token node handle converts to false.
+    Token invalid_token = items.pItem().pDual().pOne1().pToken1();
+    assert(!invalid_token.valid());
+    assert(!invalid_token);
+    if (invalid_token)
+    {
+        return 1;
+    }
     assert(items.pItemsMore().valid());
     ItemsMore itemsmore = items.pItemsMore();
     assert(itemsmore.pItem().valid());
@@ -42,6 +64,12 @@ int main()
     assert_eq(P_SUCCESS, p_parse(context));
     start = p_result(context);
     assert(!start.pItems().valid());
+    // An invalid rule node handle converts to false.
+    assert(!start.pItems());
+    if (start.pItems())
+    {
+        return 1;
+    }
     assert_eq(0u, start.pItems().node_id());
 
     p_context_delete(context);

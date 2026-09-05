@@ -360,6 +360,20 @@ accessors on a node handle:
     record, for token user fields), and `node.node_id()` (for identity
     comparison).
 
+In C++ and D, a node handle can also be used directly as a boolean condition,
+which is equivalent to testing `valid()` (C++) or `valid` (D):
+
+```
+if (node)
+{
+    /* node refers to a valid (non-null) tree node. */
+}
+```
+
+For C, use the `p_node_valid(node)` macro, and for Rust use the `node.valid()`
+method; neither language supports a user-defined conversion to a boolean
+condition.
+
 The positional position expansions (`${$.position}`, `${N.position}`, etc...)
 are not available in tree generation mode; use the position accessors above
 instead.

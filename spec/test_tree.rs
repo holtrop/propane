@@ -13,6 +13,8 @@ fn main() {
         assert!(items.pItem().pToken1().valid());
         assert_eq!(TOKEN_a, items.pItem().pToken1().token());
         assert_eq!(11, items.pItem().pToken1().pvalue());
+        /* A token node handle from an unmatched rule is invalid. */
+        assert!(!items.pItem().pDual().pOne1().pToken1().valid());
         let itemsmore = items.pItemsMore();
         assert!(itemsmore.pItem().pItem().pItem().pToken1().valid());
         assert_eq!(TOKEN_b, itemsmore.pItem().pItem().pItem().pToken1().token());

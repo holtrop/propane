@@ -17,6 +17,8 @@ int main()
     assert(p_node_valid(p_tree_walk_Items(items, pItem, pToken1)));
     assert_eq(TOKEN_a, p_tree_walk_Items(items, pItem, pToken1, token));
     assert_eq(11, p_tree_walk_Items(items, pItem, pToken1, pvalue));
+    /* A token node handle from an unmatched rule is invalid. */
+    assert(!p_node_valid(p_tree_walk_Items(items, pItem, pDual, pOne1, pToken1)));
     assert(p_node_valid(p_Items_pItemsMore(items)));
     ItemsMore itemsmore = p_Items_pItemsMore(items);
     assert(p_node_valid(p_ItemsMore_pItem(itemsmore)));

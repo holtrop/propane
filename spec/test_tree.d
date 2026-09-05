@@ -15,11 +15,33 @@ unittest
     Start start = p_result(context);
     assert(start.pItems1.valid);
     assert(start.pItems.valid);
+    // A rule node handle is usable directly as a boolean condition.
+    assert(start);
+    assert(start.pItems);
+    if (!start.pItems)
+    {
+        assert(false);
+    }
     Items items = start.pItems;
     assert(items.pItem.valid);
     assert(items.pItem.pToken1.valid);
     assert_eq(TOKEN_a, items.pItem.pToken1.token);
     assert_eq(11, items.pItem.pToken1.pvalue);
+    // A token node handle is usable directly as a boolean condition.
+    Token token = items.pItem.pToken1;
+    assert(token);
+    if (!token)
+    {
+        assert(false);
+    }
+    // An invalid token node handle converts to false.
+    Token invalidToken = items.pItem.pDual.pOne1.pToken1;
+    assert(!invalidToken.valid);
+    assert(!invalidToken);
+    if (invalidToken)
+    {
+        assert(false);
+    }
     assert(items.pItemsMore.valid);
     ItemsMore itemsmore = items.pItemsMore;
     assert(itemsmore.pItem.valid);
@@ -43,6 +65,12 @@ unittest
     assert_eq(P_SUCCESS, p_parse(context));
     start = p_result(context);
     assert(!start.pItems.valid);
+    // An invalid rule node handle converts to false.
+    assert(!start.pItems);
+    if (start.pItems)
+    {
+        assert(false);
+    }
 
     p_context_delete(context);
 

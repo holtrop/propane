@@ -149,6 +149,12 @@ public struct <%= @grammar.tree_prefix %>Token<%= @grammar.tree_suffix %>
         return __id != 0u;
     }
 
+    /** Support using this handle directly as a boolean condition. */
+    bool opCast(T : bool)()
+    {
+        return __id != 0u;
+    }
+
     /** Return the node ID (for identity comparison). */
     @property <%= @grammar.prefix %>node_id_t node_id()
     {
@@ -179,6 +185,12 @@ public struct <%= @grammar.tree_prefix %><%= rule_set.name %><%= @grammar.tree_s
 
     /** Return whether this handle refers to a valid (non-null) node. */
     @property bool valid()
+    {
+        return __id != 0u;
+    }
+
+    /** Support using this handle directly as a boolean condition. */
+    bool opCast(T : bool)()
     {
         return __id != 0u;
     }

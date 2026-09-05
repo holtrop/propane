@@ -1,3 +1,13 @@
+## v5.2.0
+
+### New Features
+
+- Tree node handles can now be used directly as a boolean condition (e.g.
+  `if (node)`) in C++ (an `explicit operator bool()`) and D (an
+  `opCast!bool`), equivalent to testing `valid()` / `valid`. C and Rust do not
+  support a user-defined conversion to a boolean condition; use
+  `p_node_valid(node)` and `node.valid()` there.
+
 ## v5.1.0
 
 ### New Features
