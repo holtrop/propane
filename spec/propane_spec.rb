@@ -267,6 +267,50 @@ EOF
     expect(File.binread("spec/run/testparser.log")).to match %r{Shift/Reduce conflict \(state \d+\) between token b and rule As2\? \(defined on line 4\)}
   end
 
+  it "warns on unused rules" do
+    write_grammar <<EOF
+token a;
+token b;
+Start -> a;
+Unused -> b Other?;
+Other -> a;
+EOF
+    results = run_propane(capture: true)
+    expect(results.stderr).to eq ""
+    expect(results.status).to eq 0
+    log = File.binread("spec/run/testparser.log")
+    expect(log).to match %r{Unused rule Unused \(defined on line 4\)}
+    expect(log).to match %r{Unused rule Other \(defined on line 5\)}
+    expect(log).to_not match %r{Unused rule (Start|Other\?)}
+  end
+
+  it "errors on unused rules with -w" do
+    write_grammar <<EOF
+token a;
+token b;
+Start -> a Used;
+Used -> b;
+Unused -> b;
+EOF
+    results = run_propane(extra_args: %w[-w], capture: true)
+    expect(results.stderr).to match %r{Unused rule Unused \(defined on line 5\)}
+    expect(results.stderr).to_not match %r{Unused rule (Start|Used)\b}
+    expect(results.status).to_not eq 0
+  end
+
+  it "does not warn about rules reachable from any of multiple start rules" do
+    write_grammar <<EOF
+token a;
+token b;
+start Start Other;
+Start -> a;
+Other -> b;
+EOF
+    results = run_propane(extra_args: %w[-w], capture: true)
+    expect(results.stderr).to eq ""
+    expect(results.status).to eq 0
+  end
+
   it "errors on duplicate field aliases in a rule" do
     write_grammar <<EOF
 token a;

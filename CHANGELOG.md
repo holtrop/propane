@@ -1,3 +1,11 @@
+## Unreleased
+
+### New Features
+
+- Warn about unused rules (rules not reachable from any start rule). The
+  warnings are written to the log file and, with `-w`, are printed to stderr
+  and treated as fatal errors.
+
 ## v5.2.0
 
 ### New Features

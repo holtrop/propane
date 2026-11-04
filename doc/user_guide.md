@@ -43,8 +43,8 @@ Propane is typically invoked from the command-line as `./propane`.
                   debugging a grammar.
       --version   Show program version and exit.
       -w          Treat warnings as errors. This option will treat shift/reduce
-                  conflicts as fatal errors and will print them to stderr in
-                  addition to the log file.
+                  conflicts and unused rules as fatal errors and will print
+                  them to stderr in addition to the log file.
 
 The user must specify the path to a Propane input grammar file and a path to an
 output file.

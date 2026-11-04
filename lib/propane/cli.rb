@@ -10,8 +10,8 @@ Options:
               debugging a grammar.
   --version   Show program version and exit.
   -w          Treat warnings as errors. This option will treat shift/reduce
-              conflicts as fatal errors and will print them to stderr in
-              addition to the log file.
+              conflicts and unused rules as fatal errors and will print
+              them to stderr in addition to the log file.
 EOF
 
     class << self

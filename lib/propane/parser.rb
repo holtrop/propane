@@ -50,6 +50,7 @@ class Propane
 
       build_reduce_actions!
       build_tables!
+      check_unused_rules!
       write_log!
       errormessage = ""
       if @errors.size > 0
@@ -67,6 +68,34 @@ class Propane
     end
 
     private
+
+    # Record a warning for each user-defined rule that cannot be reached from
+    # any start rule.
+    #
+    # @return [void]
+    def check_unused_rules!
+      reachable = Set.new
+      pending = @grammar.rules[0...@grammar.start_rules.length].map(&:rule_set)
+      while rule_set = pending.pop
+        next if reachable.include?(rule_set)
+        reachable << rule_set
+        rule_set.rules.each do |rule|
+          rule.components.each do |component|
+            if component.is_a?(RuleSet) && !reachable.include?(component)
+              pending << component
+            end
+          end
+        end
+      end
+      @rule_sets.each do |name, rule_set|
+        # Skip rule sets generated internally (real start rules and optional
+        # component rules).
+        next if name.start_with?("$") || rule_set.optional?
+        unless reachable.include?(rule_set)
+          @warnings << "Unused rule #{name} (defined on line #{rule_set.rules.first.line_number})"
+        end
+      end
+    end
 
     def build_tables!
       @state_table = []
