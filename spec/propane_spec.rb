@@ -45,7 +45,7 @@ SimpleCov.start do
   # suite. The parts are merged once at the end by the spec Rake task.
   coverage_dir(#{"coverage/parts/#{command_name}".inspect})
   filters.clear
-  add_filter do |src|
+  skip do |src|
     !(src.filename[SimpleCov.root])
   end
   formatter(MyFormatter)

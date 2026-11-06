@@ -7,8 +7,8 @@ unless ENV["dist_specs"]
     end
   end
   SimpleCov.start do
-    add_filter "/spec/"
-    add_filter "/.bundle/"
+    skip "/spec/"
+    skip "/.bundle/"
     if ENV["partial_specs"]
       command_name "RSpec-partial"
     else
